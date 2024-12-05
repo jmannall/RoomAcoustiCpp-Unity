@@ -1,0 +1,202 @@
+
+using UnityEngine;
+using System;
+
+[AddComponentMenu("RoomAcoustiC++/Audio Source")]
+[RequireComponent(typeof(AudioSource))]
+
+public class RACAudioSource : MonoBehaviour
+{
+
+    private AudioSource source;
+
+    #region Parameters
+
+    //////////////////// Parameters ////////////////////
+
+    // Inspector variables
+
+    [SerializeField]
+    [Tooltip("The AudioClip asset played by the RACAudioSource.")]
+    private AudioClip clip;
+
+    [SerializeField, Range(-60.0f, 24.0f)]
+    [Tooltip("Control the overall gain of the source.")]
+    private float gain = 0.0f;
+
+    [SerializeField]
+    [Tooltip("Play the sound when the component loads.")]
+    private bool playOnAwake = false;
+
+    [SerializeField]
+    [Tooltip("Set the source to loop. If loop points are defined in the clip, these will be respected.")]
+    private bool loop = false;
+
+    [SerializeField]
+    [Tooltip("Set the directivity of the source.")]
+    private RACManager.SourceDirectivity directivity = RACManager.SourceDirectivity.Omni;
+
+    // DSP Parameters
+    private float[] input;
+
+    private int numFrames;
+    private float linGain = 1.0f;
+
+    private bool isRunning = false;
+    private bool isPlaying = false;
+    // private int id = -1;
+    public int id { get; private set; } = -1;
+
+    #endregion
+
+    #region Unity Functions
+
+    //////////////////// Unity Functions ////////////////////
+
+    private void Awake()
+    {
+        source = GetComponent<AudioSource>();
+        source.clip = clip;
+        source.playOnAwake = playOnAwake;
+        source.loop = loop;
+    }
+
+    void Start()
+    {
+        AudioConfiguration config = AudioSettings.GetConfiguration();
+        numFrames = config.dspBufferSize;
+
+        id = RACManager.InitSource();
+        if (id >= 0)
+        {
+            isRunning = true;
+            Debug.Log("Source successfully initialised");
+        }
+        else
+            Debug.Log("Source failed to initialise");
+
+        if (playOnAwake)
+            Play();
+        else
+            Pause();
+        
+        RACManager.UpdateSourceDirectivity(id, directivity);
+        input = new float[numFrames];
+    }
+
+    void Update()
+    {
+        if (id >= 0)
+        {
+            RACManager.UpdateSource(id, transform.position, transform.rotation);
+            linGain = UpdateGain();
+        }
+    }
+
+    private void FixedUpdate()
+    {
+        if (source.isPlaying != isPlaying)
+            isPlaying = source.isPlaying;
+    }
+
+    private void OnDestroy()
+    {
+        if (id >= 0)
+        {
+            isRunning = false;
+            RACManager.RemoveSource(id);
+            id = -1;
+        }
+    }
+
+    private void OnAudioFilterRead(float[] data, int channels)
+    {
+        if (RACManager.racManager.isRunning)
+        {
+            if (isRunning && isPlaying)
+            {
+                // Copy every other sample to mono buffer
+                for (int i = 0, j = 0; i < numFrames; i++, j += 2)
+                    input[i] = linGain * data[j];
+                RACManager.SubmitAudio(id, ref input);
+            }
+        }
+        // Overwrite data
+        for (int i = 0; i < data.Length; i++)
+            data[i] = 0.0f;
+    }
+
+    #endregion
+
+    #region Functions
+
+    //////////////////// Functions ////////////////////
+
+    public void RestartSource()
+    {
+        isRunning = false;
+        int oldId = id;
+        id = RACManager.InitSource();
+        if (id >= 0)
+        {
+            isRunning = true;
+            Debug.Log("Source successfully initialised");
+        }
+        else
+            Debug.Log("Source failed to initialise");
+        if (oldId >= 0)
+            RACManager.RemoveSource(oldId);
+    }
+    private float UpdateGain()
+    {
+        return Mathf.Pow(10, gain / 20.0f);
+    }
+
+    public void SetClip(AudioClip clip)
+    {
+        if (source.isPlaying)
+        {
+            source.clip = clip;
+            source.Play();
+        }
+        else
+            source.clip = clip;
+    }
+
+    public void PlayPause()
+    {
+        Debug.Log("Play Pause");
+        if (source.isPlaying)
+            source.Pause();
+        else
+            source.Play();
+    }
+
+    public void Pause()
+    {
+        if (source.isPlaying)
+            source.Pause();
+    }
+
+    public void Play()
+    {
+        if (!source.isPlaying)
+            source.Play();
+    }
+
+    public void SetLoop(bool doLoop) { loop = doLoop; source.loop = doLoop; }
+
+    public void SetPlayOnAwake(bool play)
+    {
+        playOnAwake = play;
+        source.playOnAwake = play;
+    }
+
+    public bool IsPlaying()
+    {
+        return source.isPlaying;
+    }
+
+    #endregion
+
+}
