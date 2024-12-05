@@ -1,8 +1,8 @@
-# Define the source directory (directory where the script is being run)
-$sourceDir = Get-Location
+# Define the destination directory (directory where the script is being run)
+$destinationDir = Get-Location
 
-# Define the destination directory (one level above the source directory)
-$destinationDir = Split-Path -Path $sourceDir -Parent
+# Define the source directory (one level above the destination directory)
+$sourceDir = Split-Path -Path $destinationDir -Parent
 
 # Define the folder to copy (replace 'YourFolder' with your folder name)
 $folderToCopy = "$sourceDir\StreamingAssets"
