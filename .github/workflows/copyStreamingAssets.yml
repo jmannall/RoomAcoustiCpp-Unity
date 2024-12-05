@@ -1,0 +1,44 @@
+name: Copy Folder in Submodule Repository
+
+on:
+  push:
+    branches:
+      - main  # Trigger on pushes to the main branch
+  pull_request:
+    branches:
+      - main  # Trigger on pull requests to the main branch
+  workflow_dispatch: # Allow manual trigger for testing
+
+jobs:
+  copy-folder:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v3
+
+    - name: Copy Folder
+      run: |
+        ROOT_DIR=$(pwd)
+        PARENT_DIR=$(dirname "$ROOT_DIR")
+      
+        # Define source and destination
+        SOURCE="ROOT_DIR/streamingAssets"
+        DEST="PARENT_DIR/streamingAssets"
+
+        # Create destination folder if it doesn't exist
+        mkdir -p $DEST
+
+        # Copy contents from source to destination
+        cp -r $SOURCE/* $DEST
+
+    - name: Commit Changes (If Any)
+      run: |
+        git config --global user.name "GitHub Actions"
+        git config --global user.email "actions@github.com"
+
+        # Stage and commit changes if they exist
+        git add $DEST
+        git diff --cached --exit-code || git commit -m "Auto-copy folder contents"
+        git push
+      if: success()
