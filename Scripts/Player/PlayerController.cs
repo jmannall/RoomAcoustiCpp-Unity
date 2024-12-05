@@ -27,19 +27,29 @@ public class PlayerController : MonoBehaviour
 
     private void Awake()
     {
+        if (inputActions == null)
+        {
+            Debug.LogWarning("Input Actions not set in the Player Controller");
+            return;
+        }
         playerActionMap = inputActions.FindActionMap("Player");
         playerActionMap.Enable();
     }
     private void Start()
     {
-        move = playerActionMap["PlayerMove"];
-
         controller = GetComponent<CharacterController>();
         worldDirection.y = 0.0f;
+
+        if (inputActions == null)
+            return;
+
+        move = playerActionMap["PlayerMove"];
     }
 
     void Update()
     {
+        if (inputActions == null)
+            return;
         UpdateDirection();
         UpdateWorldDirection();
         controller.Move(speed * worldDirection * Time.deltaTime);

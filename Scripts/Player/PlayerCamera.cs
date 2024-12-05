@@ -24,18 +24,22 @@ public class PlayerCamera : MonoBehaviour
     private InputAction look;
 
     void Start()
-    { 
-        look = GetComponentInParent<PlayerController>().playerActionMap["PlayerLook"];
-
+    {
         if (lockCursor)
         {
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;
         }
+
+        InputActionMap inputActionMap = GetComponentInParent<PlayerController>().playerActionMap;
+        if (inputActionMap.enabled)
+            look = inputActionMap["PlayerLook"];
     }
 
     void Update()
     {
+        if (look == null)
+            return;
         UpdateYawPitch();
         UpdateCurrentRotation();
         transform.eulerAngles = currentRotation;
