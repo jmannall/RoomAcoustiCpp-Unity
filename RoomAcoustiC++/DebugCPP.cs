@@ -9,12 +9,24 @@ using UnityEngine;
 [AddComponentMenu("RoomAcoustiC++/Debug C++")]
 public class DebugCPP : MonoBehaviour
 {
+    // global singleton
+    public static DebugCPP debug = null;
+
     static string debug_string = " ";
 
     // Use this for initialization
     void Awake()
     {
+        Debug.AssertFormat(debug == null, "More than one instance of the DebugCPP created! Singleton violated.");
+        debug = this;
+
         RegisterDebugCallback(OnDebugCallback);
+    }
+
+    private void OnDisable()
+    {
+        UnregisterDebugCallback();
+        UnregisterIEMCallback();
     }
 
     #region DLL Interface
@@ -32,8 +44,21 @@ public class DebugCPP : MonoBehaviour
     //------------------------------------------------------------------------------------------------
     [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
     static extern void RegisterDebugCallback(debugCallback cb);
+
+    [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+    public static extern void RegisterIEMCallback(iemCallback cb);
+
+    [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+    static extern void UnregisterDebugCallback();
+
+    [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+    public static extern void UnregisterIEMCallback();
+
     //Create string param callback delegate
     delegate void debugCallback(IntPtr request, int colour, int size);
+
+    public delegate void iemCallback(int id);
+
     enum Colour { red, green, blue, black, white, yellow, orange };
     [MonoPInvokeCallback(typeof(debugCallback))]
     static void OnDebugCallback(IntPtr request, int colour, int size)

@@ -18,12 +18,18 @@ public class RACAudioListener : MonoBehaviour
         Debug.AssertFormat(racAudioListener == null, "More than one instance of the RACAudioListener created! Singleton violated.");
         racAudioListener = this;
 
-        RACManager.UpdateListener(transform.position, transform.rotation);
+        UpdateListener();
     }
 
     void Update()
     {
-        RACManager.UpdateListener(transform.position, transform.rotation);
+        UpdateListener();
+    }
+
+    private void UpdateListener()
+    {
+        if (RACManager.racManager.isRunning)
+            RACManager.UpdateListener(transform.position, transform.rotation);
     }
 
     #endregion

@@ -183,7 +183,7 @@ public class RACManager : MonoBehaviour
     private int numFDNChannels = 12;
 
     [Header("Initial properties")]
-    [SerializeField, Range(1.0f, 10.0f)]
+    [SerializeField, Range(0.0f, 10.0f)]
     private float lerpFactor = 2.0f;
 
     [SerializeField]
@@ -420,6 +420,7 @@ public class RACManager : MonoBehaviour
         int diffraction = SelectDiffractionMode(racManager.iemConfig.diffraction);
         int reflectionDiffraction = SelectDiffractionMode(racManager.iemConfig.reflectionDiffraction);
         RACUpdateIEMConfig(racManager.iemConfig.order, direct, racManager.iemConfig.reflection, diffraction, reflectionDiffraction, racManager.iemConfig.lateReverb, racManager.iemConfig.minimumEdgeLength);
+        Profiler.EndSample();
     }
 
     public static void UpdateIEMConfig(IEMConfig config)
@@ -474,12 +475,14 @@ public class RACManager : MonoBehaviour
     {
         Profiler.BeginSample("Set FDN");
         RACUpdateRoom(volume, dim, numDimensions);
+        Profiler.EndSample();
     }
-    
+
     public static void ResetFDN()
     {
         Profiler.BeginSample("Reset FDN");
         RACResetFDN();
+        Profiler.EndSample();
     }
 
     // Listener
@@ -488,6 +491,7 @@ public class RACManager : MonoBehaviour
     {
         Profiler.BeginSample("Update Listener");
         RACUpdateListener(position.x, position.y, position.z, orientation.w, orientation.x, orientation.y, orientation.z);
+        Profiler.EndSample();
     }
 
     // Source
@@ -502,6 +506,7 @@ public class RACManager : MonoBehaviour
     {
         Profiler.BeginSample("Update Source");
         RACUpdateSource(id, position.x, position.y, position.z, orientation.w, orientation.x, orientation.y, orientation.z);
+        Profiler.EndSample();
     }
 
     public static void UpdateSourceDirectivity(int id, SourceDirectivity directivity)
@@ -519,6 +524,7 @@ public class RACManager : MonoBehaviour
     {
         Profiler.BeginSample("Remove Source");
         RACRemoveSource(id);
+        Profiler.EndSample();
     }
 
     // Wall
@@ -548,6 +554,7 @@ public class RACManager : MonoBehaviour
 
         Profiler.BeginSample("Init Wall");
         int id = RACInitWall(racManager.vData, absorption);
+        Profiler.EndSample();
         return id;
     }
 
@@ -563,24 +570,28 @@ public class RACManager : MonoBehaviour
 
         Profiler.BeginSample("Update Wall");
         RACUpdateWall(id, racManager.vData);
+        Profiler.EndSample();
     }
 
     public static void UpdateWallAbsorption(int id, ref float[] absorption)
     {
         Profiler.BeginSample("Update Wall Absorption");
         RACUpdateWallAbsorption(id, absorption);
+        Profiler.EndSample();
     }
 
     public static void RemoveWall(int id)
     {
         Profiler.BeginSample("Remove Wall");
         RACRemoveWall(id);
+        Profiler.EndSample();
     }
 
     public static void UpdatePlanesAndEdges()
     {
         Profiler.BeginSample("Update Planes and Edges");
         RACUpdatePlanesAndEdges();
+        Profiler.EndSample();
     }
 
     // Audio
@@ -589,6 +600,7 @@ public class RACManager : MonoBehaviour
     {
         Profiler.BeginSample("Submit Audio");
         RACSubmitAudio(id, input);
+        Profiler.EndSample();
     }
 
     public static bool ProcessOutput()
@@ -607,6 +619,7 @@ public class RACManager : MonoBehaviour
 
         // copy the buffer as a float array
         Marshal.Copy(result, buffer, 0, racManager.numChannels * racManager.numFrames);
+        Profiler.EndSample();
     }
     #endregion
 
@@ -656,4 +669,8 @@ public class RACManager : MonoBehaviour
         else
             fLimits.Add(fBands[fBands.Count - 1] * Mathf.Pow(2, 1.0f / 6.0f));
     }
+
+    public static void DisableAudioProcessing() { racManager.isRunning = false; }
+
+    public static void EnableAudioProcessing() { racManager.isRunning = false; }
 }
