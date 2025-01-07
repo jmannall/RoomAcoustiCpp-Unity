@@ -28,10 +28,17 @@ public class IRController : MonoBehaviour
     private static bool doIRs = false;
 
     [SerializeField]
+    private string sceneName = "";
+
+    [SerializeField]
     private string runName = "Run1";
 
     private string filePath;
     private string areaName = "";
+
+    [SerializeField]
+    private string irFilePath;
+    private float[] impulseResponse;
 
     [SerializeField]
     private RACAudioSource racSource;
@@ -57,6 +64,7 @@ public class IRController : MonoBehaviour
     private IEnumerator sourceEnumerator;
     private IEnumerator listenerEnumerator;
 
+    private bool useTransforms = false;
     bool nextSource = true;
     bool nextConfig = true;
     bool nextSpatMode = true;
@@ -92,7 +100,10 @@ public class IRController : MonoBehaviour
 
         numBuffers = Mathf.CeilToInt(impulseResponseLength * AudioSettings.outputSampleRate / numFrames);
 
-        filePath = Application.dataPath + "/ImpulseResponses/" + SceneController.currentScene + "/" + runName;
+        if (sceneName == "")
+            sceneName = SceneController.currentScene;
+
+        filePath = Application.dataPath + "/ImpulseResponses/" + sceneName + "/" + runName;
         if (!Directory.Exists(filePath))
             Directory.CreateDirectory(filePath);
 
@@ -103,19 +114,23 @@ public class IRController : MonoBehaviour
     {
         RACManager.DisableAudioProcessing();
 
+        impulseResponse = ReadCSV(irFilePath);
+
         UpdateStreamWriter("Data");
         streamWriter.WriteLine(AudioSettings.outputSampleRate.ToString());
 
-        Transform[] transformStore = GetComponentsInChildren<Transform>();
-        if (listeners.Count == 0)
-            LocateListenerPositions();
-        WriteListenerPositions();
+        if (listeners.Count > 0)
+            WriteListenerPositions();
+        else
+        {
+            useTransforms = true;
+            Transform[] transformStore = GetComponentsInChildren<Transform>();
+            for (int i = 1; i < transformStore.Length; i++)
+                transforms.Add(transformStore[i]);
+        }
 
         if (sources.Count == 0)
             sources.Add(racSource.transform);
-
-        for (int i = 1; i < transformStore.Length; i++)
-            transforms.Add(transformStore[i]);
 
         transformEnumerator = ProcessTransforms();
         spatModeEnumerator = ProcessSpatModes();
@@ -132,11 +147,17 @@ public class IRController : MonoBehaviour
     private void Update()
     {
         if (!doIRs)
+        {
+            if (listeners.Count > 0)
+                useTransforms = false;
             return;
+        }
 
         if (nextTransform)
         {
-            if (!transformEnumerator.MoveNext())
+            if (!useTransforms)
+                useTransforms = true;
+            else if (!transformEnumerator.MoveNext())
             {
                 doIRs = false;
                 transformEnumerator = ProcessTransforms();
@@ -216,7 +237,9 @@ public class IRController : MonoBehaviour
         {
             areaName = transform.gameObject.name;
             LocateListenerPositions(transform);
+            WriteListenerPositions();
             yield return null; // Pause and resume in the next frame
+            ClearListenerPositions(transform);
         }
     }
 
@@ -282,11 +305,12 @@ public class IRController : MonoBehaviour
             }
             // Debug.Log("Time for IEM: " + count.ToString() + " frames");
             RACManager.SubmitAudio(racSource.id, ref inputBuffer);
+            
             inputBuffer[0] = 1.0f;
-            ProcessAudioBuffer();
+            ProcessAudioBuffer(0);
             inputBuffer[0] = 0.0f;
             for (int i = 1; i < numBuffers; i++)
-                ProcessAudioBuffer();
+                ProcessAudioBuffer(i);
             streamWriter.Write("0, 0\n");
             streamWriter.Flush();
             if (!doIRs) 
@@ -331,21 +355,33 @@ public class IRController : MonoBehaviour
             yPositions.Add(corner.y + offset.y + i * spacing);
 
         Vector3 currentPosition = new Vector3(0.0f, listenerHeight, 0.0f);
-        Transform currentTransform = transform;
-        currentTransform.rotation = quaternion;
 
-        listeners.Clear();
-        int k = 0;
         foreach (float x in xPositions)
         {
             currentPosition.x = x;
             foreach (float y in yPositions)
             {
+                GameObject emptyGO = new GameObject();
+                emptyGO.transform.parent = transform;
+                Transform newTransform = emptyGO.transform;
+                newTransform.rotation = Quaternion.identity;
+
                 currentPosition.z = y;
-                currentTransform.position = currentPosition;
-                listeners.Add(currentTransform);
+                newTransform.position = currentPosition;
+                listeners.Add(newTransform);
             }
         }        
+    }
+
+    void ClearListenerPositions(Transform transform)
+    {
+        listeners.Clear();
+        if (transform.childCount > 0)
+        {
+            Transform[] children = transform.gameObject.GetComponentsInChildren<Transform>();
+            for (int i = 1; i < children.Length; i++)
+                Destroy(children[i].gameObject);
+        }
     }
 
     void WriteListenerPositions()
@@ -359,8 +395,12 @@ public class IRController : MonoBehaviour
         }
     }
 
-    void ProcessAudioBuffer()
+    void ProcessAudioBuffer(int bufferNumber)
     {
+        int idx = bufferNumber * inputBuffer.Length;
+        for (int i = 0; i < Mathf.Min(inputBuffer.Length, impulseResponse.Length - idx); i++)
+            inputBuffer[i] = impulseResponse[idx + i];
+
         RACManager.SubmitAudio(racSource.id, ref inputBuffer);
         bool success = RACManager.ProcessOutput();
         if (success)
@@ -376,6 +416,20 @@ public class IRController : MonoBehaviour
             foreach (float sample in outputBuffer)
                 streamWriter.Write(sample.ToString() + ", ");
         }
+
+        for (int i = 0; i < Mathf.Min(inputBuffer.Length, impulseResponse.Length - idx); i++)
+            inputBuffer[i] = 0.0f;
+    }
+
+    float[] ReadCSV(string path)
+    {
+        // Read all lines from the CSV file
+        string[] lines = File.ReadAllLines(path);
+
+        // Split the values by commas and convert them to float
+        return lines.SelectMany(line => line.Split(','))
+                    .Select(float.Parse)
+                    .ToArray();
     }
 
     private void OnDrawGizmos()
