@@ -4,25 +4,34 @@ $sourceDir = Get-Location
 # Define the destination directory (one level above the source directory)
 $destinationDir = Split-Path -Path $sourceDir -Parent
 
-# Define the folder to copy (replace 'YourFolder' with your folder name)
-$folderToCopy = "$sourceDir\StreamingAssets"
-$folderToCopyMeta = "$sourceDir\StreamingAssets.meta"
+# Define the folder containing the files to delete (replace 'YourFolder' with your folder name)
+$folderToModify = "$sourceDir\StreamingAssets"
 
-# Define the destination path in the parent directory
-$destinationPath = "$destinationDir\StreamingAssets"
-$destinationPathMeta = "$destinationDir\StreamingAssets.meta"
+# Define the files to delete
+$filesToDelete = @(
+    "HRTF_ILD_48000.3dti-ild",
+    "Kemar_HRTF_ITD_48000Hz.3dti-hrtf",
+    "NearFieldCompensation_ILD_48000.3dti-ild",
+    "HRTF_ILD_48000.3dti-ild.meta",
+    "Kemar_HRTF_ITD_48000Hz.3dti-hrtf.meta",
+    "NearFieldCompensation_ILD_48000.3dti-ild.meta"
+)
 
 # Check if the folder exists
-if (Test-Path $folderToCopy) {
-    # Copy the folder to the parent directory
-    Copy-Item -Path $folderToCopy -Destination $destinationPath -Recurse -Force
-    Copy-Item -Path $folderToCopyMeta -Destination $destinationPathMeta -Recurse -Force
-    Write-Host "Folder copied successfully to: $destinationPath"
+if (Test-Path $folderToModify) {
+    foreach ($file in $filesToDelete) {
+        $filePath = "$folderToModify\$file"
+	$destinationPath = "$destinationDir\StreamingAssets\$file"
 
-    # Delete the original folder from the current directory
-    Remove-Item -Path $folderToCopy -Recurse -Force
-    Remove-Item -Path $folderToCopyMeta -Recurse -Force
-    Write-Host "Original folder deleted from: $folderToCopy"
+        # Check if the file exists and delete it
+        if (Test-Path $filePath) {
+            Copy-Item -Path $filePath -Destination $destinationPath -Force
+	    Remove-Item -Path $filePath -Force
+            Write-Host "Deleted file: $filePath"
+        } else {
+            Write-Host "File not found: $filePath"
+        }
+    }
 } else {
-    Write-Host "The folder $folderToCopy does not exist."
+    Write-Host "The folder $folderToModify does not exist."
 }
