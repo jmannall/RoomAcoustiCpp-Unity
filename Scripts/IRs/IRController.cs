@@ -10,7 +10,6 @@ public class IRController : MonoBehaviour
     [SerializeField]
     private float spacing = 1.0f;
 
-    [SerializeField]
     private float cubeSize = 0.1f;
 
     private Dictionary<int, Vector3> listeners;
@@ -29,6 +28,7 @@ public class IRController : MonoBehaviour
     private string runName = "Run1";
 
     private string filePath;
+    private string areaName = "";
 
     [SerializeField]
     private RACAudioSource source;
@@ -38,20 +38,20 @@ public class IRController : MonoBehaviour
 
     [SerializeField]
     private List<RACManager.SpatMode> spatModes;
+    bool recordMono = false;
 
+    private List<Transform> transforms = new List<Transform>();
+
+    private IEnumerator transformEnumerator;
     private IEnumerator spatModeEnumerator;
     private IEnumerator configEnumerator;
     private IEnumerator listenerEnumerator;
 
     bool nextConfig = true;
     bool nextSpatMode = true;
+    bool nextTransform = true;
 
     StreamWriter streamWriter;
-
-    //private Quaternion quaternion = Quaternion.LookRotation(Vector3.right);
-    //private string direction = "_x";
-    private Quaternion quaternion = Quaternion.identity;
-    private string direction = "_z";
 
     static bool lateReverbCompleted = false;
     static int iemCounter = 0;
@@ -83,10 +83,11 @@ public class IRController : MonoBehaviour
 
         numBuffers = Mathf.CeilToInt(impulseResponseLength * AudioSettings.outputSampleRate / numFrames);
 
-        filePath = Application.dataPath + "/InpulseResponses/" + SceneController.currentScene + "/" + runName;
+        filePath = Application.dataPath + "/ImpulseResponses/" + SceneController.currentScene + "/" + runName;
         if (!Directory.Exists(filePath))
             Directory.CreateDirectory(filePath);
-        
+
+        cubeSize = Mathf.Min(spacing / 2.0f, cubeSize);
     }
 
     private void Start()
@@ -96,8 +97,12 @@ public class IRController : MonoBehaviour
         UpdateStreamWriter("Data");
         streamWriter.WriteLine(AudioSettings.outputSampleRate.ToString());
 
-        LocateListenerPositions();
+        Transform[] transformStore = GetComponentsInChildren<Transform>();
 
+        for (int i = 1; i < transformStore.Length; i++)
+            transforms.Add(transformStore[i]);
+
+        transformEnumerator = ProcessTransforms();
         spatModeEnumerator = ProcessSpatModes();
         configEnumerator = ProcessConfigs();
         listenerEnumerator = ProcessListeners();
@@ -108,13 +113,25 @@ public class IRController : MonoBehaviour
         if (!doIRs)
             return;
 
+        if (nextTransform)
+        {
+            if (!transformEnumerator.MoveNext())
+            {
+                doIRs = false;
+                transformEnumerator = ProcessTransforms();
+                Debug.Log("All IR runs complete");
+                return;
+            }
+        }
+
+        nextTransform = false;
+
         if (nextSpatMode)
         {
             if (!spatModeEnumerator.MoveNext())
             {
-                doIRs = false;
+                nextTransform = true;
                 spatModeEnumerator = ProcessSpatModes();
-                Debug.Log("All IR runs complete");
                 return;
             }
         }
@@ -158,12 +175,33 @@ public class IRController : MonoBehaviour
         streamWriter = new StreamWriter(file);
     }
 
+    // Enumerator for the transforms foreach loop
+    private IEnumerator ProcessTransforms()
+    {
+        foreach (var transform in transforms)
+        {
+            areaName = transform.gameObject.name;
+            LocateListenerPositions(transform);
+            yield return null; // Pause and resume in the next frame
+        }
+    }
+
     // Enumerator for the spat mode foreach loop
     private IEnumerator ProcessSpatModes()
     {
         foreach (var spatMode in spatModes)
         {
-            UpdateStreamWriter(spatMode.ToString() + direction);
+            switch (spatMode)
+            {
+                case RACManager.SpatMode.None:
+                    recordMono = true;
+                    break;
+                default:
+                    recordMono = false;
+                    break;
+            }
+           
+            UpdateStreamWriter(areaName + "_" + spatMode.ToString());
             RACManager.UpdateSpatialisationMode(spatMode);
             yield return null; // Pause and resume in the next frame
         }
@@ -185,7 +223,7 @@ public class IRController : MonoBehaviour
         foreach (var listener in listeners)
         {
             activeID = listener.Key;
-            RACManager.UpdateListener(listener.Value, quaternion);
+            RACManager.UpdateListener(listener.Value, Quaternion.identity);
             int count = 0;
             source.RestartSource();
             lateReverbCompleted = false;
@@ -226,11 +264,11 @@ public class IRController : MonoBehaviour
         Debug.Log("End IR Run Early");
     }
 
-    void LocateListenerPositions()
+    void LocateListenerPositions(Transform transform)
     {
         Debug.Log("Locate Listener Positions");
 
-        UpdateStreamWriter("Positions");
+        UpdateStreamWriter(areaName + "_Positions");
 
         Vector2 scale = new Vector2(transform.localScale.x, transform.localScale.y);
         Vector2 position = new Vector2(transform.localPosition.x, transform.localPosition.z);
@@ -249,6 +287,7 @@ public class IRController : MonoBehaviour
 
         Vector3 currentPosition = new Vector3(0.0f, 1.6f, 0.0f);
 
+        listeners.Clear();
         int k = 0;
         foreach (float x in xPositions)
         {
@@ -269,8 +308,17 @@ public class IRController : MonoBehaviour
         bool success = RACManager.ProcessOutput();
         if (success)
             RACManager.GetOutputBuffer(ref outputBuffer);
-        foreach (float sample in outputBuffer)
-            streamWriter.Write(sample.ToString() + ", ");
+
+        if (recordMono)
+        {
+            for (int i = 0; i < outputBuffer.Length; i += 2)
+                streamWriter.Write(outputBuffer[i].ToString() + ", ");
+        }
+        else
+        {
+            foreach (float sample in outputBuffer)
+                streamWriter.Write(sample.ToString() + ", ");
+        }
     }
 
     private void OnDrawGizmos()
