@@ -12,8 +12,11 @@ public class IRController : MonoBehaviour
 
     private float cubeSize = 0.1f;
 
-    private Dictionary<int, Vector3> listeners;
-    int activeID = -1;
+    [SerializeField]
+    private float listenerHeight = 1.6f;
+
+    int activeSource = -1;
+    int activeListener = -1;
 
     [SerializeField, Range(0.0f, 10.0f)]
     private float impulseResponseLength = 1.0f;
@@ -31,7 +34,13 @@ public class IRController : MonoBehaviour
     private string areaName = "";
 
     [SerializeField]
-    private RACAudioSource source;
+    private RACAudioSource racSource;
+
+    [SerializeField]
+    private List<Transform> listeners;
+
+    [SerializeField]
+    private List<Transform> sources;
 
     [SerializeField]
     private List<RACManager.IEMConfig> configs;
@@ -45,8 +54,10 @@ public class IRController : MonoBehaviour
     private IEnumerator transformEnumerator;
     private IEnumerator spatModeEnumerator;
     private IEnumerator configEnumerator;
+    private IEnumerator sourceEnumerator;
     private IEnumerator listenerEnumerator;
 
+    bool nextSource = true;
     bool nextConfig = true;
     bool nextSpatMode = true;
     bool nextTransform = true;
@@ -59,11 +70,11 @@ public class IRController : MonoBehaviour
     {
         if (instance == null)
             return;
-        if (instance.source == null)
+        if (instance.racSource == null)
             return;
         if (id == -1)
             lateReverbCompleted = true;
-        else if (id == instance.source.id)
+        else if (id == instance.racSource.id)
             iemCounter++;
     }
 
@@ -74,8 +85,6 @@ public class IRController : MonoBehaviour
     {
         DebugCPP.RegisterIEMCallback(OnIEMCompleted);
         instance = this;
-
-        listeners = new Dictionary<int, Vector3>();
 
         int numFrames = AudioSettings.GetConfiguration().dspBufferSize;
         inputBuffer = new float[numFrames];
@@ -98,6 +107,12 @@ public class IRController : MonoBehaviour
         streamWriter.WriteLine(AudioSettings.outputSampleRate.ToString());
 
         Transform[] transformStore = GetComponentsInChildren<Transform>();
+        if (listeners.Count == 0)
+            LocateListenerPositions();
+        WriteListenerPositions();
+
+        if (sources.Count == 0)
+            sources.Add(racSource.transform);
 
         for (int i = 1; i < transformStore.Length; i++)
             transforms.Add(transformStore[i]);
@@ -105,7 +120,13 @@ public class IRController : MonoBehaviour
         transformEnumerator = ProcessTransforms();
         spatModeEnumerator = ProcessSpatModes();
         configEnumerator = ProcessConfigs();
+        sourceEnumerator = ProcessSources();
         listenerEnumerator = ProcessListeners();
+    }
+
+    private void OnDisable()
+    {
+        DebugCPP.UnregisterIEMCallback();
     }
 
     private void Update()
@@ -151,11 +172,24 @@ public class IRController : MonoBehaviour
 
         nextConfig = false;
 
+        if (nextSource)
+        {
+            if (!sourceEnumerator.MoveNext())
+            {
+                nextConfig = true;
+                sourceEnumerator = ProcessSources();
+                Debug.Log("Next config");
+                return;
+            }
+        }
+
+        nextSource = false;
+
         if (!listenerEnumerator.MoveNext())
         {
-            nextConfig = true;
+            nextSource = true;
             listenerEnumerator = ProcessListeners();
-            Debug.Log("Next config");
+            Debug.Log("Next source");
             return;
         }
     }
@@ -217,15 +251,28 @@ public class IRController : MonoBehaviour
         }
     }
 
+    // Enumerator for the source foreach loop
+    private IEnumerator ProcessSources()
+    {
+        foreach (var source in sources)
+        {
+            activeSource++;
+            racSource.transform.position = source.position;
+            yield return null; // Pause and resume in the next frame
+        }
+        activeSource = -1;
+    }
+    
     // Enumerator for the listener foreach loop
     private IEnumerator ProcessListeners()
     {
         foreach (var listener in listeners)
         {
-            activeID = listener.Key;
-            RACManager.UpdateListener(listener.Value, Quaternion.identity);
+            activeListener++;
+            RACManager.UpdateListener(listener.position, listener.rotation);
+
             int count = 0;
-            source.RestartSource();
+            racSource.RestartSource();
             lateReverbCompleted = false;
             iemCounter = 0;
             while (!lateReverbCompleted || iemCounter < 2)
@@ -234,7 +281,7 @@ public class IRController : MonoBehaviour
                 yield return null;
             }
             // Debug.Log("Time for IEM: " + count.ToString() + " frames");
-            RACManager.SubmitAudio(source.id, ref inputBuffer);
+            RACManager.SubmitAudio(racSource.id, ref inputBuffer);
             inputBuffer[0] = 1.0f;
             ProcessAudioBuffer();
             inputBuffer[0] = 0.0f;
@@ -247,7 +294,7 @@ public class IRController : MonoBehaviour
             RACManager.ResetFDN();
             yield return null; // Pause and resume in the next frame
         }
-        activeID = -1;
+        activeListener = -1;
     }
 
     public void StartIRRun()
@@ -268,8 +315,6 @@ public class IRController : MonoBehaviour
     {
         Debug.Log("Locate Listener Positions");
 
-        UpdateStreamWriter(areaName + "_Positions");
-
         Vector2 scale = new Vector2(transform.localScale.x, transform.localScale.y);
         Vector2 position = new Vector2(transform.localPosition.x, transform.localPosition.z);
         Vector2 corner = position - scale / 2.0f;
@@ -285,7 +330,9 @@ public class IRController : MonoBehaviour
         for (int i = 0; i < numSources.y; i++)
             yPositions.Add(corner.y + offset.y + i * spacing);
 
-        Vector3 currentPosition = new Vector3(0.0f, 1.6f, 0.0f);
+        Vector3 currentPosition = new Vector3(0.0f, listenerHeight, 0.0f);
+        Transform currentTransform = transform;
+        currentTransform.rotation = quaternion;
 
         listeners.Clear();
         int k = 0;
@@ -295,16 +342,26 @@ public class IRController : MonoBehaviour
             foreach (float y in yPositions)
             {
                 currentPosition.z = y;
-                listeners.Add(k++, currentPosition);
-                streamWriter.WriteLine(currentPosition.x + ", " + currentPosition.y + ", " + currentPosition.z);
-                streamWriter.Flush();
+                currentTransform.position = currentPosition;
+                listeners.Add(currentTransform);
             }
+        }        
+    }
+
+    void WriteListenerPositions()
+    {
+        UpdateStreamWriter("Positions");
+
+        foreach (var listener in listeners)
+        {
+            streamWriter.WriteLine(listener.position.x + ", " + listener.position.y + ", " + listener.position.z);
+            streamWriter.Flush();
         }
     }
 
     void ProcessAudioBuffer()
     {
-        RACManager.SubmitAudio(source.id, ref inputBuffer);
+        RACManager.SubmitAudio(racSource.id, ref inputBuffer);
         bool success = RACManager.ProcessOutput();
         if (success)
             RACManager.GetOutputBuffer(ref outputBuffer);
@@ -327,14 +384,23 @@ public class IRController : MonoBehaviour
             return;
 
         Vector3 cubeDimensions = cubeSize * Vector3.one;
+
+        Gizmos.color = Color.blue;
+        foreach (var source in sources)
+            Gizmos.DrawCube(source.position, cubeDimensions);
+
         Gizmos.color = Color.yellow;
+        foreach (var listener in listeners)
+            Gizmos.DrawCube(listener.position, cubeDimensions);
 
-        foreach (var source in listeners)
-            Gizmos.DrawCube(source.Value, cubeDimensions);
+        if (activeSource < 0)
+            return;
+        Gizmos.color = Color.green;
+        Gizmos.DrawCube(sources.ElementAt(activeSource).position, cubeDimensions);
 
-        if (activeID < 0)
+        if (activeListener < 0)
             return;
         Gizmos.color = Color.red;
-        Gizmos.DrawCube(listeners.ElementAt(activeID).Value, cubeDimensions);
+        Gizmos.DrawCube(listeners.ElementAt(activeListener).position, cubeDimensions);
     }
 }
