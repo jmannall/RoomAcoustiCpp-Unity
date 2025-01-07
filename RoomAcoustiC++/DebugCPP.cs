@@ -26,7 +26,6 @@ public class DebugCPP : MonoBehaviour
     private void OnDisable()
     {
         UnregisterDebugCallback();
-        UnregisterIEMCallback();
     }
 
     #region DLL Interface
