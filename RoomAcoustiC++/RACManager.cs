@@ -672,5 +672,5 @@ public class RACManager : MonoBehaviour
 
     public static void DisableAudioProcessing() { racManager.isRunning = false; }
 
-    public static void EnableAudioProcessing() { racManager.isRunning = false; }
+    public static void EnableAudioProcessing() { racManager.isRunning = true; }
 }

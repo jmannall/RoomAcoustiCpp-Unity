@@ -1,14 +1,17 @@
 # Define the source directory (directory where the script is being run)
 $sourceDir = Get-Location
 
-# Define the destination directory (one level above the source directory)
-$destinationDir = Split-Path -Path $sourceDir -Parent
+# Define the folder containing the files to move
+$sourceFolder = "$sourceDir\StreamingAssets"
 
-# Define the folder containing the files to delete (replace 'YourFolder' with your folder name)
-$folderToModify = "$sourceDir\StreamingAssets"
+# Define the Asset directory (one level above the source directory)
+$assetDir = Split-Path -Path $sourceDir -Parent
 
-# Define the files to delete
-$filesToDelete = @(
+# Define the destination folder
+$destinationFolder = "$assetDir\StreamingAssets"
+
+# Define the files to move
+$filesToMove = @(
     "HRTF_ILD_48000.3dti-ild",
     "Kemar_HRTF_ITD_48000Hz.3dti-hrtf",
     "NearFieldCompensation_ILD_48000.3dti-ild",
@@ -17,21 +20,25 @@ $filesToDelete = @(
     "NearFieldCompensation_ILD_48000.3dti-ild.meta"
 )
 
-# Check if the folder exists
-if (Test-Path $folderToModify) {
-    foreach ($file in $filesToDelete) {
-        $filePath = "$folderToModify\$file"
-	$destinationPath = "$destinationDir\StreamingAssets\$file"
+# Check if destination folder exists
+if (Test-Path $destinationFolder) {
+    # Check if the source folder exists
+    if (Test-Path $sourceFolder) {
+        foreach ($file in $filesToMove) {
+            $sourcePath = "$sourceFolder\$file"
+	    $destinationPath = "$destinationFolder\$file"
 
-        # Check if the file exists and delete it
-        if (Test-Path $filePath) {
-            Copy-Item -Path $filePath -Destination $destinationPath -Force
-	    Remove-Item -Path $filePath -Force
-            Write-Host "Deleted file: $filePath"
-        } else {
-            Write-Host "File not found: $filePath"
+            # Check if the file exists and delete it
+            if (Test-Path $sourcePath) {
+                Move-Item -Path $sourcePath -Destination $destinationPath -Force
+                Write-Host "Moved file: $sourcePath"
+            } else {
+                Write-Host "File not found: $sourcePath"
+            }
         }
+    } else {
+        Write-Host "The folder $sourceFolder does not exist."
     }
 } else {
-    Write-Host "The folder $folderToModify does not exist."
+	Write-Host "The folder $destinationFolder does not exist."
 }

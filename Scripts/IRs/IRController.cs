@@ -112,9 +112,10 @@ public class IRController : MonoBehaviour
 
     private void Start()
     {
-        RACManager.DisableAudioProcessing();
-
-        impulseResponse = ReadCSV(irFilePath);
+        if (irFilePath == "")
+            impulseResponse = new float[1] { 1.0f };
+        else
+            impulseResponse = ReadCSV(irFilePath);
 
         UpdateStreamWriter("Data");
         streamWriter.WriteLine(AudioSettings.outputSampleRate.ToString());
@@ -161,6 +162,7 @@ public class IRController : MonoBehaviour
             {
                 doIRs = false;
                 transformEnumerator = ProcessTransforms();
+                RACManager.EnableAudioProcessing();
                 Debug.Log("All IR runs complete");
                 return;
             }
@@ -323,6 +325,8 @@ public class IRController : MonoBehaviour
 
     public void StartIRRun()
     {
+        RACManager.DisableAudioProcessing();
+        RACManager.ResetFDN();
         doIRs = true;
         Debug.Log("Start IR Runs: " + doIRs);
     }
@@ -332,6 +336,7 @@ public class IRController : MonoBehaviour
     public void EndRun()
     {
         doIRs = false;
+        RACManager.EnableAudioProcessing();
         Debug.Log("End IR Run Early");
     }
 
@@ -386,7 +391,7 @@ public class IRController : MonoBehaviour
 
     void WriteListenerPositions()
     {
-        UpdateStreamWriter("Positions");
+        UpdateStreamWriter(areaName + "_Positions");
 
         foreach (var listener in listeners)
         {
