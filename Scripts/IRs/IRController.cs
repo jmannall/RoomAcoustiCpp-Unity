@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class IRController : MonoBehaviour
 {
@@ -101,7 +102,7 @@ public class IRController : MonoBehaviour
         numBuffers = Mathf.CeilToInt(impulseResponseLength * AudioSettings.outputSampleRate / numFrames);
 
         if (sceneName == "")
-            sceneName = SceneController.currentScene;
+            sceneName = SceneManager.GetActiveScene().name;
 
         filePath = Application.dataPath + "/ImpulseResponses/" + sceneName + "/" + runName;
         if (!Directory.Exists(filePath))
