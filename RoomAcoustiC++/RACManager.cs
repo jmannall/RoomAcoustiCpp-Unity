@@ -268,7 +268,7 @@ public class RACManager : MonoBehaviour
         bool filesLoaded = RACLoadSpatialisationFiles(hrtfResamplingStep, filePaths);
         if (!filesLoaded)
         {
-            Debug.Log("Failed to load HRTF files");
+            Debug.LogError("Failed to load HRTF files");
             isRunning = false;
         }
         else
