@@ -4,7 +4,10 @@
 using AOT;
 using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Runtime.InteropServices;
+using Unity.VisualScripting;
+using UnityEditor;
 using UnityEditor.PackageManager;
 using UnityEngine;
 
@@ -125,8 +128,31 @@ public class DebugCPP : MonoBehaviour
 
     private void OnDrawGizmos()
     {
+        // Create a GUIStyle with a larger font size
+        GUIStyle style = new GUIStyle();
+        style.fontSize = 32; // Adjust this value for a larger or smaller font
+        style.normal.textColor = Color.white; // Text color
+
         foreach (var path in pathDictionary)
         {
+            if (path.Key.Contains('_'))
+            {
+                Gizmos.color = Color.magenta;
+                Vector3 endPoint = path.Value[0] + path.Value[1].normalized;
+                Gizmos.DrawRay(path.Value[0], path.Value[1].normalized);
+                Gizmos.DrawWireCube(endPoint, new Vector3(0.1f, 0.1f, 0.1f));
+
+                // Extract the number after the underscore in path.Key
+                string[] parts = path.Key.Split('_');
+                if (parts.Length > 1 && int.TryParse(parts[1], out int number))
+                {
+                    number++;
+                    // Display the number as a label at the cube's position
+                    Handles.Label(endPoint, number.ToString(), style);
+                }
+                continue;
+            }
+
             if (path.Key.Contains('r'))
             {
                 if (path.Key.Contains('d'))
@@ -143,7 +169,8 @@ public class DebugCPP : MonoBehaviour
             Gizmos.DrawLine(listenerPosition.position, path.Value[path.Value.Count - 2]);
 
             Gizmos.color = Color.cyan;
-            Gizmos.DrawCube(path.Value[path.Value.Count - 1], new Vector3(0.1f, 0.1f, 0.1f));
+            Gizmos.DrawWireCube(path.Value[path.Value.Count - 1], new Vector3(0.1f, 0.1f, 0.1f));
+            Handles.Label(path.Value[path.Value.Count - 1], path.Key, style);
         }
     }
 }
