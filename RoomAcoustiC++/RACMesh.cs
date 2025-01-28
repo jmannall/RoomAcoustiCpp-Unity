@@ -58,6 +58,7 @@ public class RACMesh : MonoBehaviour
         initialised = true;
         if (absorptionSkew != 0.0f)
             UpdateAbsorption();
+        RACManager.UpdatePlanesAndEdges();
     }
 
     private void LateUpdate()

@@ -153,6 +153,17 @@ public class DebugCPP : MonoBehaviour
                 continue;
             }
 
+            if (path.Key.Contains('e'))
+            {
+                Gizmos.color = Color.white;
+                Gizmos.DrawLine(path.Value[0], path.Value[1]);
+
+                Gizmos.DrawWireCube(path.Value[0], new Vector3(0.1f, 0.1f, 0.1f));
+                Gizmos.DrawWireCube(path.Value[1], new Vector3(0.1f, 0.1f, 0.1f));
+                Handles.Label((path.Value[0] + path.Value[1]) / 2, path.Key, style);
+                continue;
+            }
+
             if (path.Key.Contains('r'))
             {
                 if (path.Key.Contains('d'))
@@ -164,6 +175,7 @@ public class DebugCPP : MonoBehaviour
             {
                 Gizmos.color = Color.green;
             }
+
             Gizmos.DrawLine(sourcePosition.position, path.Value[0]);
             Gizmos.DrawLineStrip(path.Value.ToArray(), false);
             Gizmos.DrawLine(listenerPosition.position, path.Value[path.Value.Count - 2]);
