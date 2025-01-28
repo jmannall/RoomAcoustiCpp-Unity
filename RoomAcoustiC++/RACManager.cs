@@ -209,6 +209,8 @@ public class RACManager : MonoBehaviour
 
     public bool isRunning { get; private set; }
 
+    private static bool noHRTFFiles = false;
+
     [Header("Acoustic Model Configuration")]
     [SerializeField]
     private IEMConfig iemConfig = IEMConfig.Default;
@@ -269,7 +271,8 @@ public class RACManager : MonoBehaviour
         if (!filesLoaded)
         {
             Debug.LogError("Failed to load HRTF files");
-            isRunning = false;
+            racManager.spatialisationMode = SpatMode.None;
+            noHRTFFiles = true;
         }
         else
             Debug.Log("HRTF files loaded");
@@ -347,6 +350,12 @@ public class RACManager : MonoBehaviour
 
     public static void UpdateSpatialisationMode()
     {
+        if (noHRTFFiles)
+        {
+            racManager.spatialisationMode = SpatMode.None;
+            return;
+        }
+
         switch (racManager.spatialisationMode)
         {
             case SpatMode.None:
@@ -360,6 +369,9 @@ public class RACManager : MonoBehaviour
 
     public static void UpdateSpatialisationMode(SpatMode mode)
     {
+        if (noHRTFFiles)
+            return;
+
         racManager.spatialisationMode = mode;
         UpdateSpatialisationMode();
     }
