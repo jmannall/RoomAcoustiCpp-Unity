@@ -328,6 +328,7 @@ public class IRController : MonoBehaviour
     {
         RACManager.DisableAudioProcessing();
         RACManager.ResetFDN();
+        RACManager.ProcessOutput();
         doIRs = true;
         Debug.Log("Start IR Runs: " + doIRs);
     }
