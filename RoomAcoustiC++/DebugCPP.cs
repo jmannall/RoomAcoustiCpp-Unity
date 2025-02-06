@@ -4,11 +4,8 @@
 using AOT;
 using System;
 using System.Collections.Generic;
-using System.Net;
 using System.Runtime.InteropServices;
-using Unity.VisualScripting;
 using UnityEditor;
-using UnityEditor.PackageManager;
 using UnityEngine;
 
 [AddComponentMenu("RoomAcoustiC++/Debug C++")]
@@ -21,7 +18,9 @@ public class DebugCPP : MonoBehaviour
     private static Dictionary<string, List<Vector3>> pathDictionary = new Dictionary<string, List<Vector3>>();
 
     public Transform sourcePosition;
-    public Transform listenerPosition;
+    private Transform listenerPosition;
+
+    private GUIStyle style = new GUIStyle();
 
     // Use this for initialization
     void Awake()
@@ -31,6 +30,17 @@ public class DebugCPP : MonoBehaviour
 
         RegisterDebugCallback(OnDebugCallback);
         RegisterPathCallback(OnPathCallback);
+    }
+
+    private void Start()
+    {
+        listenerPosition = FindAnyObjectByType<RACAudioListener>().transform;
+        if (listenerPosition == null)
+            Debug.LogError("RACAudioListener not found");
+
+        // Create a GUIStyle with a larger font size
+        style.fontSize = 32; // Adjust this value for a larger or smaller font
+        style.normal.textColor = Color.white; // Text color
     }
 
     private void OnDisable()
@@ -128,12 +138,12 @@ public class DebugCPP : MonoBehaviour
 
     private void OnDrawGizmos()
     {
-        // Create a GUIStyle with a larger font size
-        GUIStyle style = new GUIStyle();
-        style.fontSize = 32; // Adjust this value for a larger or smaller font
-        style.normal.textColor = Color.white; // Text color
+        if (sourcePosition == null || listenerPosition == null)
+            return;
 
-        foreach (var path in pathDictionary)
+        Dictionary<string, List<Vector3>> localPathDictionary = new Dictionary<string, List<Vector3>>(pathDictionary);
+
+        foreach (var path in localPathDictionary)
         {
             if (path.Key.Contains('_'))
             {
