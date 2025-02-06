@@ -133,6 +133,9 @@ public class RACAudioSource : MonoBehaviour
 
     public void RestartSource()
     {
+        if (id < 0)
+            return;
+
         isRunning = false;
         int oldId = id;
         id = RACManager.InitSource();
