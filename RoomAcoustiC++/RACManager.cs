@@ -128,7 +128,7 @@ public class RACManager : MonoBehaviour
     public enum ReverbTime { Sabine, Eyring }
     public enum FDNMatrix { Householder, RandomOrthogonal }
     public enum DiffractionModel { Attenuate, LowPass, UDFA, UDFAI, NNBest, NNSmall, UTD, BTM }
-    public enum SourceDirectivity { Omni, Cardioid }
+    public enum SourceDirectivity { Omni, Cardioid, Genelec }
     public enum DirectSound { None, Check, AlwaysOn }
     public enum DiffractionSound { None, ShadowZone, AllZones }
     public enum OctaveBand { Third, Octave }
@@ -529,7 +529,9 @@ public class RACManager : MonoBehaviour
                 { RACUpdateSourceDirectivity(id, 0); break; }
             case SourceDirectivity.Cardioid:
                 { RACUpdateSourceDirectivity(id, 1); break; }
-        }
+            case SourceDirectivity.Genelec: 
+                { RACUpdateSourceDirectivity(id, 2); break; }
+    }
     }
 
     public static void RemoveSource(int id)

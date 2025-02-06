@@ -32,8 +32,7 @@ public class RACAudioSource : MonoBehaviour
     [Tooltip("Set the source to loop. If loop points are defined in the clip, these will be respected.")]
     private bool loop = false;
 
-    [SerializeField]
-    [Tooltip("Set the directivity of the source.")]
+    [SerializeField, HideInInspector]
     private RACManager.SourceDirectivity directivity = RACManager.SourceDirectivity.Omni;
 
     // DSP Parameters
@@ -79,8 +78,8 @@ public class RACAudioSource : MonoBehaviour
             Play();
         else
             Pause();
-        
-        RACManager.UpdateSourceDirectivity(id, directivity);
+
+        UpdateDirectivity();
         input = new float[numFrames];
     }
 
@@ -193,6 +192,11 @@ public class RACAudioSource : MonoBehaviour
     public bool IsPlaying()
     {
         return source.isPlaying;
+    }
+
+    public void UpdateDirectivity()
+    {
+        RACManager.UpdateSourceDirectivity(id, directivity);
     }
 
     #endregion
