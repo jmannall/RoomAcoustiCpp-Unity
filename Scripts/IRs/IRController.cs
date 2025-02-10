@@ -11,6 +11,9 @@ public class IRController : MonoBehaviour
     [SerializeField]
     private float spacing = 1.0f;
 
+    [SerializeField, Tooltip("Rotates around the y - axis")]
+    private float rotationStep = 0.0f;
+
     private float cubeSize = 0.1f;
 
     [SerializeField]
@@ -36,6 +39,8 @@ public class IRController : MonoBehaviour
 
     private string filePath;
     private string areaName = "";
+
+    private string spatName = "";
 
     [SerializeField]
     private string irFilePath;
@@ -122,7 +127,10 @@ public class IRController : MonoBehaviour
         streamWriter.WriteLine(AudioSettings.outputSampleRate.ToString());
 
         if (listeners.Count > 0)
+        {
             WriteListenerPositions();
+            AddListenerRotations();
+        }
         else
         {
             useTransforms = true;
@@ -157,9 +165,7 @@ public class IRController : MonoBehaviour
 
         if (nextTransform)
         {
-            if (!useTransforms)
-                useTransforms = true;
-            else if (!transformEnumerator.MoveNext())
+            if (useTransforms && !transformEnumerator.MoveNext())
             {
                 doIRs = false;
                 transformEnumerator = ProcessTransforms();
@@ -176,6 +182,8 @@ public class IRController : MonoBehaviour
             if (!spatModeEnumerator.MoveNext())
             {
                 nextTransform = true;
+                if (!useTransforms)
+                    useTransforms = true;
                 spatModeEnumerator = ProcessSpatModes();
                 return;
             }
@@ -220,7 +228,7 @@ public class IRController : MonoBehaviour
 
     void OnDestroy()
     {
-        listeners.Clear();  
+        listeners.Clear();
         if (streamWriter != null)
             streamWriter.Close();
     }
@@ -260,8 +268,8 @@ public class IRController : MonoBehaviour
                     recordMono = false;
                     break;
             }
-           
-            UpdateStreamWriter(areaName + "_" + spatMode.ToString());
+
+            spatName = spatMode.ToString();
             RACManager.UpdateSpatialisationMode(spatMode);
             yield return null; // Pause and resume in the next frame
         }
@@ -284,14 +292,18 @@ public class IRController : MonoBehaviour
         {
             activeSource++;
             racSource.transform.position = source.position;
+            if (!useTransforms)
+                areaName = source.gameObject.name;
+            UpdateStreamWriter(areaName + "_" + spatName);
             yield return null; // Pause and resume in the next frame
         }
         activeSource = -1;
     }
-    
+
     // Enumerator for the listener foreach loop
     private IEnumerator ProcessListeners()
     {
+        RACManager.ProcessOutput();
         foreach (var listener in listeners)
         {
             activeListener++;
@@ -308,7 +320,9 @@ public class IRController : MonoBehaviour
             }
             // Debug.Log("Time for IEM: " + count.ToString() + " frames");
             RACManager.SubmitAudio(racSource.id, ref inputBuffer);
-            
+            RACManager.ResetFDN();
+            RACManager.ProcessOutput();
+
             inputBuffer[0] = 1.0f;
             ProcessAudioBuffer(0);
             inputBuffer[0] = 0.0f;
@@ -316,9 +330,8 @@ public class IRController : MonoBehaviour
                 ProcessAudioBuffer(i);
             streamWriter.Write("0, 0\n");
             streamWriter.Flush();
-            if (!doIRs) 
+            if (!doIRs)
                 yield break;
-            RACManager.ResetFDN();
             yield return null; // Pause and resume in the next frame
         }
         activeListener = -1;
@@ -327,8 +340,6 @@ public class IRController : MonoBehaviour
     public void StartIRRun()
     {
         RACManager.DisableAudioProcessing();
-        RACManager.ResetFDN();
-        RACManager.ProcessOutput();
         doIRs = true;
         Debug.Log("Start IR Runs: " + doIRs);
     }
@@ -377,7 +388,7 @@ public class IRController : MonoBehaviour
                 newTransform.position = currentPosition;
                 listeners.Add(newTransform);
             }
-        }        
+        }
     }
 
     void ClearListenerPositions(Transform transform)
@@ -399,6 +410,31 @@ public class IRController : MonoBehaviour
         {
             streamWriter.WriteLine(listener.position.x + ", " + listener.position.y + ", " + listener.position.z);
             streamWriter.Flush();
+        }
+    }
+    void AddListenerRotations()
+    {
+        if (rotationStep == 0.0f)
+            return;
+
+        int numExtraListeners = Mathf.FloorToInt(360.0f / rotationStep);
+
+        var store = new List<Transform>(listeners);
+        listeners.Clear();
+        foreach (Transform original in store)
+        {
+            listeners.Add(original);
+            for (int j = 1; j < numExtraListeners; j++)
+            {
+                GameObject emptyGO = new GameObject();
+                emptyGO.transform.parent = original;
+                Transform newTransform = emptyGO.transform;
+                Vector3 rot = original.eulerAngles;
+                rot.y -= j * rotationStep;
+                newTransform.position = original.position;
+                newTransform.eulerAngles = rot;
+                listeners.Add(newTransform);
+            }
         }
     }
 
@@ -463,5 +499,7 @@ public class IRController : MonoBehaviour
             return;
         Gizmos.color = Color.red;
         Gizmos.DrawCube(listeners.ElementAt(activeListener).position, cubeDimensions);
+        Gizmos.color = Color.white;
+        Gizmos.DrawRay(listeners.ElementAt(activeListener).position, listeners.ElementAt(activeListener).forward);
     }
 }
