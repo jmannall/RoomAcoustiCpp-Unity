@@ -32,6 +32,10 @@ public class RACAudioSource : MonoBehaviour
     [Tooltip("Set the source to loop. If loop points are defined in the clip, these will be respected.")]
     private bool loop = false;
 
+    [SerializeField]
+    [Tooltip("Send the audio clip to channel 3.")]
+    private bool arSend = false;
+
     [SerializeField, HideInInspector]
     private RACManager.SourceDirectivity directivity = RACManager.SourceDirectivity.Omni;
 
@@ -58,6 +62,10 @@ public class RACAudioSource : MonoBehaviour
         source.clip = clip;
         source.playOnAwake = playOnAwake;
         source.loop = loop;
+        source.bypassEffects = false;
+        source.bypassReverbZones = true;
+        source.spatialBlend = 0.0f;
+        source.panStereo = 0.0f;
     }
 
     void Start()
@@ -115,14 +123,18 @@ public class RACAudioSource : MonoBehaviour
             if (isRunning && isPlaying)
             {
                 // Copy every other sample to mono buffer
-                for (int i = 0, j = 0; i < numFrames; i++, j += 2)
+                for (int i = 0, j = 0; i < numFrames; i++, j+=channels)
                     input[i] = linGain * data[j];
                 RACManager.SubmitAudio(id, ref input);
             }
         }
         // Overwrite data
-        for (int i = 0; i < data.Length; i++)
-            data[i] = 0.0f;
+        Array.Fill(data, 0.0f);
+        if (arSend && channels > 2)
+        {
+            for (int i = 0, j = 2; i < numFrames; i++, j+=channels)
+                data[j] = input[i];
+        }
     }
 
     #endregion
