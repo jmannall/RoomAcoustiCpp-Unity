@@ -110,6 +110,9 @@ public class RACManager : MonoBehaviour
     private static extern bool RACProcessOutput();
 
     [DllImport(DLLNAME)]
+    private static extern bool RACProcessOutput_MOD_ART(float[] input);
+
+    [DllImport(DLLNAME)]
     private static extern void RACGetOutputBuffer(ref IntPtr buffer);
 
     #endregion
@@ -225,6 +228,8 @@ public class RACManager : MonoBehaviour
     [SerializeField, HideInInspector]
     private ReverbTime reverbTimeModel = ReverbTime.Sabine;
 
+    private float[] interleavedData;
+
     #endregion
 
     #region Unity Functions
@@ -304,7 +309,7 @@ public class RACManager : MonoBehaviour
 #if UNITY_STANDALONE_WIN
         Debug.Log("Stand Alone Windows");
 #endif
-
+        interleavedData = new float[numFDNChannels * numFrames];
     }
 
     private void OnDestroy()
@@ -321,6 +326,9 @@ public class RACManager : MonoBehaviour
 
             Profiler.BeginSample("Process Audio Output");
             bool success = RACProcessOutput();
+            //for (int i = 1, j = 0; i < numFDNChannels * numFrames; i += numFDNChannels, j += 2)
+            //    interleavedData[i] = data[j];
+            //bool success = RACProcessOutput_MOD_ART(interleavedData);
             Profiler.EndSample();
 
             if (success)
