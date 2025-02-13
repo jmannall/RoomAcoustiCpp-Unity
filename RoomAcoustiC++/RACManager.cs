@@ -336,18 +336,30 @@ public class RACManager : MonoBehaviour
                 // fetch the output buffer from the context
                 GetOutputBuffer(ref outputBuffer);
 
-                // choose the right length in case data buffer too big
-                numSamples = (numSamples > outputBuffer.Length) ? outputBuffer.Length : numSamples;
+                if (channels == numChannels)
+                {
+                    // choose the right length in case data buffer too big
+                    numSamples = (numSamples > outputBuffer.Length) ? outputBuffer.Length : numSamples;
 
-                // memcpy the data over
-                Array.Copy(outputBuffer, data, numSamples);
+                    // memcpy the data over
+                    Array.Copy(outputBuffer, data, numSamples);
+                }
+                else
+                {
+                    // Copy stereo interleaved buffer to the first two channels of the interleaved data buffer
+                    for (int i = 0; i < numFrames; i++)
+                    {
+                        data[i * channels] = outputBuffer[i * numChannels];     // Left channel
+                        data[i * channels + 1] = outputBuffer[i * numChannels + 1]; // Right channel
+                        // Fill the rest of the channels with 0
+                        for (int j = numChannels; j < channels; j++)
+                                data[i * channels + j] = 0.0f;
+                    }
+
+                }
             }
-            else
-            {
-                // fill output with 0
-                for (int i = 0; i < numSamples; ++i)
-                    data[i] = 0.0f;
-            }
+            else // fill output with 0
+                Array.Fill(data, 0.0f);
         }
     }
 
