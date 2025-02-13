@@ -200,7 +200,7 @@ public class RACManager : MonoBehaviour
     [Range(0.1f, 2.0f)]
     private float Q = 0.98f;
 
-    [SerializeField, Range(5, 45)]
+    [SerializeField, Range(1, 45)]
     private int hrtfResamplingStep = 5;
 
     [SerializeField]

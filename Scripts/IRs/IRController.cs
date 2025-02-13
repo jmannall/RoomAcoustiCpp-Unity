@@ -48,6 +48,7 @@ public class IRController : MonoBehaviour
 
     [SerializeField]
     private RACAudioSource racSource;
+    private Transform listenerTransform;
 
     [SerializeField]
     private List<Transform> listeners;
@@ -118,6 +119,10 @@ public class IRController : MonoBehaviour
 
     private void Start()
     {
+        listenerTransform = FindAnyObjectByType<RACAudioListener>().transform;
+        if (listenerTransform == null)
+            Debug.LogError("RACAudioListener not found");
+
         if (irFilePath == "")
             impulseResponse = new float[1] { 1.0f };
         else
@@ -308,7 +313,9 @@ public class IRController : MonoBehaviour
         {
             activeListener++;
             RACManager.UpdateListener(listener.position, listener.rotation);
-
+            listenerTransform.position = listener.position;
+            listenerTransform.rotation = listener.rotation;
+            
             int count = 0;
             racSource.RestartSource();
             lateReverbCompleted = false;
