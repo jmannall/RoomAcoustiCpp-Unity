@@ -169,9 +169,10 @@ public class RACAudioSource : MonoBehaviour
 
     public void SetClip(AudioClip clip)
     {
+        bool wasPlaying = source.isPlaying;
         this.clip = clip;
         source.clip = clip;
-        if (source.isPlaying)
+        if (wasPlaying)
             source.Play();
     }
 
