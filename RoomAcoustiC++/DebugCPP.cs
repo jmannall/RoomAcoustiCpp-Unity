@@ -17,7 +17,7 @@ public class DebugCPP : MonoBehaviour
     static string debug_string = " ";
     private static Dictionary<string, List<Vector3>> pathDictionary = new Dictionary<string, List<Vector3>>();
 
-    public Transform sourcePosition;
+    public RACAudioSource source;
     private Transform listenerPosition;
 
     private GUIStyle style = new GUIStyle();
@@ -138,23 +138,23 @@ public class DebugCPP : MonoBehaviour
 
     private void OnDrawGizmos()
     {
-        if (sourcePosition == null || listenerPosition == null)
+        if (source == null || listenerPosition == null)
             return;
 
         Dictionary<string, List<Vector3>> localPathDictionary = new Dictionary<string, List<Vector3>>(pathDictionary);
 
         foreach (var path in localPathDictionary)
         {
-            if (path.Key.Contains('_'))
+            if (path.Key.Contains('l'))
             {
                 Gizmos.color = Color.magenta;
                 Vector3 endPoint = path.Value[0] + path.Value[1].normalized;
                 Gizmos.DrawRay(path.Value[0], path.Value[1].normalized);
                 Gizmos.DrawWireCube(endPoint, new Vector3(0.1f, 0.1f, 0.1f));
 
-                // Extract the number after the underscore in path.Key
-                string[] parts = path.Key.Split('_');
-                if (parts.Length > 1 && int.TryParse(parts[1], out int number))
+                // Extract the number before 'l' in path.Key
+                string[] parts = path.Key.Split('l');
+                if (parts.Length > 1 && int.TryParse(parts[0], out int number))
                 {
                     number++;
                     // Display the number as a label at the cube's position
@@ -162,6 +162,9 @@ public class DebugCPP : MonoBehaviour
                 }
                 continue;
             }
+
+            if (!path.Key.Contains(source.id.ToString() + 's'))
+                continue;
 
             if (path.Key.Contains('e'))
             {
@@ -186,13 +189,19 @@ public class DebugCPP : MonoBehaviour
                 Gizmos.color = Color.green;
             }
 
-            Gizmos.DrawLine(sourcePosition.position, path.Value[0]);
-            Gizmos.DrawLineStrip(path.Value.ToArray(), false);
+            Gizmos.DrawLine(source.transform.position, path.Value[0]);
+            Vector3[] pathWithoutLast = path.Value.ToArray();
+            Array.Resize(ref pathWithoutLast, pathWithoutLast.Length - 1);
+            Gizmos.DrawLineStrip(pathWithoutLast, false);
             Gizmos.DrawLine(listenerPosition.position, path.Value[path.Value.Count - 2]);
+
+            Color originalColor = Gizmos.color;
+            Gizmos.color = new Color(originalColor.r, originalColor.g, originalColor.b, 0.2f);
+            Gizmos.DrawLine(path.Value[path.Value.Count - 1], path.Value[path.Value.Count - 2]);
 
             Gizmos.color = Color.cyan;
             Gizmos.DrawWireCube(path.Value[path.Value.Count - 1], new Vector3(0.1f, 0.1f, 0.1f));
-            Handles.Label(path.Value[path.Value.Count - 1], path.Key, style);
+            Handles.Label(path.Value[path.Value.Count - 1], path.Key.Split('s')[1], style);
         }
     }
 }
