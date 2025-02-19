@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.UIElements;
 
 public class IRController : MonoBehaviour
 {
@@ -174,6 +175,7 @@ public class IRController : MonoBehaviour
             {
                 doIRs = false;
                 transformEnumerator = ProcessTransforms();
+                RACManager.UpdateImpulseResponseMode(false);
                 RACManager.EnableAudioProcessing();
                 Debug.Log("All IR runs complete");
                 return;
@@ -347,6 +349,7 @@ public class IRController : MonoBehaviour
     public void StartIRRun()
     {
         RACManager.DisableAudioProcessing();
+        RACManager.UpdateImpulseResponseMode(true);
         doIRs = true;
         Debug.Log("Start IR Runs: " + doIRs);
     }
@@ -356,6 +359,7 @@ public class IRController : MonoBehaviour
     public void EndRun()
     {
         doIRs = false;
+        RACManager.UpdateImpulseResponseMode(false);
         RACManager.EnableAudioProcessing();
         Debug.Log("End IR Run Early");
     }

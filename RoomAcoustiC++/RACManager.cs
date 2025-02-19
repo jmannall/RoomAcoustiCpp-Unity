@@ -115,6 +115,9 @@ public class RACManager : MonoBehaviour
     [DllImport(DLLNAME)]
     private static extern void RACGetOutputBuffer(ref IntPtr buffer);
 
+    [DllImport(DLLNAME)]
+    private static extern void RACUpdateImpulseResponseMode(float lerpFactor, bool mode);
+
     #endregion
 
     #region Parameters
@@ -655,6 +658,11 @@ public class RACManager : MonoBehaviour
         // copy the buffer as a float array
         Marshal.Copy(result, buffer, 0, racManager.numChannels * racManager.numFrames);
         Profiler.EndSample();
+    }
+
+    public static void UpdateImpulseResponseMode(bool mode)
+    {
+        RACUpdateImpulseResponseMode(racManager.lerpFactor, mode);
     }
     #endregion
 

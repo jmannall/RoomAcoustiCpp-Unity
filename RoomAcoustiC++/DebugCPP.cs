@@ -163,9 +163,6 @@ public class DebugCPP : MonoBehaviour
                 continue;
             }
 
-            if (!path.Key.Contains(source.id.ToString() + 's'))
-                continue;
-
             if (path.Key.Contains('e'))
             {
                 Gizmos.color = Color.white;
@@ -177,6 +174,9 @@ public class DebugCPP : MonoBehaviour
                 continue;
             }
 
+            if (!path.Key.Contains(source.id.ToString() + 's'))
+                continue;
+
             if (path.Key.Contains('r'))
             {
                 if (path.Key.Contains('d'))
@@ -184,9 +184,13 @@ public class DebugCPP : MonoBehaviour
                 else
                     Gizmos.color = Color.red;
             }
+            else if (path.Key.Contains('d'))
+                Gizmos.color = Color.green;
             else
             {
-                Gizmos.color = Color.green;
+                Gizmos.color = Color.blue;
+                Gizmos.DrawLine(path.Value[0], path.Value[1]);
+                continue;
             }
 
             Gizmos.DrawLine(source.transform.position, path.Value[0]);
