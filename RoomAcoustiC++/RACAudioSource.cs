@@ -160,6 +160,7 @@ public class RACAudioSource : MonoBehaviour
             Debug.Log("Source failed to initialise");
         if (oldId >= 0)
             RACManager.RemoveSource(oldId);
+        UpdateDirectivity();
         RACManager.UpdateSource(id, transform.position, transform.rotation);
     }
     private float UpdateLinearGain()
