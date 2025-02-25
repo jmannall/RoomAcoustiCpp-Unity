@@ -5,7 +5,6 @@ using System.IO;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using UnityEngine.UIElements;
 
 public class IRController : MonoBehaviour
 {
@@ -39,8 +38,8 @@ public class IRController : MonoBehaviour
     private string runName = "Run1";
 
     private string filePath;
+    private string configName = "";
     private string areaName = "";
-
     private string spatName = "";
 
     [SerializeField]
@@ -285,9 +284,12 @@ public class IRController : MonoBehaviour
     // Enumerator for the config foreach loop
     private IEnumerator ProcessConfigs()
     {
+        int idx = 0;
         foreach (var config in configs)
         {
             RACManager.UpdateIEMConfig(config);
+            configName = idx.ToString();
+            idx++;
             yield return null; // Pause and resume in the next frame
         }
     }
@@ -301,7 +303,7 @@ public class IRController : MonoBehaviour
             racSource.transform.position = source.position;
             if (!useTransforms)
                 areaName = source.gameObject.name;
-            UpdateStreamWriter(areaName + "_" + spatName);
+            UpdateStreamWriter(areaName + "_" + spatName + "_" + configName);
             yield return null; // Pause and resume in the next frame
         }
         activeSource = -1;

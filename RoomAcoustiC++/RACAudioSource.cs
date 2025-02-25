@@ -96,7 +96,7 @@ public class RACAudioSource : MonoBehaviour
         if (id >= 0)
         {
             RACManager.UpdateSource(id, transform.position, transform.rotation);
-            linGain = UpdateGain();
+            linGain = UpdateLinearGain();
         }
     }
 
@@ -162,10 +162,12 @@ public class RACAudioSource : MonoBehaviour
             RACManager.RemoveSource(oldId);
         RACManager.UpdateSource(id, transform.position, transform.rotation);
     }
-    private float UpdateGain()
+    private float UpdateLinearGain()
     {
         return Mathf.Pow(10, gain / 20.0f);
     }
+
+    public void UpdateGain(float gain) { this.gain = gain; }
 
     public void SetClip(AudioClip clip)
     {
