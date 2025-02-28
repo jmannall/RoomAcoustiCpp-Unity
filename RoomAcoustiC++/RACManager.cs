@@ -134,7 +134,7 @@ public class RACManager : MonoBehaviour
     public enum ReverbTime { Sabine, Eyring }
     public enum FDNMatrix { Householder, RandomOrthogonal }
     public enum DiffractionModel { Attenuate, LowPass, UDFA, UDFAI, NNBest, NNSmall, UTD, BTM }
-    public enum SourceDirectivity { Omni, Cardioid, Genelec }
+    public enum SourceDirectivity { Omni, Subcardioid, Cardioid, Supercardioid, Hypercardioid, Bidirectional, Genelec }
     public enum DirectSound { None, Check, AlwaysOn }
     public enum DiffractionSound { None, ShadowZone, AllZones }
     public enum OctaveBand { Third, Octave }
@@ -252,7 +252,8 @@ public class RACManager : MonoBehaviour
 
         outputBuffer = new float[numChannels * numFrames];
 
-        hrtfFile = "Kemar_HRTF_ITD_48000Hz.3dti-hrtf";
+        //hrtfFile = "Kemar_HRTF_ITD_48000_3dti-hrtf.3dti-hrtf";
+        hrtfFile = "Kemar_DTF_ITD_48000_3dti-hrtf.3dti-hrtf";
         nearFieldFile = "NearFieldCompensation_ILD_48000.3dti-ild";
         ildFile = "HRTF_ILD_48000.3dti-ild";
 
@@ -551,10 +552,18 @@ public class RACManager : MonoBehaviour
         {
             case SourceDirectivity.Omni:
                 { RACUpdateSourceDirectivity(id, 0); break; }
-            case SourceDirectivity.Cardioid:
+            case SourceDirectivity.Subcardioid:
                 { RACUpdateSourceDirectivity(id, 1); break; }
-            case SourceDirectivity.Genelec: 
+            case SourceDirectivity.Cardioid:
                 { RACUpdateSourceDirectivity(id, 2); break; }
+            case SourceDirectivity.Supercardioid:
+                { RACUpdateSourceDirectivity(id, 3); break; }
+            case SourceDirectivity.Hypercardioid:
+                { RACUpdateSourceDirectivity(id, 4); break; }
+            case SourceDirectivity.Bidirectional:
+                { RACUpdateSourceDirectivity(id, 5); break; }
+            case SourceDirectivity.Genelec: 
+                { RACUpdateSourceDirectivity(id, 6); break; }
     }
     }
 

@@ -110,7 +110,7 @@ public class IRController : MonoBehaviour
         if (sceneName == "")
             sceneName = SceneManager.GetActiveScene().name;
 
-        filePath = Application.dataPath + "/ImpulseResponses/" + sceneName + "/" + runName;
+        filePath = Application.persistentDataPath + "/ImpulseResponses/" + sceneName + "/" + runName;
         if (!Directory.Exists(filePath))
             Directory.CreateDirectory(filePath);
 

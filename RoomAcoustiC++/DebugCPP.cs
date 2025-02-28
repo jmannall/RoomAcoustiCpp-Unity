@@ -145,6 +145,9 @@ public class DebugCPP : MonoBehaviour
 
         foreach (var path in localPathDictionary)
         {
+            if (path.Value.Count < 1)
+                continue;
+
             if (path.Key.Contains('l'))
             {
                 Gizmos.color = Color.magenta;
@@ -175,7 +178,10 @@ public class DebugCPP : MonoBehaviour
             }
 
             if (!path.Key.Contains(source.id.ToString() + 's'))
+            {
+                pathDictionary.Remove(path.Key);
                 continue;
+            }
 
             if (path.Key.Contains('r'))
             {
