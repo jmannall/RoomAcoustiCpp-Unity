@@ -13,10 +13,12 @@ $destinationFolder = "$assetDir\StreamingAssets"
 # Define the files to move
 $filesToMove = @(
     "HRTF_ILD_48000.3dti-ild",
-    "Kemar_HRTF_ITD_48000Hz.3dti-hrtf",
+    "Kemar_HRTF_ITD_48000_3dti-hrtf.3dti-hrtf",
+    "Kemar_DTF_ITD_48000_3dti-hrtf.3dti-hrtf"
     "NearFieldCompensation_ILD_48000.3dti-ild",
     "HRTF_ILD_48000.3dti-ild.meta",
-    "Kemar_HRTF_ITD_48000Hz.3dti-hrtf.meta",
+    "Kemar_HRTF_ITD_48000_3dti-hrtf.3dti-hrtf.meta",
+    "Kemar_DTF_ITD_48000_3dti-hrtf.3dti-hrtf.meta"
     "NearFieldCompensation_ILD_48000.3dti-ild.meta"
 )
 
