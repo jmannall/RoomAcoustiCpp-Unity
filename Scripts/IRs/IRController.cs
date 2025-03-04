@@ -301,6 +301,7 @@ public class IRController : MonoBehaviour
         {
             activeSource++;
             racSource.transform.position = source.position;
+            racSource.transform.rotation = source.rotation;
             if (!useTransforms)
                 areaName = source.gameObject.name;
             UpdateStreamWriter(areaName + "_" + spatName + "_" + configName);
