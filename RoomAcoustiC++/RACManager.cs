@@ -233,6 +233,15 @@ public class RACManager : MonoBehaviour
 
     private float[] interleavedData;
 
+    public enum HRTFFiles
+    {
+        KemarHRTF,
+        KemarDTF,
+        Custom // This will allow users to enter a custom string
+    }
+
+    public HRTFFiles selectedHRTF;
+    public string customHRTFFile;
     #endregion
 
     #region Unity Functions
@@ -252,8 +261,18 @@ public class RACManager : MonoBehaviour
 
         outputBuffer = new float[numChannels * numFrames];
 
-        //hrtfFile = "Kemar_HRTF_ITD_48000_3dti-hrtf.3dti-hrtf";
-        hrtfFile = "Kemar_DTF_ITD_48000_3dti-hrtf.3dti-hrtf";
+        switch (selectedHRTF)
+        {
+            case HRTFFiles.KemarHRTF:
+                hrtfFile = "Kemar_HRTF_ITD_48000_3dti-hrtf.3dti-hrtf";
+                break;
+            case HRTFFiles.KemarDTF:
+                hrtfFile = "Kemar_DTF_ITD_48000_3dti-hrtf.3dti-hrtf";
+                break;
+            case HRTFFiles.Custom:
+                hrtfFile = customHRTFFile;
+                break;
+        }
         nearFieldFile = "NearFieldCompensation_ILD_48000.3dti-ild";
         ildFile = "HRTF_ILD_48000.3dti-ild";
 

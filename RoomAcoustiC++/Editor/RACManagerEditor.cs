@@ -7,7 +7,7 @@ using UnityEngine;
 
 public class RACManagerEditor : Editor
 {
-    private SerializedProperty lerpFactor, fBands, fLimitBand, hrtfResamplingStep, fdnMatrix, iemConfig, spatialisationMode, diffractionModel, reverbTimeModel;
+    private SerializedProperty lerpFactor, fBands, fLimitBand, hrtfResamplingStep, fdnMatrix, selectedHRTF, customHRTFFile, iemConfig, spatialisationMode, diffractionModel, reverbTimeModel;
 
     private void OnEnable()
     {
@@ -17,6 +17,8 @@ public class RACManagerEditor : Editor
         fLimitBand = serializedObject.FindProperty("fLimitBand");
         hrtfResamplingStep = serializedObject.FindProperty("hrtfResamplingStep");
         fdnMatrix = serializedObject.FindProperty("fdnMatrix");
+        selectedHRTF = serializedObject.FindProperty("selectedHRTF");
+        customHRTFFile = serializedObject.FindProperty("customHRTFFile");
         iemConfig = serializedObject.FindProperty("iemConfig");
         spatialisationMode = serializedObject.FindProperty("spatialisationMode");
         diffractionModel = serializedObject.FindProperty("diffractionModel");
@@ -37,6 +39,12 @@ public class RACManagerEditor : Editor
         EditorGUILayout.PropertyField(fLimitBand, new GUIContent("Frequency Limit Band", "Control the size of the upper and lower bands for frequency dependent processing. If Frequency Bands are provided as octave bands, select Octave."));
         EditorGUILayout.PropertyField(hrtfResamplingStep, new GUIContent("HRTF Resampling Step", "Control the HRTF angular resolution."));
         EditorGUILayout.PropertyField(fdnMatrix, new GUIContent("FDN Matrix", "Select the design of the FDN feedback matrix."));
+
+        EditorGUILayout.PropertyField(selectedHRTF, new GUIContent("HRTF File", "Select HRTF File."));
+
+        if (selectedHRTF.enumValueIndex == (int)RACManager.HRTFFiles.Custom)
+            EditorGUILayout.PropertyField(customHRTFFile, new GUIContent("Enter HRTF file here:"));
+        serializedObject.ApplyModifiedProperties();
 
         GUI.enabled = true;
         GUI.changed = false;
