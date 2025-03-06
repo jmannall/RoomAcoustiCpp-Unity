@@ -608,7 +608,7 @@ public class RACManager : MonoBehaviour
         racManager.vData[8] = vertices[2].z;
     }
 
-    public static int InitWall(Vector3 normal, ref Vector3[] vertices, ref float[] absorption)
+    public static int InitWall(ref Vector3[] vertices, ref float[] absorption)
     {
         if (vertices.Length != 3)
         {
@@ -624,7 +624,7 @@ public class RACManager : MonoBehaviour
         return id;
     }
 
-    public static void UpdateWall(int id, Vector3 normal, ref Vector3[] vertices)
+    public static void UpdateWall(int id, ref Vector3[] vertices)
     {
         if (vertices.Length != 3)
         {

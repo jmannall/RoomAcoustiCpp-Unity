@@ -172,8 +172,7 @@ public class RACObject : MonoBehaviour
             vertices[2] = mesh.vertices[mesh.triangles[i + 2]];
             transform.TransformPoints(vertices);
 
-            normals.Add(Vector3.Cross(vertices[1] - vertices[0], vertices[2] - vertices[0]).normalized);
-            walls.Add(new RACWall(normals.Last(), ref vertices, ref absorption));
+            walls.Add(new RACWall(ref vertices, ref absorption));
         }
 
         public void Update(ref Mesh mesh, ref SubMeshDescriptor subMesh, Transform transform)
@@ -197,8 +196,7 @@ public class RACObject : MonoBehaviour
                 vertices[2] = mesh.vertices[mesh.triangles[idx + 2]];
                 transform.TransformPoints(vertices);
 
-                normals[i] = Vector3.Cross(vertices[1] - vertices[0], vertices[2] - vertices[0]).normalized;
-                walls[i].UpdateWall(normals[i], ref vertices);
+                walls[i].UpdateWall(ref vertices);
             }
         }
 
@@ -207,14 +205,12 @@ public class RACObject : MonoBehaviour
             foreach (RACWall wall in walls)
                 wall.Remove();
             walls.Clear();
-            normals.Clear();
         }
 
         // Parameters
 
         [SerializeField]
         private List<RACWall> walls = new List<RACWall>();
-        private List<Vector3> normals = new List<Vector3>();
         private Vector3[] vertices = new Vector3[3];
 
         [SerializeField]
@@ -234,9 +230,9 @@ public class RACObject : MonoBehaviour
 
         public RACWall() { id = -1; }
 
-        public RACWall(Vector3 normal, ref Vector3[] vertices, ref float[] absorption)
+        public RACWall(ref Vector3[] vertices, ref float[] absorption)
         {
-            id = RACManager.InitWall(normal, ref vertices, ref absorption);
+            id = RACManager.InitWall(ref vertices, ref absorption);
         }
 
         // Destructor
@@ -255,11 +251,11 @@ public class RACObject : MonoBehaviour
             }
         }
 
-        public void UpdateWall(Vector3 normal, ref Vector3[] vertices)
+        public void UpdateWall(ref Vector3[] vertices)
         {
             if (id > -1)
             {
-                RACManager.UpdateWall(id, normal, ref vertices);
+                RACManager.UpdateWall(id, ref vertices);
             }
         }
 
@@ -278,205 +274,5 @@ public class RACObject : MonoBehaviour
         private int id = -1;
     }
 
-    #endregion
-
-    #region Commented Code
-    //////////////////// Objects ////////////////////
-
-    //private class Object
-    //{
-    //    public Object() { }
-
-    //    public void Remove()
-    //    {
-    //        for (int i = 0; i < walls.Length; i++)
-    //        {
-    //            walls[i].Remove();
-    //        }
-    //    }
-
-    //    public void RemoveWall(int i)
-    //    {
-    //        walls[i].Remove();
-    //    }
-
-    //    public virtual int GetId() { return -1; }
-
-    //    public virtual void UpdateObject(ref Mesh mesh, Transform transform) { return; }
-
-    //    public virtual void UpdateObject(ref Mesh mesh, ref SubMeshDescriptor subMesh, Transform transform) { return; }
-
-
-    //    ~Object()
-    //    {
-    //        Remove();
-    //    }
-
-    //    protected RACWall[] walls;
-    //    protected Vector3[] normals;
-    //    protected Vector3[] vertices;
-    //}
-
-    //private class Quad : Object
-    //{
-    //    public Quad(ref Mesh mesh, Transform transform, ref float[] absorption)
-    //    {
-    //        normals = new Vector3[1];
-    //        normals[0] = transform.TransformDirection(mesh.normals[0]);
-
-    //        vertices = new Vector3[4];
-    //        vertices[0] = mesh.vertices[0];
-    //        vertices[1] = mesh.vertices[2];
-    //        vertices[2] = mesh.vertices[3];
-    //        vertices[3] = mesh.vertices[1];
-    //        transform.TransformPoints(vertices);
-
-    //        walls = new RACWall[1];
-    //        walls[0] = new RACWall(normals[0], ref vertices, ref absorption);
-    //    }
-
-    //    public override int GetId() { return walls[0].GetId(); }
-
-    //    public override void UpdateObject(ref Mesh mesh, Transform transform)
-    //    {
-    //        Profiler.BeginSample("Update Quad");
-    //        normals[0] = transform.TransformDirection(mesh.normals[0]);
-
-    //        vertices[0] = mesh.vertices[0];
-    //        vertices[1] = mesh.vertices[2];
-    //        vertices[2] = mesh.vertices[3];
-    //        vertices[3] = mesh.vertices[1];
-    //        transform.TransformPoints(vertices);
-
-    //        walls[0].UpdateWall(normals[0], ref vertices);
-    //    }
-    //}
-
-    //private class Plane : Object
-    //{
-    //    public Plane(ref Mesh mesh, Transform transform, ref float[] absorption)
-    //    {
-    //        normals = new Vector3[1];
-    //        normals[0] = transform.TransformDirection(mesh.normals[0]);
-
-    //        vertices = new Vector3[4];
-    //        vertices[0] = mesh.vertices[0];
-    //        vertices[1] = mesh.vertices[110];
-    //        vertices[2] = mesh.vertices[120];
-    //        vertices[3] = mesh.vertices[10];
-    //        transform.TransformPoints(vertices);
-
-    //        walls = new RACWall[1];
-    //        walls[0] = new RACWall(normals[0], ref vertices, ref absorption);
-    //    }
-
-    //    public override int GetId() { return walls[0].GetId(); }
-
-    //    public override void UpdateObject(ref Mesh mesh, Transform transform)
-    //    {
-    //        normals[0] = transform.TransformDirection(mesh.normals[0]);
-
-    //        vertices[0] = mesh.vertices[0];
-    //        vertices[1] = mesh.vertices[110];
-    //        vertices[2] = mesh.vertices[120];
-    //        vertices[3] = mesh.vertices[10];
-    //        transform.TransformPoints(vertices);
-
-    //        walls[0].UpdateWall(normals[0], ref vertices);
-    //    }
-    //}
-
-    //private class Cube : Object
-    //{
-    //    public Cube(ref Mesh mesh, Transform transform, ref float[] absorption)
-    //    {
-    //        normals = new Vector3[6];
-    //        normals[0] = mesh.normals[0];
-    //        normals[1] = mesh.normals[4];
-    //        normals[2] = mesh.normals[6];
-    //        normals[3] = mesh.normals[12];
-    //        normals[4] = mesh.normals[16];
-    //        normals[5] = mesh.normals[20];
-    //        transform.TransformDirections(normals);
-
-    //        vertices = new Vector3[4];
-    //        vertices[0] = mesh.vertices[0];
-    //        vertices[1] = mesh.vertices[2];
-    //        vertices[2] = mesh.vertices[3];
-    //        vertices[3] = mesh.vertices[1];
-    //        transform.TransformPoints(vertices);
-    //        walls[0] = new RACWall(normals[0], ref vertices, ref absorption);
-
-    //        vertices[0] = mesh.vertices[8];
-    //        vertices[1] = mesh.vertices[4];
-    //        vertices[2] = mesh.vertices[5];
-    //        vertices[3] = mesh.vertices[9];
-    //        transform.TransformPoints(vertices);
-    //        walls[1] = new RACWall(normals[1], ref vertices, ref absorption);
-
-    //        vertices[0] = mesh.vertices[10];
-    //        vertices[1] = mesh.vertices[6];
-    //        vertices[2] = mesh.vertices[7];
-    //        vertices[3] = mesh.vertices[11];
-    //        transform.TransformPoints(vertices);
-    //        walls[2] = new RACWall(normals[2], ref vertices, ref absorption);
-
-    //        mesh.vertices[12..16].CopyTo(vertices, 0); // vertices[0..4] = mesh.vertices[12..16]
-    //        transform.TransformPoints(vertices);
-    //        walls[3] = new RACWall(normals[3], ref vertices, ref absorption);
-
-    //        mesh.vertices[16..20].CopyTo(vertices, 0); // vertices[0..4] = mesh.vertices[16..20]
-    //        transform.TransformPoints(vertices);
-    //        walls[4] = new RACWall(normals[4], ref vertices, ref absorption);
-
-    //        mesh.vertices[20..24].CopyTo(vertices, 0); // vertices[0..4] = mesh.vertices[20..24]
-    //        transform.TransformPoints(vertices);
-    //        walls[5] = new RACWall(normals[5], ref vertices, ref absorption);
-    //    }
-
-    //    public override void UpdateObject(ref Mesh mesh, Transform transform)
-    //    {
-    //        normals[0] = mesh.normals[0];
-    //        normals[1] = mesh.normals[4];
-    //        normals[2] = mesh.normals[6];
-    //        normals[3] = mesh.normals[12];
-    //        normals[4] = mesh.normals[16];
-    //        normals[5] = mesh.normals[20];
-    //        transform.TransformDirections(normals);
-
-    //        vertices[0] = mesh.vertices[0];
-    //        vertices[1] = mesh.vertices[2];
-    //        vertices[2] = mesh.vertices[3];
-    //        vertices[3] = mesh.vertices[1];
-    //        transform.TransformPoints(vertices);
-    //        walls[0].UpdateWall(normals[0], ref vertices);
-
-    //        vertices[0] = mesh.vertices[8];
-    //        vertices[1] = mesh.vertices[4];
-    //        vertices[2] = mesh.vertices[5];
-    //        vertices[3] = mesh.vertices[9];
-    //        transform.TransformPoints(vertices);
-    //        walls[1].UpdateWall(normals[0], ref vertices);
-
-    //        vertices[0] = mesh.vertices[10];
-    //        vertices[1] = mesh.vertices[6];
-    //        vertices[2] = mesh.vertices[7];
-    //        vertices[3] = mesh.vertices[11];
-    //        transform.TransformPoints(vertices);
-    //        walls[2].UpdateWall(normals[0], ref vertices);
-
-    //        mesh.vertices[12..16].CopyTo(vertices, 0); // vertices[0..4] = mesh.vertices[12..16]
-    //        transform.TransformPoints(vertices);
-    //        walls[3].UpdateWall(normals[0], ref vertices);
-
-    //        mesh.vertices[16..20].CopyTo(vertices, 0); // vertices[0..4] = mesh.vertices[16..20]
-    //        transform.TransformPoints(vertices);
-    //        walls[4].UpdateWall(normals[0], ref vertices);
-
-    //        mesh.vertices[20..24].CopyTo(vertices, 0); // vertices[0..4] = mesh.vertices[20..24]
-    //        transform.TransformPoints(vertices);
-    //        walls[5].UpdateWall(normals[0], ref vertices);
-    //    }
-    //}
     #endregion
 }

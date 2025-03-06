@@ -83,23 +83,24 @@ public class IRController : MonoBehaviour
     static int iemCounter = 0;
     static void OnIEMCompleted(int id)
     {
-        if (instance == null)
+        if (irController == null)
             return;
-        if (instance.racSource == null)
+        if (irController.racSource == null)
             return;
         if (id == -1)
             lateReverbCompleted = true;
-        else if (id == instance.racSource.id)
+        else if (id == irController.racSource.id)
             iemCounter++;
     }
 
-    private static IRController instance;
+    private static IRController irController;
 
     // Start is called before the first frame update
     private void Awake()
     {
         DebugCPP.RegisterIEMCallback(OnIEMCompleted);
-        instance = this;
+        Debug.AssertFormat(irController == null, "More than one instance of the IRController created! Singleton violated.");
+        irController = this;
 
         int numFrames = AudioSettings.GetConfiguration().dspBufferSize;
         inputBuffer = new float[numFrames];
