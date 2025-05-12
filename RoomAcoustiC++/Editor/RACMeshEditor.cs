@@ -26,6 +26,7 @@ public class RACMeshEditor : Editor
         GUI.changed = false;
 
         EditorGUILayout.Slider(absorptionSkew, -1.0f, 1.0f, new GUIContent("Absorption Skew", "Scale the material absorption."));
+
         serializedObject.ApplyModifiedProperties();
 
         if (isPlaying && GUI.changed)

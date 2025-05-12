@@ -16,7 +16,7 @@ public class RACMesh : MonoBehaviour
 
     [SerializeField, HideInInspector]
     private float absorptionSkew = 0.0f;
-
+   
     [SerializeField]
     [Tooltip("Set the volume of the room.")]
     private float volume = 0.0f;

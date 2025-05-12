@@ -6,6 +6,7 @@ using System.IO;
 using UnityEngine.Networking;
 using UnityEngine.Profiling;
 using System.Collections.Generic;
+using System.Collections;
 
 [AddComponentMenu("RoomAcoustiC++/Audio Manager")]
 [RequireComponent(typeof(AudioSource))]
@@ -47,6 +48,9 @@ public class RACManager : MonoBehaviour
 
     [DllImport(DLLNAME)]
     private static extern void RACUpdateIEMConfig(int order, int dir, bool refl, int diff, int refDiff, bool rev, float edgeLen);
+
+    [DllImport(DLLNAME)]
+    private static extern void RACUpdateReverbTime(float[] T60);
 
     [DllImport(DLLNAME)]
     private static extern void RACUpdateReverbTimeModel(int model);
@@ -102,6 +106,8 @@ public class RACManager : MonoBehaviour
     private static extern void RACUpdatePlanesAndEdges();
 
     // Audio
+    [DllImport(DLLNAME)]
+    private static extern void RACSetHeadphoneEQ(float[] leftIR, float[] rightIR, int irLength);
 
     [DllImport(DLLNAME)]
     private static extern void RACSubmitAudio(int id, float[] input);
@@ -120,6 +126,10 @@ public class RACManager : MonoBehaviour
 
     #endregion
 
+
+    public event Action enableAudioProcessing;
+    public event Action disableAudioProcessing;
+
     #region Parameters
 
     //////////////////// Parameters ////////////////////
@@ -128,13 +138,14 @@ public class RACManager : MonoBehaviour
     private string hrtfFile = " ";
     private string nearFieldFile = " ";
     private string ildFile = " ";
+    private string headphoneEQFile = " ";
     private string resourcePath;
 
     public enum SpatMode { None, Performance, Quality }
-    public enum ReverbTime { Sabine, Eyring }
+    public enum ReverbTime { Sabine, Eyring, Custom }
     public enum FDNMatrix { Householder, RandomOrthogonal }
     public enum DiffractionModel { Attenuate, LowPass, UDFA, UDFAI, NNBest, NNSmall, UTD, BTM }
-    public enum SourceDirectivity { Omni, Subcardioid, Cardioid, Supercardioid, Hypercardioid, Bidirectional, Genelec }
+    public enum SourceDirectivity { Omni, Subcardioid, Cardioid, Supercardioid, Hypercardioid, Bidirectional, Genelec, GenelecDTF }
     public enum DirectSound { None, Check, AlwaysOn }
     public enum DiffractionSound { None, ShadowZone, AllZones }
     public enum OctaveBand { Third, Octave }
@@ -229,6 +240,9 @@ public class RACManager : MonoBehaviour
     private DiffractionModel diffractionModel = DiffractionModel.BTM;
 
     [SerializeField, HideInInspector]
+    private List<float> T60;
+
+    [SerializeField, HideInInspector]
     private ReverbTime reverbTimeModel = ReverbTime.Sabine;
 
     private float[] interleavedData;
@@ -240,8 +254,17 @@ public class RACManager : MonoBehaviour
         Custom // This will allow users to enter a custom string
     }
 
+    public enum HeadphoneEQFiles
+    {
+        None,
+        Custom // This will allow users to enter a custom string
+    }
+
     public HRTFFiles selectedHRTF;
     public string customHRTFFile;
+
+    public HeadphoneEQFiles selectedHeadphoneEQ;
+    public string customHeadphoneEQFile;
     #endregion
 
     #region Unity Functions
@@ -304,9 +327,14 @@ public class RACManager : MonoBehaviour
         }
         else
             Debug.Log("HRTF files loaded");
+
+        LoadHeadphoneEQ();
+
         UpdateIEMConfig();
         UpdateSpatialisationMode();
         UpdateReverbTimeModel();
+        if (reverbTimeModel == ReverbTime.Custom)
+            UpdateReverbTime();
         UpdateFDNModel();
         UpdateDiffractionModel();
     }
@@ -420,6 +448,11 @@ public class RACManager : MonoBehaviour
         UpdateSpatialisationMode();
     }
 
+    public static void UpdateReverbTime()
+    {
+        RACUpdateReverbTime(racManager.T60.ToArray());
+    }
+
     public static void UpdateReverbTimeModel()
     {
         switch (racManager.reverbTimeModel)
@@ -428,6 +461,8 @@ public class RACManager : MonoBehaviour
                 { RACUpdateReverbTimeModel(0); break; }
             case ReverbTime.Eyring:
                 { RACUpdateReverbTimeModel(1); break; }
+            case ReverbTime.Custom:
+                { RACUpdateReverbTimeModel(2); break; }
         }
     }
 
@@ -583,7 +618,9 @@ public class RACManager : MonoBehaviour
                 { RACUpdateSourceDirectivity(id, 5); break; }
             case SourceDirectivity.Genelec: 
                 { RACUpdateSourceDirectivity(id, 6); break; }
-    }
+            case SourceDirectivity.GenelecDTF:
+                { RACUpdateSourceDirectivity(id, 7); break; }
+        }
     }
 
     public static void RemoveSource(int id)
@@ -661,6 +698,11 @@ public class RACManager : MonoBehaviour
     }
 
     // Audio
+
+    public static void SetHeadphoneEQ(ref float[] leftIR, ref float[] rightIR)
+    {
+        RACSetHeadphoneEQ(leftIR, rightIR, leftIR.Length);
+    }
 
     public static void SubmitAudio(int id, ref float[] input)
     {
@@ -741,7 +783,45 @@ public class RACManager : MonoBehaviour
             fLimits.Add(fBands[fBands.Count - 1] * Mathf.Pow(2, 1.0f / 6.0f));
     }
 
-    public static void DisableAudioProcessing() { racManager.isRunning = false; }
+    public static void DisableAudioProcessing() { racManager.disableAudioProcessing?.Invoke(); racManager.isRunning = false; }
 
-    public static void EnableAudioProcessing() { racManager.isRunning = true; }
+    public static void EnableAudioProcessing() { racManager.enableAudioProcessing?.Invoke(); racManager.isRunning = true; }
+
+    public static void LoadHeadphoneEQ()
+    {
+        switch (racManager.selectedHeadphoneEQ)
+        {
+            case HeadphoneEQFiles.None:
+                return;
+            case HeadphoneEQFiles.Custom:
+                racManager.headphoneEQFile = racManager.customHeadphoneEQFile;
+                break;
+        }
+
+        char sep = Path.DirectorySeparatorChar;
+            
+        if (Application.platform == RuntimePlatform.Android)
+            racManager.DownloadFileForAndroid(racManager.headphoneEQFile);
+
+        string headphoneEQPath = racManager.resourcePath + sep + racManager.headphoneEQFile;
+        if (File.Exists(headphoneEQPath))
+        {
+            Debug.Log("Headphone EQ file loaded");
+
+            using (BinaryReader reader = new BinaryReader(File.Open(headphoneEQPath, FileMode.Open)))
+            {
+                int irLength = reader.ReadInt32();
+                float[] leftIR = new float[irLength];
+                float[] rightIR = new float[irLength];
+                for (int i = 0; i < irLength; i++)
+                {
+                    leftIR[i] = reader.ReadSingle();
+                    rightIR[i] = reader.ReadSingle();
+                }
+                SetHeadphoneEQ(ref leftIR, ref rightIR);
+            }
+        }
+        else
+            Debug.LogError("Headphone EQ file not found");
+    }
 }

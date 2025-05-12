@@ -13,12 +13,11 @@ public class RACAudioListener : MonoBehaviour
 
     //////////////////// Unity Functions ////////////////////
     
-    private void OnEnable()
+    private void Awake()
     {
         Debug.AssertFormat(racAudioListener == null, "More than one instance of the RACAudioListener created! Singleton violated.");
         racAudioListener = this;
-
-        UpdateListener();
+        // UpdateListener();
     }
 
     void Update()

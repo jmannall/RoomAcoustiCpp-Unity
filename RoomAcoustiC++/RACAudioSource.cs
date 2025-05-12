@@ -59,7 +59,8 @@ public class RACAudioSource : MonoBehaviour
     private void Awake()
     {
         source = GetComponent<AudioSource>();
-        source.clip = clip;
+        if (clip != null)
+            source.clip = clip;
         source.playOnAwake = playOnAwake;
         source.loop = loop;
         source.bypassEffects = false;
@@ -73,47 +74,29 @@ public class RACAudioSource : MonoBehaviour
         AudioConfiguration config = AudioSettings.GetConfiguration();
         numFrames = config.dspBufferSize;
 
-        id = RACManager.InitSource();
-        if (id >= 0)
-        {
-            isRunning = true;
-            Debug.Log("Source successfully initialised");
-        }
-        else
-            Debug.Log("Source failed to initialise");
+        RACManager.racManager.enableAudioProcessing += InitSource;
+        RACManager.racManager.disableAudioProcessing += RemoveSource;
 
         if (playOnAwake)
             Play();
-        else
-            Pause();
 
-        UpdateDirectivity();
         input = new float[numFrames];
     }
 
     void Update()
     {
-        if (id >= 0)
-        {
-            RACManager.UpdateSource(id, transform.position, transform.rotation);
-            linGain = UpdateLinearGain();
-        }
-    }
+        if (id < 0)
+            return;
 
-    private void FixedUpdate()
-    {
-        if (source.isPlaying != isPlaying)
-            isPlaying = source.isPlaying;
+        RACManager.UpdateSource(id, transform.position, transform.rotation);
+        linGain = UpdateLinearGain();
+
+        isPlaying = source.isPlaying;
     }
 
     private void OnDestroy()
     {
-        if (id >= 0)
-        {
-            isRunning = false;
-            RACManager.RemoveSource(id);
-            id = -1;
-        }
+        RemoveSource();
     }
 
     private void OnAudioFilterRead(float[] data, int channels)
@@ -126,15 +109,19 @@ public class RACAudioSource : MonoBehaviour
                 for (int i = 0, j = 0; i < numFrames; i++, j+=channels)
                     input[i] = linGain * data[j];
                 RACManager.SubmitAudio(id, ref input);
+
+                // Overwrite data
+                Array.Fill(data, 0.0f);
+                if (arSend && channels > 2)
+                {
+                    for (int i = 0, j = 2; i < numFrames; i++, j += channels)
+                        data[j] = input[i];
+                }
+                return;
             }
         }
         // Overwrite data
         Array.Fill(data, 0.0f);
-        if (arSend && channels > 2)
-        {
-            for (int i = 0, j = 2; i < numFrames; i++, j+=channels)
-                data[j] = input[i];
-        }
     }
 
     #endregion
@@ -143,26 +130,42 @@ public class RACAudioSource : MonoBehaviour
 
     //////////////////// Functions ////////////////////
 
-    public void RestartSource()
+    private void InitSource()
+    {
+        if (id >= 0)
+            return;
+        id = RACManager.InitSource();
+
+        if (id < 0)
+        {
+            Debug.LogError("Source failed to initialise");
+            return;
+        }
+        Debug.Log("Source successfully initialised");
+
+        UpdateDirectivity();
+        isRunning = true;
+    }
+
+    private void RemoveSource()
     {
         if (id < 0)
             return;
 
         isRunning = false;
-        int oldId = id;
-        id = RACManager.InitSource();
-        if (id >= 0)
-        {
-            isRunning = true;
-            Debug.Log("Source successfully initialised");
-        }
-        else
-            Debug.Log("Source failed to initialise");
-        if (oldId >= 0)
-            RACManager.RemoveSource(oldId);
-        UpdateDirectivity();
-        RACManager.UpdateSource(id, transform.position, transform.rotation);
+        RACManager.RemoveSource(id);
+        id = -1;
     }
+
+    public void RestartSource()
+    {
+        if (id < 0)
+            return;
+
+        RemoveSource();
+        InitSource();
+    }
+
     private float UpdateLinearGain()
     {
         return Mathf.Pow(10, gain / 20.0f);
@@ -183,9 +186,9 @@ public class RACAudioSource : MonoBehaviour
     {
         Debug.Log("Play Pause");
         if (source.isPlaying)
-            source.Pause();
+            Pause();
         else
-            source.Play();
+            Play();
     }
 
     public void Pause()
@@ -196,8 +199,20 @@ public class RACAudioSource : MonoBehaviour
 
     public void Play()
     {
+        if (!isRunning)
+            InitSource();
         if (!source.isPlaying)
             source.Play();
+    }
+
+    public void Stop() { RemoveSource(); source.Stop(); }
+
+    public void PlayScheduled(double time)
+    {
+        if (!isRunning)
+            InitSource();
+        if (!source.isPlaying)
+            source.PlayScheduled(time);
     }
 
     public void SetLoop(bool doLoop) { loop = doLoop; source.loop = doLoop; }

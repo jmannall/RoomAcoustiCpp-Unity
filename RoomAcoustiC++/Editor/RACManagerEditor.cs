@@ -7,7 +7,7 @@ using UnityEngine;
 
 public class RACManagerEditor : Editor
 {
-    private SerializedProperty lerpFactor, fBands, fLimitBand, hrtfResamplingStep, fdnMatrix, selectedHRTF, customHRTFFile, iemConfig, spatialisationMode, diffractionModel, reverbTimeModel;
+    private SerializedProperty lerpFactor, fBands, fLimitBand, hrtfResamplingStep, fdnMatrix, selectedHRTF, customHRTFFile, selectedHeadphoneEQ, customHeadphoneEQFile, iemConfig, spatialisationMode, diffractionModel, reverbTimeModel, T60;
 
     private void OnEnable()
     {
@@ -19,10 +19,13 @@ public class RACManagerEditor : Editor
         fdnMatrix = serializedObject.FindProperty("fdnMatrix");
         selectedHRTF = serializedObject.FindProperty("selectedHRTF");
         customHRTFFile = serializedObject.FindProperty("customHRTFFile");
+        selectedHeadphoneEQ = serializedObject.FindProperty("selectedHeadphoneEQ");
+        customHeadphoneEQFile = serializedObject.FindProperty("customHeadphoneEQFile");
         iemConfig = serializedObject.FindProperty("iemConfig");
         spatialisationMode = serializedObject.FindProperty("spatialisationMode");
         diffractionModel = serializedObject.FindProperty("diffractionModel");
         reverbTimeModel = serializedObject.FindProperty("reverbTimeModel");
+        T60 = serializedObject.FindProperty("T60");
     }
 
     public override void OnInspectorGUI()
@@ -46,7 +49,18 @@ public class RACManagerEditor : Editor
             EditorGUILayout.PropertyField(customHRTFFile, new GUIContent("Enter HRTF file here:"));
         serializedObject.ApplyModifiedProperties();
 
+        EditorGUILayout.PropertyField(selectedHeadphoneEQ, new GUIContent("Headphone EQ File", "Select Headphone EQ File."));
+
         GUI.enabled = true;
+        if (selectedHeadphoneEQ.enumValueIndex == (int)RACManager.HeadphoneEQFiles.Custom)
+        {
+            EditorGUILayout.PropertyField(customHeadphoneEQFile, new GUIContent("Enter Headphone EQ file:"));
+            serializedObject.ApplyModifiedProperties();
+            if (isPlaying && GUILayout.Button("Update Headphone EQ"))
+                RACManager.LoadHeadphoneEQ();
+        }
+        serializedObject.ApplyModifiedProperties();
+        //GUI.enabled = true;
         GUI.changed = false;
 
         EditorGUILayout.PropertyField(iemConfig, new GUIContent("Image Edge Model", "Control the acoustic components modelled by the image edge model."), true);
@@ -77,11 +91,18 @@ public class RACManagerEditor : Editor
         }
 
         EditorGUILayout.PropertyField(reverbTimeModel, new GUIContent("Reverberation Time", "Select the formula used to calculate the reverberation time"));
+
+        bool isCustom = reverbTimeModel.enumValueIndex == (int)RACManager.ReverbTime.Custom;
+        if (isCustom)
+            EditorGUILayout.PropertyField(T60, new GUIContent("T60", "Enter custom T60"));
         serializedObject.ApplyModifiedProperties();
 
         if (isPlaying && GUI.changed)
         {
-            RACManager.UpdateReverbTimeModel();
+            if (isCustom)
+                RACManager.UpdateReverbTime();
+            else
+                RACManager.UpdateReverbTimeModel();
             GUI.changed = false;
         }
     }
