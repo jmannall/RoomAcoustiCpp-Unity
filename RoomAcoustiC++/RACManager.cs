@@ -47,7 +47,7 @@ public class RACManager : MonoBehaviour
     // Image Source Model
 
     [DllImport(DLLNAME)]
-    private static extern void RACUpdateIEMConfig(int order, int dir, bool refl, int diff, int refDiff, bool rev, float edgeLen);
+    private static extern void RACUpdateIEMConfig(int dir, int refl, int diffShadow, int diffSpecular, bool rev, float edgeLen);
 
     [DllImport(DLLNAME)]
     private static extern void RACUpdateReverbTime(float[] T60);
@@ -153,17 +153,17 @@ public class RACManager : MonoBehaviour
     [Serializable]
     public struct IEMConfig
     {
-        [Range(0, 6)]
-        [Tooltip("Set the maximum reflection/diffraction order.")]
-        public int order;
         [Tooltip("None (no direct sound), Check (direct sound if source visible), Always On (no visibility check).")]
         public DirectSound direct;
-        [Tooltip("Toggle the early reflections.")]
-        public bool reflection;
-        [Tooltip("Toggle diffraction of the direct sound. None (no diffracted sound), Shadow Zone (include only shadowed diffraction), All Zones (include specular diffraction).")]
-        public DiffractionSound diffraction;
-        [Tooltip("Toggle diffraction of the reflected sound. None (no diffracted sound), Shadow Zone (include only shadowed diffraction), All Zones (include specular diffraction).")]
-        public DiffractionSound reflectionDiffraction;
+        [Range(0, 6)]
+        [Tooltip("Set the maximum number of reflections in reflection only paths.")]
+        public int reflectionOrder;
+        [Range(0, 6)]
+        [Tooltip("Set the maximum number of reflections or diffractions shadowed diffraction paths.")]
+        public int shadowDiffractionOrder;
+        [Range(0, 6)]
+        [Tooltip("Set the maximum number of reflections or diffractions specular diffraction paths.")]
+        public int specularDiffractionOrder;
         [Tooltip("Toggle the late reverberation.")]
         public bool lateReverb;
 
@@ -171,23 +171,21 @@ public class RACManager : MonoBehaviour
         [Tooltip("Set a minimum edge length threshold for diffraction modelling.")]
         public float minimumEdgeLength;
 
-        public IEMConfig(int order, DirectSound direct, bool reflection, DiffractionSound diffraction, DiffractionSound reflectionDiffraction, bool lateReverb, float minimumEdgeLength)
+        public IEMConfig(DirectSound direct, int reflOrder, int diffShadowOrder, int diffSpecularOrder, bool lateReverb, float minimumEdgeLength)
         {
-            this.order = order;
             this.direct = direct;
-            this.reflection = reflection;
-            this.diffraction = diffraction;
-            this.reflectionDiffraction = reflectionDiffraction;
+            this.reflectionOrder = reflOrder;
+            this.shadowDiffractionOrder = diffShadowOrder;
+            this.specularDiffractionOrder = diffSpecularOrder;
             this.lateReverb = lateReverb;
             this.minimumEdgeLength = minimumEdgeLength;
         }
 
         public static IEMConfig Default => new IEMConfig(
-        order: 2,
         direct: DirectSound.Check,
-        reflection: true,
-        diffraction: DiffractionSound.ShadowZone,
-        reflectionDiffraction: DiffractionSound.None,
+        reflOrder: 2,
+        diffShadowOrder: 1,
+        diffSpecularOrder: 0,
         lateReverb: true,
         minimumEdgeLength: 0.0f
     );
@@ -508,9 +506,7 @@ public class RACManager : MonoBehaviour
     {
         Profiler.BeginSample("Update IEM");
         int direct = SelectDirectMode(racManager.iemConfig.direct);
-        int diffraction = SelectDiffractionMode(racManager.iemConfig.diffraction);
-        int reflectionDiffraction = SelectDiffractionMode(racManager.iemConfig.reflectionDiffraction);
-        RACUpdateIEMConfig(racManager.iemConfig.order, direct, racManager.iemConfig.reflection, diffraction, reflectionDiffraction, racManager.iemConfig.lateReverb, racManager.iemConfig.minimumEdgeLength);
+        RACUpdateIEMConfig(direct, racManager.iemConfig.reflectionOrder, racManager.iemConfig.shadowDiffractionOrder, racManager.iemConfig.specularDiffractionOrder, racManager.iemConfig.lateReverb, racManager.iemConfig.minimumEdgeLength);
         Profiler.EndSample();
     }
 
