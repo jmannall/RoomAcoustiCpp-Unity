@@ -159,8 +159,7 @@ public class RACAudioSource : MonoBehaviour
 
     public void RestartSource()
     {
-        if (id < 0)
-            RemoveSource();       
+        RemoveSource();       
         InitSource();
     }
 
