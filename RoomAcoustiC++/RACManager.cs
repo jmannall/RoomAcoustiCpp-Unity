@@ -56,15 +56,12 @@ public class RACManager : MonoBehaviour
     private static extern void RACUpdateReverbTimeModel(int model);
 
     [DllImport(DLLNAME)]
-    private static extern void RACUpdateFDNModel(int id);
-
-    [DllImport(DLLNAME)]
     private static extern void RACUpdateDiffractionModel(int id);
 
     // Reverb
 
     [DllImport(DLLNAME)]
-    private static extern void RACUpdateRoom(float volume, float[] dim, int numDimensions);
+    private static extern void RACUpdateRoom(float volume, float[] dim, int numDimensions, int id);
 
     [DllImport(DLLNAME)]
     private static extern void RACResetFDN();
@@ -333,7 +330,6 @@ public class RACManager : MonoBehaviour
         UpdateReverbTimeModel();
         if (reverbTimeModel == ReverbTime.Custom)
             UpdateReverbTime();
-        UpdateFDNModel();
         UpdateDiffractionModel();
     }
 
@@ -516,17 +512,6 @@ public class RACManager : MonoBehaviour
         UpdateIEMConfig();
     }
 
-    private static void UpdateFDNModel()
-    {
-        switch (racManager.fdnMatrix)
-        {
-            case FDNMatrix.Householder:
-                { RACUpdateFDNModel(0); break; }
-            case FDNMatrix.RandomOrthogonal:
-                { RACUpdateFDNModel(1); break; }
-        }
-    }
-
     public static void UpdateDiffractionModel(DiffractionModel model)
     {
         racManager.diffractionModel = model;
@@ -561,7 +546,7 @@ public class RACManager : MonoBehaviour
     public static void UpdateRoom(float volume, float[] dim, int numDimensions)
     {
         Profiler.BeginSample("Set FDN");
-        RACUpdateRoom(volume, dim, numDimensions);
+        RACUpdateRoom(volume, dim, numDimensions, (int)racManager.fdnMatrix);
         Profiler.EndSample();
     }
 
