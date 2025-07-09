@@ -94,7 +94,14 @@ public class RACManagerEditor : Editor
 
         bool isCustom = reverbTimeModel.enumValueIndex == (int)RACManager.ReverbTime.Custom;
         if (isCustom)
+        {
+            if (T60.arraySize == 0)
+            {
+                T60.arraySize = 1;
+                T60.GetArrayElementAtIndex(0).floatValue = 1.0f; // Default value if no custom T60 is set
+            }
             EditorGUILayout.PropertyField(T60, new GUIContent("T60", "Enter custom T60"));
+        }
         serializedObject.ApplyModifiedProperties();
 
         if (isPlaying && GUI.changed)
