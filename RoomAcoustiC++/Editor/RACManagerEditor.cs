@@ -1,5 +1,7 @@
 
+using System.Linq;
 using UnityEditor;
+using UnityEditor.Build;
 using UnityEngine;
 
 [AddComponentMenu("RoomAcoustiC++/Editor/AudioManager")]
@@ -7,6 +9,9 @@ using UnityEngine;
 
 public class RACManagerEditor : Editor
 {
+    private string[] pluginOptions = new string[] { "RAC_Default", "RAC_Debug", "RAC_Profile", "RAC_ProfileDetailed" };
+    private int selectedIndex = 0;
+
     private SerializedProperty lerpFactor, fBands, fLimitBand, hrtfResamplingStep, fdnMatrix, selectedHRTF, customHRTFFile, selectedHeadphoneEQ, customHeadphoneEQFile, iemConfig, spatialisationMode, diffractionModel, reverbTimeModel, T60;
 
     private void OnEnable()
@@ -36,6 +41,31 @@ public class RACManagerEditor : Editor
         bool isPlaying = EditorApplication.isPlaying;
         if (isPlaying)
             GUI.enabled = false;
+
+        selectedIndex = EditorGUILayout.Popup("Select Plugin", selectedIndex, pluginOptions);
+
+        if (GUILayout.Button("Apply Plugin"))
+        {
+            string selectedDefine = pluginOptions[selectedIndex];
+
+            // Use NamedBuildTarget for modern Unity
+            var buildTarget = NamedBuildTarget.FromBuildTargetGroup(EditorUserBuildSettings.selectedBuildTargetGroup);
+
+            // Get current defines
+            string defines = PlayerSettings.GetScriptingDefineSymbols(buildTarget);
+
+            // Filter out old plugin defines
+            var newDefinesList = defines.Split(';')
+                .Where(d => !d.StartsWith("RAC_"))
+                .ToList();
+
+            // Add new selected define
+            newDefinesList.Add(selectedDefine);
+            string newDefines = string.Join(";", newDefinesList);
+
+            // Apply new define symbols
+            PlayerSettings.SetScriptingDefineSymbols(buildTarget, newDefines);
+        }
 
         EditorGUILayout.PropertyField(lerpFactor, new GUIContent("Lerp Factor", "Control the speed at which DSP parameters are interpolated."));
         EditorGUILayout.PropertyField(fBands, new GUIContent("Frequency Bands", "Set the centre frequencies for all frequency dependent processing."), true);
