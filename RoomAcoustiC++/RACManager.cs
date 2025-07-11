@@ -6,7 +6,6 @@ using System.IO;
 using UnityEngine.Networking;
 using UnityEngine.Profiling;
 using System.Collections.Generic;
-using System.Collections;
 
 [AddComponentMenu("RoomAcoustiC++/Audio Manager")]
 [RequireComponent(typeof(AudioSource))]
@@ -21,7 +20,17 @@ public class RACManager : MonoBehaviour
     //////////////////// Plugin interface ////////////////////
 
 #if (UNITY_EDITOR)
+#if RAC_Default
     private const string DLLNAME = "RoomAcoustiCpp_x64";
+# elif RAC_Debug
+    private const string DLLNAME = "RoomAcoustiCpp_Debug_x64";
+# elif RAC_Profile
+    private const string DLLNAME = "RoomAcoustiCpp_Profile_x64";
+# elif RAC_ProfileDetailed
+    private const string DLLNAME = "RoomAcoustiCpp_ProfileDetailed_x64";
+#else
+    private const string DLLNAME = "RoomAcoustiCpp_x64";
+#endif
 #elif (UNITY_ANDROID)
     private const string DLLNAME = "libRoomAcoustiCpp";
 #elif (UNITY_STANDALONE_WIN)
