@@ -125,15 +125,19 @@ public class RACManagerEditor : Editor
         bool isCustom = reverbTimeModel.enumValueIndex == (int)RACManager.ReverbTime.Custom;
         if (isCustom)
         {
-            if (T60.arraySize == 0)
+            if (T60.arraySize < fBands.arraySize)
             {
-                T60.arraySize = 1;
-                T60.GetArrayElementAtIndex(0).floatValue = 1.0f; // Default value if no custom T60 is set
+                int oldSize = T60.arraySize;
+                T60.arraySize = fBands.arraySize;
+                for (int i = oldSize; i < T60.arraySize; i++)
+                    T60.GetArrayElementAtIndex(i).floatValue = 1.0f; // Default value for new elements
             }
+            else if (T60.arraySize > fBands.arraySize)
+                T60.arraySize = fBands.arraySize; // Resize to match frequency bands
+
             EditorGUILayout.PropertyField(T60, new GUIContent("T60", "Enter custom T60"));
         }
         serializedObject.ApplyModifiedProperties();
-
         if (isPlaying && GUI.changed)
         {
             if (isCustom)
@@ -141,7 +145,7 @@ public class RACManagerEditor : Editor
             else
                 RACManager.UpdateReverbTimeModel();
             GUI.changed = false;
-        }
+        }        
     }
 
 

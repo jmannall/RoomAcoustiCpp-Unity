@@ -453,6 +453,15 @@ public class RACManager : MonoBehaviour
 
     public static void UpdateReverbTime()
     {
+        if (racManager.T60.Count < racManager.fBands.Count)
+        {
+            int oldSize = racManager.T60.Count;
+            for (int i = oldSize; i < racManager.fBands.Count; i++)
+                racManager.T60.Add(1.0f); // Default value for new elements
+        }
+        else if (racManager.T60.Count > racManager.fBands.Count)
+            racManager.T60.RemoveRange(racManager.fBands.Count, racManager.T60.Count - racManager.fBands.Count);
+
         RACUpdateReverbTime(racManager.T60.ToArray());
     }
 
