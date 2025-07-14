@@ -11,6 +11,8 @@ using UnityEngine;
 [AddComponentMenu("RoomAcoustiC++/Debug C++")]
 public class DebugCPP : MonoBehaviour
 {
+#if RAC_Debug && UNITY_EDITOR
+
     // global singleton
     public static DebugCPP debug = null;
 
@@ -54,17 +56,7 @@ public class DebugCPP : MonoBehaviour
         pathDictionary.Clear();
     }
 
-    #region DLL Interface
-#if (UNITY_EDITOR)
-    private const string DLLNAME = "RoomAcoustiCpp_x64";
-#elif (UNITY_ANDROID)
-        private const string DLLNAME = "libRoomAcoustiCpp";
-#elif (UNITY_STANDALONE_WIN)
-        private const string DLLNAME = "RoomAcoustiCpp_x64";
-#else
-    private const string DLLNAME = " ";
-#endif
-    #endregion
+    private const string DLLNAME = "RoomAcoustiCpp_Debug_x64";
 
     //------------------------------------------------------------------------------------------------
     [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
@@ -214,4 +206,5 @@ public class DebugCPP : MonoBehaviour
             Handles.Label(path.Value[path.Value.Count - 1], path.Key.Split('s')[1], style);
         }
     }
+#endif
 }
