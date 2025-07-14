@@ -345,6 +345,7 @@ public class IRController : MonoBehaviour
                 ProcessAudioBuffer(i);
             streamWriter.Write("0, 0\n");
             streamWriter.Flush();
+            racSource.Stop();
             if (!doIRs)
                 yield break;
             yield return null; // Pause and resume in the next frame
