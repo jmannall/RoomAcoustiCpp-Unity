@@ -151,7 +151,7 @@ public class RACManager : MonoBehaviour
     public enum ReverbTime { Sabine, Eyring, Custom }
     public enum FDNMatrix { Householder, RandomOrthogonal }
     public enum DiffractionModel { Attenuate, LowPass, UDFA, UDFAI, NNBest, NNSmall, UTD, BTM }
-    public enum SourceDirectivity { Omni, Subcardioid, Cardioid, Supercardioid, Hypercardioid, Bidirectional, Genelec, GenelecDTF }
+    public enum SourceDirectivity { Omni, Subcardioid, Cardioid, Supercardioid, Hypercardioid, Bidirectional, Genelec8020c, Genelec8020cDTF, QSC_K8 }
     public enum DirectSound { None, Check, AlwaysOn }
     public enum DiffractionSound { None, ShadowZone, AllZones }
     public enum OctaveBand { Third, Octave }
@@ -615,10 +615,12 @@ public class RACManager : MonoBehaviour
                 { RACUpdateSourceDirectivity(id, 4); break; }
             case SourceDirectivity.Bidirectional:
                 { RACUpdateSourceDirectivity(id, 5); break; }
-            case SourceDirectivity.Genelec: 
+            case SourceDirectivity.Genelec8020c: 
                 { RACUpdateSourceDirectivity(id, 6); break; }
-            case SourceDirectivity.GenelecDTF:
+            case SourceDirectivity.Genelec8020cDTF:
                 { RACUpdateSourceDirectivity(id, 7); break; }
+            case SourceDirectivity.QSC_K8:
+                { RACUpdateSourceDirectivity(id, 8); break; }
         }
     }
 
