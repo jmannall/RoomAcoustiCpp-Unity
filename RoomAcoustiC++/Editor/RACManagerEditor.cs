@@ -12,7 +12,7 @@ public class RACManagerEditor : Editor
     private string[] pluginOptions = new string[] { "RAC_Default", "RAC_Debug", "RAC_Profile", "RAC_ProfileDetailed" };
     private int selectedIndex = 0;
 
-    private SerializedProperty lerpFactor, fBands, fLimitBand, hrtfResamplingStep, fdnMatrix, selectedHRTF, customHRTFFile, selectedHeadphoneEQ, customHeadphoneEQFile, iemConfig, spatialisationMode, diffractionModel, reverbTimeModel, T60;
+    private SerializedProperty lerpFactor, fBands, fLimitBand, hrtfResamplingStep, fdnMatrix, selectedHRTF, customHRTFFile, selectedHeadphoneEQ, customHeadphoneEQFile, iemConfig, spatialisationMode, diffractionModel, lateReverbModel, reverbTimeModel, T60;
 
     private void OnEnable()
     {
@@ -29,6 +29,7 @@ public class RACManagerEditor : Editor
         iemConfig = serializedObject.FindProperty("iemConfig");
         spatialisationMode = serializedObject.FindProperty("spatialisationMode");
         diffractionModel = serializedObject.FindProperty("diffractionModel");
+        lateReverbModel = serializedObject.FindProperty("lateReverbModel");
         reverbTimeModel = serializedObject.FindProperty("reverbTimeModel");
         T60 = serializedObject.FindProperty("T60");
     }
@@ -120,32 +121,44 @@ public class RACManagerEditor : Editor
             GUI.changed = false;
         }
 
-        EditorGUILayout.PropertyField(reverbTimeModel, new GUIContent("Reverberation Time", "Select the formula used to calculate the reverberation time"));
-
-        bool isCustom = reverbTimeModel.enumValueIndex == (int)RACManager.ReverbTime.Custom;
-        if (isCustom)
-        {
-            if (T60.arraySize < fBands.arraySize)
-            {
-                int oldSize = T60.arraySize;
-                T60.arraySize = fBands.arraySize;
-                for (int i = oldSize; i < T60.arraySize; i++)
-                    T60.GetArrayElementAtIndex(i).floatValue = 1.0f; // Default value for new elements
-            }
-            else if (T60.arraySize > fBands.arraySize)
-                T60.arraySize = fBands.arraySize; // Resize to match frequency bands
-
-            EditorGUILayout.PropertyField(T60, new GUIContent("T60", "Enter custom T60"));
-        }
+        EditorGUILayout.PropertyField(lateReverbModel, new GUIContent("Reverberation Model", "Select the late reveberation model used for audio processing."));
         serializedObject.ApplyModifiedProperties();
+
         if (isPlaying && GUI.changed)
         {
-            if (isCustom)
-                RACManager.UpdateReverbTime();
-            else
-                RACManager.UpdateReverbTimeModel();
+            RACManager.UpdateLateReverbModel();
             GUI.changed = false;
-        }        
+        }
+
+        if (lateReverbModel.enumValueIndex == (int)RACManager.LateReverbModel.FDN)
+        {
+            EditorGUILayout.PropertyField(reverbTimeModel, new GUIContent("Reverberation Time", "Select the formula used to calculate the reverberation time"));
+
+            bool isCustom = reverbTimeModel.enumValueIndex == (int)RACManager.ReverbTime.Custom;
+            if (isCustom)
+            {
+                if (T60.arraySize < fBands.arraySize)
+                {
+                    int oldSize = T60.arraySize;
+                    T60.arraySize = fBands.arraySize;
+                    for (int i = oldSize; i < T60.arraySize; i++)
+                        T60.GetArrayElementAtIndex(i).floatValue = 1.0f; // Default value for new elements
+                }
+                else if (T60.arraySize > fBands.arraySize)
+                    T60.arraySize = fBands.arraySize; // Resize to match frequency bands
+
+                EditorGUILayout.PropertyField(T60, new GUIContent("T60", "Enter custom T60"));
+            }
+            serializedObject.ApplyModifiedProperties();
+            if (isPlaying && GUI.changed)
+            {
+                if (isCustom)
+                    RACManager.UpdateReverbTime();
+                else
+                    RACManager.UpdateReverbTimeModel();
+                GUI.changed = false;
+            }
+        }
     }
 
 

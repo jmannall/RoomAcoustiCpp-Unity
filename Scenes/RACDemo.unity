@@ -761,7 +761,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: c3a2d4f75bda21543abdb0f4b021305e, type: 2}
+  - {fileID: 2100000, guid: 725f9c033862ccd49bc375e0ce64bdb0, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -1277,9 +1277,19 @@ MonoBehaviour:
     specularDiffractionOrder: 0
     lateReverb: 1
     minimumEdgeLength: 0
+    maximumPathLength: 1000
   spatialisationMode: 1
   diffractionModel: 4
-  T60: []
+  lateReverbModel: 0
+  T60:
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
   reverbTimeModel: 1
   selectedHRTF: 0
   customHRTFFile: 
@@ -1502,7 +1512,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9bfc19cd67d622048aaa0ac6fd18b5fe, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  source: {fileID: 0}
 --- !u!4 &2116243660
 Transform:
   m_ObjectHideFlags: 0

@@ -67,6 +67,9 @@ public class RACManager : MonoBehaviour
     [DllImport(DLLNAME)]
     private static extern void RACUpdateDiffractionModel(int id);
 
+    [DllImport(DLLNAME)]
+    private static extern void RACUpdateLateReverbModel(int id);
+
     // Reverb
 
     [DllImport(DLLNAME)]
@@ -151,6 +154,7 @@ public class RACManager : MonoBehaviour
     public enum ReverbTime { Sabine, Eyring, Custom }
     public enum FDNMatrix { Householder, RandomOrthogonal }
     public enum DiffractionModel { Attenuate, LowPass, UDFA, UDFAI, NNBest, NNSmall, UTD, BTM }
+    public enum LateReverbModel { FDN, RAVES }
     public enum SourceDirectivity { Omni, Subcardioid, Cardioid, Supercardioid, Hypercardioid, Bidirectional, Genelec8020c, Genelec8020cDTF, QSC_K8 }
     public enum DirectSound { None, Check, AlwaysOn }
     public enum DiffractionSound { None, ShadowZone, AllZones }
@@ -242,6 +246,9 @@ public class RACManager : MonoBehaviour
 
     [SerializeField, HideInInspector]
     private DiffractionModel diffractionModel = DiffractionModel.BTM;
+
+    [SerializeField, HideInInspector]
+    private LateReverbModel lateReverbModel = LateReverbModel.FDN;
 
     [SerializeField, HideInInspector]
     private List<float> T60;
@@ -556,6 +563,23 @@ public class RACManager : MonoBehaviour
                 { RACUpdateDiffractionModel(6); break; }
             case DiffractionModel.BTM:
                 { RACUpdateDiffractionModel(7); break; }
+        }
+    }
+
+    public static void UpdateLateReverbModel(LateReverbModel model)
+    {
+        racManager.lateReverbModel = model;
+        UpdateLateReverbModel();
+    }
+
+    public static void UpdateLateReverbModel()
+    {
+        switch (racManager.lateReverbModel)
+        {
+            case LateReverbModel.FDN:
+                { RACUpdateLateReverbModel(0); break; }
+            case LateReverbModel.RAVES:
+                { RACUpdateLateReverbModel(1); break; }
         }
     }
 
