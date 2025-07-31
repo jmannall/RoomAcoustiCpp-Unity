@@ -56,7 +56,7 @@ public class RACManager : MonoBehaviour
     // Image Source Model
 
     [DllImport(DLLNAME)]
-    private static extern void RACUpdateIEMConfig(int dir, int refl, int diffShadow, int diffSpecular, bool rev, float edgeLen);
+    private static extern void RACUpdateIEMConfig(int dir, int refl, int diffShadow, int diffSpecular, bool rev, float edgeLen, float pathLen);
 
     [DllImport(DLLNAME)]
     private static extern void RACUpdateReverbTime(float[] T60);
@@ -181,7 +181,11 @@ public class RACManager : MonoBehaviour
         [Tooltip("Set a minimum edge length threshold for diffraction modelling.")]
         public float minimumEdgeLength;
 
-        public IEMConfig(DirectSound direct, int reflOrder, int diffShadowOrder, int diffSpecularOrder, bool lateReverb, float minimumEdgeLength)
+        [Range(0, 1e3f)]
+        [Tooltip("Set a maximum path length threshold for image sources.")]
+        public float maximumPathLength;
+
+        public IEMConfig(DirectSound direct, int reflOrder, int diffShadowOrder, int diffSpecularOrder, bool lateReverb, float minimumEdgeLength, float maximumPathLength)
         {
             this.direct = direct;
             this.reflectionOrder = reflOrder;
@@ -189,6 +193,7 @@ public class RACManager : MonoBehaviour
             this.specularDiffractionOrder = diffSpecularOrder;
             this.lateReverb = lateReverb;
             this.minimumEdgeLength = minimumEdgeLength;
+            this.maximumPathLength = maximumPathLength;
         }
 
         public static IEMConfig Default => new IEMConfig(
@@ -197,7 +202,8 @@ public class RACManager : MonoBehaviour
         diffShadowOrder: 1,
         diffSpecularOrder: 0,
         lateReverb: true,
-        minimumEdgeLength: 0.0f
+        minimumEdgeLength: 0.0f,
+        maximumPathLength: 1e3f
     );
     }
 
@@ -527,7 +533,7 @@ public class RACManager : MonoBehaviour
     {
         Profiler.BeginSample("Update IEM");
         int direct = SelectDirectMode(racManager.iemConfig.direct);
-        RACUpdateIEMConfig(direct, racManager.iemConfig.reflectionOrder, racManager.iemConfig.shadowDiffractionOrder, racManager.iemConfig.specularDiffractionOrder, racManager.iemConfig.lateReverb, racManager.iemConfig.minimumEdgeLength);
+        RACUpdateIEMConfig(direct, racManager.iemConfig.reflectionOrder, racManager.iemConfig.shadowDiffractionOrder, racManager.iemConfig.specularDiffractionOrder, racManager.iemConfig.lateReverb, racManager.iemConfig.minimumEdgeLength, racManager.iemConfig.maximumPathLength);
         Profiler.EndSample();
     }
 
