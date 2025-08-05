@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0.12731749, g: 0.13414757, b: 0.1210787, a: 1}
+  m_IndirectSpecularColor: {r: 0.12731704, g: 0.13414727, b: 0.121078536, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -682,6 +682,7 @@ MonoBehaviour:
   gain: 0
   playOnAwake: 1
   loop: 1
+  arSend: 0
   directivity: 2
 --- !u!135 &816638784
 SphereCollider:
@@ -1209,29 +1210,35 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   lerpFactor: 2
-  fBands:
-  - 125
+  frequencyBands:
   - 250
   - 500
   - 1000
   - 2000
   - 4000
-  - 8000
-  - 16000
-  fLimitBand: 1
   hrtfResamplingStep: 5
+  numReverbSources: 12
   fdnMatrix: 1
   iemConfig:
-    order: 3
     direct: 1
-    reflection: 0
-    diffraction: 0
-    reflectionDiffraction: 0
+    reflectionOrder: 2
+    shadowDiffractionOrder: 1
+    specularDiffractionOrder: 0
     lateReverb: 1
     minimumEdgeLength: 0
   spatialisationMode: 1
   diffractionModel: 4
+  T60:
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
   reverbTimeModel: 1
+  selectedHRTF: 0
+  customHRTFFile: 
+  selectedHeadphoneEQ: 0
+  customHeadphoneEQFile: 
 --- !u!4 &1951929760
 Transform:
   m_ObjectHideFlags: 0
@@ -1448,8 +1455,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9bfc19cd67d622048aaa0ac6fd18b5fe, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  sourcePosition: {fileID: 816638781}
-  listenerPosition: {fileID: 3590191572136118833}
+  source: {fileID: 816638782}
 --- !u!4 &2116243660
 Transform:
   m_ObjectHideFlags: 0
@@ -1609,11 +1615,6 @@ MonoBehaviour:
     m_Asset: {fileID: 0}
     m_Actions: []
     m_Bindings: []
---- !u!4 &3590191572136118833 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 6194889284471079498, guid: 5e07509371f3ba741a8def441336069e, type: 3}
-  m_PrefabInstance: {fileID: 3590191572136118830}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

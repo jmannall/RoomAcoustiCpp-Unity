@@ -12,13 +12,15 @@ public class RACMesh : MonoBehaviour
 
     [SerializeField]
     [Tooltip("Input the main dimensions of the room in metres. Controls the length of the FDN delay lines.")]
-    private List<float> roomDimensions;
+    [Min(0.0f)]
+    private List<float> roomDimensions = new List<float> { 2.0f, 3.0f, 5.0f };
 
-    [SerializeField, HideInInspector]
+[SerializeField, HideInInspector]
     private float absorptionSkew = 0.0f;
    
     [SerializeField]
     [Tooltip("Set the volume of the room.")]
+    [Min(0.0f)]
     private float volume = 0.0f;
 
     [SerializeField]
