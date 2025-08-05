@@ -1,8 +1,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using Unity.VisualScripting;
 using UnityEngine;
 
 [CreateAssetMenu(fileName = "RACMaterialEntry", menuName = "RoomAcoustiC++/MaterialEntry", order = 1)]
@@ -453,7 +451,7 @@ public class RACMaterialEntry : ScriptableObject
         else
         {
 #if UNITY_EDITOR
-            var racManagerInstance = UnityEngine.Object.FindObjectOfType<RACManager>();
+            var racManagerInstance = FindAnyObjectByType<RACManager>();
             if (racManagerInstance != null)
                 freqs = racManagerInstance.frequencyBands;
 #endif
