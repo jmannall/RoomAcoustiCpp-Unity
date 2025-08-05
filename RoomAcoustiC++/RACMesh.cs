@@ -53,7 +53,7 @@ public class RACMesh : MonoBehaviour
 
         Debug.Log("Number of objects: " + meshes.Length);
 
-        RACManager.UpdateRoom(volume, roomDimensions.ToArray(), roomDimensions.Count);
+        RACManager.InitLateReverb(volume, roomDimensions.ToArray());
 
         initialised = true;
         if (absorptionSkew != 0.0f)

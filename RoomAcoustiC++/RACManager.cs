@@ -42,7 +42,7 @@ public class RACManager : MonoBehaviour
     // Load and Destroy
 
     [DllImport(DLLNAME)]
-    private static extern bool RACInit(int fs, int numFrames, int numFDNChannels, float lerpFactor, float Q, float[] fBands, int numBands);
+    private static extern bool RACInit(int fs, int numFrames, int numReverbSources, float lerpFactor, float Q, [In] float[] frequencyBands, int numFrequencyBands);
 
     [DllImport(DLLNAME)]
     private static extern void RACExit();
@@ -51,18 +51,21 @@ public class RACManager : MonoBehaviour
     private static extern bool RACLoadSpatialisationFiles(int hrtfResampling, string[] filePaths);
 
     [DllImport(DLLNAME)]
+    private static extern void RACSetHeadphoneEQ([In] float[] leftIR, [In] float[] rightIR, int irLength);
+
+    [DllImport(DLLNAME)]
     private static extern void RACUpdateSpatialisationMode(int id);
 
     // Image Source Model
 
     [DllImport(DLLNAME)]
-    private static extern void RACUpdateIEMConfig(int dir, int refl, int diffShadow, int diffSpecular, bool rev, float edgeLen);
+    private static extern void RACUpdateIEMConfig(int direct, int reflOrder, int shadowDiffOrder, int specularDiffOrder, bool lateReverb, float minEdgeLength);
 
     [DllImport(DLLNAME)]
-    private static extern void RACUpdateReverbTime(float[] T60);
+    private static extern void RACUpdateReverbTime([In] float[] T60);
 
     [DllImport(DLLNAME)]
-    private static extern void RACUpdateReverbTimeModel(int model);
+    private static extern void RACUpdateReverbTimeModel(int id);
 
     [DllImport(DLLNAME)]
     private static extern void RACUpdateDiffractionModel(int id);
@@ -70,7 +73,7 @@ public class RACManager : MonoBehaviour
     // Reverb
 
     [DllImport(DLLNAME)]
-    private static extern void RACUpdateRoom(float volume, float[] dim, int numDimensions, int id);
+    private static extern bool RACInitLateReverb(float volume, [In] float[] dimensions, int numDimensions, int id);
 
     [DllImport(DLLNAME)]
     private static extern void RACResetFDN();
@@ -97,13 +100,13 @@ public class RACManager : MonoBehaviour
     // Wall
 
     [DllImport(DLLNAME)]
-    private static extern int RACInitWall(float[] vData, float[] absorption);
+    private static extern int RACInitWall([In] float[] vertices, [In] float[] absorption);
 
     [DllImport(DLLNAME)]
-    private static extern void RACUpdateWall(int id, float[] vData);
+    private static extern void RACUpdateWall(int id, [In] float[] vertices);
 
     [DllImport(DLLNAME)]
-    private static extern int RACUpdateWallAbsorption(int id, float[] absorption);
+    private static extern int RACUpdateWallAbsorption(int id, [In] float[] absorption);
 
     [DllImport(DLLNAME)]
     private static extern void RACRemoveWall(int id);
@@ -113,22 +116,16 @@ public class RACManager : MonoBehaviour
 
     // Audio
     [DllImport(DLLNAME)]
-    private static extern void RACSetHeadphoneEQ(float[] leftIR, float[] rightIR, int irLength);
-
-    [DllImport(DLLNAME)]
-    private static extern void RACSubmitAudio(int id, float[] input);
+    private static extern void RACSubmitAudio(int id, [In] float[] data);
 
     [DllImport(DLLNAME)]
     private static extern bool RACProcessOutput();
 
     [DllImport(DLLNAME)]
-    private static extern bool RACProcessOutput_MOD_ART(float[] input);
+    private static extern void RACGetOutputBuffer([In] float[] buffer);
 
     [DllImport(DLLNAME)]
-    private static extern void RACGetOutputBuffer(ref IntPtr buffer);
-
-    [DllImport(DLLNAME)]
-    private static extern void RACUpdateImpulseResponseMode(float lerpFactor, bool mode);
+    private static extern void RACUpdateImpulseResponseMode(bool mode);
 
     #endregion
 
@@ -501,25 +498,11 @@ public class RACManager : MonoBehaviour
         }
     }
 
-    static int SelectDiffractionMode(DiffractionSound diff)
-    {
-        switch (diff)
-        {
-            case DiffractionSound.None:
-                { return 0; }
-            case DiffractionSound.ShadowZone:
-                { return 1; }
-            case DiffractionSound.AllZones:
-                { return 2; }
-            default:
-                { return 0; }
-        }
-    }
-
     public static void UpdateIEMConfig()
     {
-        Profiler.BeginSample("Update IEM");
         int direct = SelectDirectMode(racManager.iemConfig.direct);
+
+        Profiler.BeginSample("Update IEM");
         RACUpdateIEMConfig(direct, racManager.iemConfig.reflectionOrder, racManager.iemConfig.shadowDiffractionOrder, racManager.iemConfig.specularDiffractionOrder, racManager.iemConfig.lateReverb, racManager.iemConfig.minimumEdgeLength);
         Profiler.EndSample();
     }
@@ -561,10 +544,10 @@ public class RACManager : MonoBehaviour
 
     // Reverb
 
-    public static void UpdateRoom(float volume, float[] dim, int numDimensions)
+    public static void InitLateReverb(float volume, float[] dimensions)
     {
         Profiler.BeginSample("Set FDN");
-        RACUpdateRoom(volume, dim, numDimensions, (int)racManager.fdnMatrix);
+        RACInitLateReverb(volume, dimensions, dimensions.Length, (int)racManager.fdnMatrix);
         Profiler.EndSample();
     }
 
@@ -720,20 +703,14 @@ public class RACManager : MonoBehaviour
 
     public static void GetOutputBuffer(ref float[] buffer)
     {
-        // fetch the buffer
-        IntPtr result = IntPtr.Zero;
-
         Profiler.BeginSample("Get Output");
-        RACGetOutputBuffer(ref result);
-
-        // copy the buffer as a float array
-        Marshal.Copy(result, buffer, 0, racManager.numChannels * racManager.numFrames);
+        RACGetOutputBuffer(buffer);
         Profiler.EndSample();
     }
 
     public static void UpdateImpulseResponseMode(bool mode)
     {
-        RACUpdateImpulseResponseMode(racManager.lerpFactor, mode);
+        RACUpdateImpulseResponseMode(mode);
     }
     #endregion
 
