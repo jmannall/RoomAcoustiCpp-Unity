@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0f585c1f54c389545866b621f51c0d92, type: 3}
   m_Name: Wall
   m_EditorClassIdentifier: 
-  material: {fileID: 2100000, guid: a08a01d48ec89be4da690bc5e5a18bb4, type: 2}
+  material: {fileID: 2100000, guid: b45032e2b6bb1ec4eae6c41cb9a33329, type: 2}
   mAbsorptionMap:
   - frequency: 250
     absorption: 0.02
