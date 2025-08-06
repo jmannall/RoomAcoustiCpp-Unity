@@ -201,7 +201,7 @@ public class RACMaterialEntry : ScriptableObject
 
     //////////////////// Unity Functions ////////////////////
 
-    void Awake()
+    private void Awake()
     {
         SetAbsorption();
     }
@@ -535,6 +535,7 @@ public class RACMaterialEntry : ScriptableObject
 
     public float[] GetAbsorption()
     {
+        SetAbsorption();
         float[] absorption = new float[mAbsorptionMap.Count];
 
         for (int i = 0; i < absorption.Length; i++)

@@ -417,10 +417,7 @@ public class RACManager : MonoBehaviour
     public static void UpdateSpatialisationMode()
     {
         if (noHRTFFiles)
-        {
             racManager.spatialisationMode = SpatMode.None;
-            return;
-        }
 
         switch (racManager.spatialisationMode)
         {
