@@ -202,6 +202,14 @@ public class RACAudioSource : MonoBehaviour
             source.Play();
     }
 
+    public void PlayOneShot(AudioClip clip)
+    {
+        if (!isRunning)
+            InitSource();
+        if (clip != null)
+            source.PlayOneShot(clip);
+    }
+
     public void Stop() { RemoveSource(); source.Stop(); }
 
     public void PlayScheduled(double time)
