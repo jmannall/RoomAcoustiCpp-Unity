@@ -320,7 +320,10 @@ public class RACManager : MonoBehaviour
             noHRTFFiles = true;
         }
         else
+        {
             Debug.Log("HRTF files loaded");
+            noHRTFFiles = false;
+        }
 
         LoadHeadphoneEQ();
 
