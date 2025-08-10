@@ -19,24 +19,24 @@ public class RACManager : MonoBehaviour
 
     //////////////////// Plugin interface ////////////////////
 
-#if (UNITY_EDITOR)
+    private const string PluginName = "RoomAcoustiCpp";
+
 #if RAC_Default
-    private const string DLLNAME = "RoomAcoustiCpp_x64";
-# elif RAC_Debug
-    private const string DLLNAME = "RoomAcoustiCpp_Debug_x64";
-# elif RAC_Profile
-    private const string DLLNAME = "RoomAcoustiCpp_Profile_x64";
-# elif RAC_ProfileDetailed
-    private const string DLLNAME = "RoomAcoustiCpp_ProfileDetailed_x64";
+    private const string PluginType = "";
+#elif RAC_Debug
+    private const string PluginType = "Debug";
+#elif RAC_Profile
+    private const string PluginType = "Profile";
+#elif RAC_ProfileDetailed
+    private const string PluginType = "ProfileDetailed";
 #else
-    private const string DLLNAME = "RoomAcoustiCpp_x64";
+    private const string PluginType = "";
 #endif
-#elif (UNITY_ANDROID)
-    private const string DLLNAME = "libRoomAcoustiCpp";
-#elif (UNITY_STANDALONE_WIN)
-    private const string DLLNAME = "RoomAcoustiCpp_x64";
+
+#if UNITY_IOS
+    private const string DLLNAME = "__Internal";
 #else
-    private const string DLLNAME = " ";
+    private const string DLLNAME = PluginName + "_" + PluginType;
 #endif
 
     // Load and Destroy
