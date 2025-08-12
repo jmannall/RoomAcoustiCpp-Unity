@@ -103,7 +103,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 4389832639380028857}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7d29f04630fe6984b8add7d6c3ec072e, type: 3}
+  m_Script: {fileID: 11500000, guid: e03b2d7bfb464d24bb8f89701bd6e81d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
 --- !u!114 &1953582393570172425
@@ -115,11 +115,11 @@ MonoBehaviour:
   m_GameObject: {fileID: 4389832639380028857}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 02f832da319c6cb44ba08e94b2d2a4c6, type: 3}
+  m_Script: {fileID: 11500000, guid: c2666619857c95a4294806b178adf275, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   lockCursor: 0
-  mouseSensitivity: 0.5
+  mouseSensitivity: 1
   pitchMinMax: {x: -40, y: 85}
   rotationSmoothTime: 0.12
 --- !u!1 &8761139404786669987
@@ -190,7 +190,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 54a61ecff2ffeba42a76d3a78d0587df, type: 2}
+  - {fileID: 2100000, guid: d297b904fe9c9894bb81e5f7366b1d55, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -269,15 +269,15 @@ MonoBehaviour:
   m_GameObject: {fileID: 8761139404786669987}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 84c9e5af90df3a4479b723fd44dcefa6, type: 3}
+  m_Script: {fileID: 11500000, guid: 685ebbab3153938499dd905fd2ea94ff, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  speed: 1.5
+  speed: 0
   cameraTransform: {fileID: 6194889284471079498}
-  inputActions: {fileID: 0}
+  inputActions: {fileID: -944628639613478452, guid: a73382d59bb1a2e4d932f3aa74351a57, type: 3}
   playerActionMap:
-    m_Name: Player
-    m_Id: 93247308-b1ba-455a-b01f-05cf2e39e3be
+    m_Name: 
+    m_Id: 
     m_Asset: {fileID: 0}
     m_Actions: []
     m_Bindings: []
