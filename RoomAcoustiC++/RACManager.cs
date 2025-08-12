@@ -36,7 +36,7 @@ public class RACManager : MonoBehaviour
 #if UNITY_IOS
     private const string DLLNAME = "__Internal";
 #else
-    private const string DLLNAME = PluginName + "_" + PluginType;
+    private const string DLLNAME = PluginName + "_" + PluginType + "_x64";
 #endif
 
     // Load and Destroy
@@ -76,7 +76,7 @@ public class RACManager : MonoBehaviour
     // Reverb
 
     [DllImport(DLLNAME)]
-    private static extern bool RACInitLateReverb(float volume, [In] float[] dimensions, int numDimensions, int id);
+    private static extern bool RACUpdateRoom(float volume, [In] float[] dimensions, int numDimensions, int id);
 
     [DllImport(DLLNAME)]
     private static extern bool RACInitRAVES(string ravesPath, int id);
@@ -574,7 +574,7 @@ public class RACManager : MonoBehaviour
     public static void InitLateReverb(float volume, float[] dimensions)
     {
         Profiler.BeginSample("Set FDN");
-        RACInitLateReverb(volume, dimensions, dimensions.Length, (int)racManager.fdnMatrix);
+        RACUpdateRoom(volume, dimensions, dimensions.Length, (int)racManager.fdnMatrix);
         Profiler.EndSample();
     }
 
