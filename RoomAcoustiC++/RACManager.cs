@@ -79,6 +79,9 @@ public class RACManager : MonoBehaviour
     private static extern bool RACInitLateReverb(float volume, [In] float[] dimensions, int numDimensions, int id);
 
     [DllImport(DLLNAME)]
+    private static extern bool RACInitRAVES(string ravesPath, int id);
+
+    [DllImport(DLLNAME)]
     private static extern void RACResetFDN();
 
     // Listener
@@ -572,6 +575,13 @@ public class RACManager : MonoBehaviour
     {
         Profiler.BeginSample("Set FDN");
         RACInitLateReverb(volume, dimensions, dimensions.Length, (int)racManager.fdnMatrix);
+        Profiler.EndSample();
+    }
+
+    public static void InitRAVES(string ravesPath)
+    {
+        Profiler.BeginSample("Set FDN");
+        RACInitRAVES(ravesPath, (int)racManager.fdnMatrix);
         Profiler.EndSample();
     }
 

@@ -1,5 +1,7 @@
 
 using System.Collections.Generic;
+using System.IO;
+using UnityEditor.Build.Reporting;
 using UnityEngine;
 
 [AddComponentMenu("RoomAcoustiC++/Mesh")]
@@ -55,7 +57,13 @@ public class RACMesh : MonoBehaviour
 
         Debug.Log("Number of objects: " + meshes.Length);
 
-        RACManager.InitLateReverb(volume, roomDimensions.ToArray());
+        // RACManager.InitLateReverb(volume, roomDimensions.ToArray());
+
+        string resourcePath = Application.streamingAssetsPath;
+
+        char sep = Path.DirectorySeparatorChar;
+        string ravesPath = resourcePath + sep + "RAVES" + sep;
+        RACManager.InitRAVES(ravesPath);
 
         initialised = true;
         if (absorptionSkew != 0.0f)
