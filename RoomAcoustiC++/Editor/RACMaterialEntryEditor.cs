@@ -16,15 +16,15 @@ public class RACMaterialEntryEditor : Editor
     public void OnEnable()
     {
         RACMaterialEntry mGameObject = target as RACMaterialEntry;
+        mGameObject.ResetCustomAbsorption();
         materialEntries = mGameObject.GetAbsorptionMap();
+
     }
 
     public override void OnInspectorGUI()
     {
         DrawDefaultInspector();
         RACMaterialEntry mGameObject = target as RACMaterialEntry;
-        if (mGameObject.SetAbsorption())
-            mGameObject.SetAbsorption(materialEntries);
         materialEntries = mGameObject.GetAbsorptionMap();
 
         // Get the current width of the Inspector window
@@ -34,7 +34,6 @@ public class RACMaterialEntryEditor : Editor
         float labelWidth = EditorGUIUtility.labelWidth; // Width for the label headers
         float fieldWidth = (viewWidth - 4 * fieldPadding - buttonWidth) / 2; // Adjust dynamically
 
-
         // Display header for the table
         EditorGUILayout.BeginHorizontal();
         EditorGUILayout.LabelField(new GUIContent("Frequency", "Define centre frequencies"), GUILayout.Width(fieldWidth + fieldPadding + 2));
@@ -43,23 +42,18 @@ public class RACMaterialEntryEditor : Editor
         EditorGUILayout.EndHorizontal();
 
         if (materialEntries == null)
-            materialEntries = new List<RACMaterialEntry.Entry>();
+            return;
 
         // Display the table
         for (int i = 0; i < materialEntries.Count; i++)
         {
             RACMaterialEntry.Entry entry = materialEntries[i];
             EditorGUILayout.BeginHorizontal();
-            float f = EditorGUILayout.FloatField(materialEntries[i].frequency, GUILayout.Width(fieldWidth));
+            EditorGUILayout.LabelField(materialEntries[i].frequency.ToString("0.##"), EditorStyles.textField, GUILayout.Width(fieldWidth), GUILayout.Height(EditorGUIUtility.singleLineHeight));
             EditorGUILayout.Space(fieldPadding);
             float a = EditorGUILayout.FloatField(materialEntries[i].absorption, GUILayout.Width(fieldWidth));
             EditorGUILayout.Space(fieldPadding);
-
-            if (f != materialEntries[i].frequency)
-            {
-                mGameObject.Custom();
-                entry.frequency = Mathf.Clamp(f, 20.0f, 20000.0f);
-            }
+            EditorGUILayout.EndHorizontal();
 
             if (a != materialEntries[i].absorption)
             {
@@ -68,26 +62,13 @@ public class RACMaterialEntryEditor : Editor
             }
 
             materialEntries[i] = entry;
-
-            // Add a button to remove this entry
-            if (GUILayout.Button("-", GUILayout.Width(buttonWidth)))
-            {
-                mGameObject.Custom();
-                materialEntries.RemoveAt(i);
-            }
-            EditorGUILayout.EndHorizontal();
         }
 
-        // Add a button to add a new element
-        GUILayout.BeginHorizontal();
-        GUILayout.FlexibleSpace();
-        if (GUILayout.Button("Add", GUILayout.Width(3 * buttonWidth)))
+        if (Event.current.type == EventType.Repaint)
         {
-            mGameObject.Custom();
-            materialEntries.Add(new RACMaterialEntry.Entry());
+            mGameObject.UpdateCustomAbsorption(materialEntries);
+            mGameObject.SetAbsorption();
         }
-        GUILayout.EndHorizontal();
-
         EditorUtility.SetDirty(target);
     }
 }

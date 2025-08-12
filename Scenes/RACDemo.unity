@@ -427,7 +427,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: cac25e4715deb194188cb604d73298e3, type: 2}
+  - {fileID: 2100000, guid: 4fa1bf95ab25b6b47914795fa848e08e, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -1258,17 +1258,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   lerpFactor: 2
-  fBands:
-  - 125
+  frequencyBands:
   - 250
   - 500
   - 1000
   - 2000
   - 4000
-  - 8000
-  - 16000
-  fLimitBand: 1
   hrtfResamplingStep: 5
+  numReverbSources: 12
   fdnMatrix: 1
   iemConfig:
     direct: 1
@@ -1280,11 +1277,7 @@ MonoBehaviour:
     maximumPathLength: 1000
   spatialisationMode: 1
   diffractionModel: 4
-  lateReverbModel: 0
   T60:
-  - 1
-  - 1
-  - 1
   - 1
   - 1
   - 1
@@ -1512,6 +1505,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9bfc19cd67d622048aaa0ac6fd18b5fe, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  source: {fileID: 816638782}
 --- !u!4 &2116243660
 Transform:
   m_ObjectHideFlags: 0

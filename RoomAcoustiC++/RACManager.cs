@@ -19,30 +19,30 @@ public class RACManager : MonoBehaviour
 
     //////////////////// Plugin interface ////////////////////
 
-#if (UNITY_EDITOR)
+    private const string PluginName = "RoomAcoustiCpp";
+
 #if RAC_Default
-    private const string DLLNAME = "RoomAcoustiCpp_x64";
-# elif RAC_Debug
-    private const string DLLNAME = "RoomAcoustiCpp_Debug_x64";
-# elif RAC_Profile
-    private const string DLLNAME = "RoomAcoustiCpp_Profile_x64";
-# elif RAC_ProfileDetailed
-    private const string DLLNAME = "RoomAcoustiCpp_ProfileDetailed_x64";
+    private const string PluginType = "";
+#elif RAC_Debug
+    private const string PluginType = "Debug";
+#elif RAC_Profile
+    private const string PluginType = "Profile";
+#elif RAC_ProfileDetailed
+    private const string PluginType = "ProfileDetailed";
 #else
-    private const string DLLNAME = "RoomAcoustiCpp_x64";
+    private const string PluginType = "";
 #endif
-#elif (UNITY_ANDROID)
-    private const string DLLNAME = "libRoomAcoustiCpp";
-#elif (UNITY_STANDALONE_WIN)
-    private const string DLLNAME = "RoomAcoustiCpp_x64";
+
+#if UNITY_IOS
+    private const string DLLNAME = "__Internal";
 #else
-    private const string DLLNAME = " ";
+    private const string DLLNAME = PluginName + "_" + PluginType;
 #endif
 
     // Load and Destroy
 
     [DllImport(DLLNAME)]
-    private static extern bool RACInit(int fs, int numFrames, int numFDNChannels, float lerpFactor, float Q, float[] fBands, int numBands);
+    private static extern bool RACInit(int fs, int numFrames, int numReverbSources, float lerpFactor, float Q, [In] float[] frequencyBands, int numFrequencyBands);
 
     [DllImport(DLLNAME)]
     private static extern void RACExit();
@@ -51,18 +51,21 @@ public class RACManager : MonoBehaviour
     private static extern bool RACLoadSpatialisationFiles(int hrtfResampling, string[] filePaths);
 
     [DllImport(DLLNAME)]
+    private static extern void RACSetHeadphoneEQ([In] float[] leftIR, [In] float[] rightIR, int irLength);
+
+    [DllImport(DLLNAME)]
     private static extern void RACUpdateSpatialisationMode(int id);
 
     // Image Source Model
 
     [DllImport(DLLNAME)]
-    private static extern void RACUpdateIEMConfig(int dir, int refl, int diffShadow, int diffSpecular, bool rev, float edgeLen, float pathLen);
+    private static extern void RACUpdateIEMConfig(int direct, int reflOrder, int shadowDiffOrder, int specularDiffOrder, bool lateReverb, float minEdgeLength);
 
     [DllImport(DLLNAME)]
-    private static extern void RACUpdateReverbTime(float[] T60);
+    private static extern void RACUpdateReverbTime([In] float[] T60);
 
     [DllImport(DLLNAME)]
-    private static extern void RACUpdateReverbTimeModel(int model);
+    private static extern void RACUpdateReverbTimeModel(int id);
 
     [DllImport(DLLNAME)]
     private static extern void RACUpdateDiffractionModel(int id);
@@ -73,7 +76,7 @@ public class RACManager : MonoBehaviour
     // Reverb
 
     [DllImport(DLLNAME)]
-    private static extern void RACUpdateRoom(float volume, float[] dim, int numDimensions, int id);
+    private static extern bool RACInitLateReverb(float volume, [In] float[] dimensions, int numDimensions, int id);
 
     [DllImport(DLLNAME)]
     private static extern void RACResetFDN();
@@ -100,13 +103,13 @@ public class RACManager : MonoBehaviour
     // Wall
 
     [DllImport(DLLNAME)]
-    private static extern int RACInitWall(float[] vData, float[] absorption);
+    private static extern int RACInitWall([In] float[] vertices, [In] float[] absorption);
 
     [DllImport(DLLNAME)]
-    private static extern void RACUpdateWall(int id, float[] vData);
+    private static extern void RACUpdateWall(int id, [In] float[] vertices);
 
     [DllImport(DLLNAME)]
-    private static extern int RACUpdateWallAbsorption(int id, float[] absorption);
+    private static extern int RACUpdateWallAbsorption(int id, [In] float[] absorption);
 
     [DllImport(DLLNAME)]
     private static extern void RACRemoveWall(int id);
@@ -116,22 +119,16 @@ public class RACManager : MonoBehaviour
 
     // Audio
     [DllImport(DLLNAME)]
-    private static extern void RACSetHeadphoneEQ(float[] leftIR, float[] rightIR, int irLength);
-
-    [DllImport(DLLNAME)]
-    private static extern void RACSubmitAudio(int id, float[] input);
+    private static extern void RACSubmitAudio(int id, [In] float[] data);
 
     [DllImport(DLLNAME)]
     private static extern bool RACProcessOutput();
 
     [DllImport(DLLNAME)]
-    private static extern bool RACProcessOutput_MOD_ART(float[] input);
+    private static extern void RACGetOutputBuffer([In] float[] buffer);
 
     [DllImport(DLLNAME)]
-    private static extern void RACGetOutputBuffer(ref IntPtr buffer);
-
-    [DllImport(DLLNAME)]
-    private static extern void RACUpdateImpulseResponseMode(float lerpFactor, bool mode);
+    private static extern void RACUpdateImpulseResponseMode(bool mode);
 
     #endregion
 
@@ -158,7 +155,6 @@ public class RACManager : MonoBehaviour
     public enum SourceDirectivity { Omni, Subcardioid, Cardioid, Supercardioid, Hypercardioid, Bidirectional, Genelec8020c, Genelec8020cDTF, QSC_K8 }
     public enum DirectSound { None, Check, AlwaysOn }
     public enum DiffractionSound { None, ShadowZone, AllZones }
-    public enum OctaveBand { Third, Octave }
 
     [Serializable]
     public struct IEMConfig
@@ -169,10 +165,10 @@ public class RACManager : MonoBehaviour
         [Tooltip("Set the maximum number of reflections in reflection only paths.")]
         public int reflectionOrder;
         [Range(0, 6)]
-        [Tooltip("Set the maximum number of reflections or diffractions shadowed diffraction paths.")]
+        [Tooltip("Set the maximum number of reflections or diffractions in shadowed diffraction paths.")]
         public int shadowDiffractionOrder;
         [Range(0, 6)]
-        [Tooltip("Set the maximum number of reflections or diffractions specular diffraction paths.")]
+        [Tooltip("Set the maximum number of reflections or diffractions in specular diffraction paths.")]
         public int specularDiffractionOrder;
         [Tooltip("Toggle the late reverberation.")]
         public bool lateReverb;
@@ -211,19 +207,13 @@ public class RACManager : MonoBehaviour
     private int sampleRate;
     private int numFrames;
     private int numChannels = 2;
-    private int numFDNChannels = 12;
 
     [Header("Initial properties")]
     [SerializeField, Range(0.0f, 10.0f)]
     private float lerpFactor = 2.0f;
 
     [SerializeField]
-    private List<float> fBands = new List<float> { 250.0f, 500.0f, 1000.0f, 2000.0f, 4000.0f };
-
-    public List<float> fLimits { private set; get; } = new List<float>();
-
-    [SerializeField]
-    private OctaveBand fLimitBand = OctaveBand.Octave;
+    public List<float> frequencyBands = new List<float> { 250.0f, 500.0f, 1000.0f, 2000.0f, 4000.0f };
 
     [Range(0.1f, 2.0f)]
     private float Q = 0.98f;
@@ -231,16 +221,19 @@ public class RACManager : MonoBehaviour
     [SerializeField, Range(1, 45)]
     private int hrtfResamplingStep = 5;
 
+    [SerializeField, Range(0, 32)]
+    private int numReverbSources = 12;
+
     [SerializeField]
     private FDNMatrix fdnMatrix = FDNMatrix.Householder;
 
     private float[] outputBuffer;
 
-    private float[] vData = new float[9];
+    private float[] vertices = new float[9];
 
     public bool isRunning { get; private set; }
 
-    private static bool noHRTFFiles = false;
+    private static bool noHRTFFiles = true;
 
     [Header("Acoustic Model Configuration")]
     [SerializeField]
@@ -331,10 +324,7 @@ public class RACManager : MonoBehaviour
         char sep = Path.DirectorySeparatorChar;
         string[] filePaths = { resourcePath + sep + hrtfFile, resourcePath + sep + nearFieldFile, resourcePath + sep + ildFile };
 
-        fBands.Sort();
-        CreateFLimits();
-
-        isRunning = RACInit(sampleRate, numFrames, numFDNChannels, lerpFactor, Q, fBands.ToArray(), fBands.Count);
+        isRunning = RACInit(sampleRate, numFrames, numReverbSources, lerpFactor, Q, frequencyBands.ToArray(), frequencyBands.Count);
         bool filesLoaded = RACLoadSpatialisationFiles(hrtfResamplingStep, filePaths);
         if (!filesLoaded)
         {
@@ -343,15 +333,19 @@ public class RACManager : MonoBehaviour
             noHRTFFiles = true;
         }
         else
+        {
             Debug.Log("HRTF files loaded");
+            noHRTFFiles = false;
+        }
 
         LoadHeadphoneEQ();
 
         UpdateIEMConfig();
         UpdateSpatialisationMode();
-        UpdateReverbTimeModel();
         if (reverbTimeModel == ReverbTime.Custom)
             UpdateReverbTime();
+        else
+            UpdateReverbTimeModel();
         UpdateDiffractionModel();
     }
 
@@ -376,7 +370,7 @@ public class RACManager : MonoBehaviour
 #if UNITY_STANDALONE_WIN
         Debug.Log("Stand Alone Windows");
 #endif
-        interleavedData = new float[numFDNChannels * numFrames];
+        interleavedData = new float[numReverbSources * numFrames];
     }
 
     private void OnDestroy()
@@ -439,10 +433,7 @@ public class RACManager : MonoBehaviour
     public static void UpdateSpatialisationMode()
     {
         if (noHRTFFiles)
-        {
             racManager.spatialisationMode = SpatMode.None;
-            return;
-        }
 
         switch (racManager.spatialisationMode)
         {
@@ -466,14 +457,14 @@ public class RACManager : MonoBehaviour
 
     public static void UpdateReverbTime()
     {
-        if (racManager.T60.Count < racManager.fBands.Count)
+        if (racManager.T60.Count < racManager.frequencyBands.Count)
         {
             int oldSize = racManager.T60.Count;
-            for (int i = oldSize; i < racManager.fBands.Count; i++)
+            for (int i = oldSize; i < racManager.frequencyBands.Count; i++)
                 racManager.T60.Add(1.0f); // Default value for new elements
         }
-        else if (racManager.T60.Count > racManager.fBands.Count)
-            racManager.T60.RemoveRange(racManager.fBands.Count, racManager.T60.Count - racManager.fBands.Count);
+        else if (racManager.T60.Count > racManager.frequencyBands.Count)
+            racManager.T60.RemoveRange(racManager.frequencyBands.Count, racManager.T60.Count - racManager.frequencyBands.Count);
 
         RACUpdateReverbTime(racManager.T60.ToArray());
     }
@@ -514,26 +505,12 @@ public class RACManager : MonoBehaviour
         }
     }
 
-    static int SelectDiffractionMode(DiffractionSound diff)
-    {
-        switch (diff)
-        {
-            case DiffractionSound.None:
-                { return 0; }
-            case DiffractionSound.ShadowZone:
-                { return 1; }
-            case DiffractionSound.AllZones:
-                { return 2; }
-            default:
-                { return 0; }
-        }
-    }
-
     public static void UpdateIEMConfig()
     {
-        Profiler.BeginSample("Update IEM");
         int direct = SelectDirectMode(racManager.iemConfig.direct);
-        RACUpdateIEMConfig(direct, racManager.iemConfig.reflectionOrder, racManager.iemConfig.shadowDiffractionOrder, racManager.iemConfig.specularDiffractionOrder, racManager.iemConfig.lateReverb, racManager.iemConfig.minimumEdgeLength, racManager.iemConfig.maximumPathLength);
+
+        Profiler.BeginSample("Update IEM");
+        RACUpdateIEMConfig(direct, racManager.iemConfig.reflectionOrder, racManager.iemConfig.shadowDiffractionOrder, racManager.iemConfig.specularDiffractionOrder, racManager.iemConfig.lateReverb, racManager.iemConfig.minimumEdgeLength);
         Profiler.EndSample();
     }
 
@@ -591,10 +568,10 @@ public class RACManager : MonoBehaviour
 
     // Reverb
 
-    public static void UpdateRoom(float volume, float[] dim, int numDimensions)
+    public static void InitLateReverb(float volume, float[] dimensions)
     {
         Profiler.BeginSample("Set FDN");
-        RACUpdateRoom(volume, dim, numDimensions, (int)racManager.fdnMatrix);
+        RACInitLateReverb(volume, dimensions, dimensions.Length, (int)racManager.fdnMatrix);
         Profiler.EndSample();
     }
 
@@ -665,15 +642,15 @@ public class RACManager : MonoBehaviour
 
     public static void UpdateVData(ref Vector3[] vertices)
     {
-        racManager.vData[0] = vertices[0].x;
-        racManager.vData[1] = vertices[0].y;
-        racManager.vData[2] = vertices[0].z;
-        racManager.vData[3] = vertices[1].x;
-        racManager.vData[4] = vertices[1].y;
-        racManager.vData[5] = vertices[1].z;
-        racManager.vData[6] = vertices[2].x;
-        racManager.vData[7] = vertices[2].y;
-        racManager.vData[8] = vertices[2].z;
+        racManager.vertices[0] = vertices[0].x;
+        racManager.vertices[1] = vertices[0].y;
+        racManager.vertices[2] = vertices[0].z;
+        racManager.vertices[3] = vertices[1].x;
+        racManager.vertices[4] = vertices[1].y;
+        racManager.vertices[5] = vertices[1].z;
+        racManager.vertices[6] = vertices[2].x;
+        racManager.vertices[7] = vertices[2].y;
+        racManager.vertices[8] = vertices[2].z;
     }
 
     public static int InitWall(ref Vector3[] vertices, ref float[] absorption)
@@ -687,7 +664,7 @@ public class RACManager : MonoBehaviour
         UpdateVData(ref vertices);
 
         Profiler.BeginSample("Init Wall");
-        int id = RACInitWall(racManager.vData, absorption);
+        int id = RACInitWall(racManager.vertices, absorption);
         Profiler.EndSample();
         return id;
     }
@@ -703,7 +680,7 @@ public class RACManager : MonoBehaviour
         UpdateVData(ref vertices);
 
         Profiler.BeginSample("Update Wall");
-        RACUpdateWall(id, racManager.vData);
+        RACUpdateWall(id, racManager.vertices);
         Profiler.EndSample();
     }
 
@@ -750,20 +727,14 @@ public class RACManager : MonoBehaviour
 
     public static void GetOutputBuffer(ref float[] buffer)
     {
-        // fetch the buffer
-        IntPtr result = IntPtr.Zero;
-
         Profiler.BeginSample("Get Output");
-        RACGetOutputBuffer(ref result);
-
-        // copy the buffer as a float array
-        Marshal.Copy(result, buffer, 0, racManager.numChannels * racManager.numFrames);
+        RACGetOutputBuffer(buffer);
         Profiler.EndSample();
     }
 
     public static void UpdateImpulseResponseMode(bool mode)
     {
-        RACUpdateImpulseResponseMode(racManager.lerpFactor, mode);
+        RACUpdateImpulseResponseMode(mode);
     }
     #endregion
 
@@ -797,22 +768,6 @@ public class RACManager : MonoBehaviour
     }
 
     #endregion
-
-    private void CreateFLimits()
-    {
-        if (fLimitBand == OctaveBand.Octave)
-            fLimits.Add(fBands[0] * Mathf.Pow(2, -0.5f));
-        else
-            fLimits.Add(fBands[0] * Mathf.Pow(2, -(1.0f / 6.0f)));
-
-        for (int i = 0; i < fBands.Count - 1; ++i)
-            fLimits.Add(Mathf.Sqrt(fBands[i] * fBands[i + 1]));
-
-        if (fLimitBand == OctaveBand.Octave)
-            fLimits.Add(fBands[fBands.Count - 1] * Mathf.Pow(2, 0.5f));
-        else
-            fLimits.Add(fBands[fBands.Count - 1] * Mathf.Pow(2, 1.0f / 6.0f));
-    }
 
     public static void DisableAudioProcessing() { racManager.disableAudioProcessing?.Invoke(); racManager.isRunning = false; }
 
