@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using UnityEditor.PackageManager.UI;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -64,6 +65,9 @@ public class IRController : MonoBehaviour
     [SerializeField]
     private List<RACManager.SpatMode> spatModes;
     bool recordMono = false;
+
+    [SerializeField]
+    private bool doEchogram = false;
 
     private List<Transform> transforms = new List<Transform>();
 
@@ -470,16 +474,24 @@ public class IRController : MonoBehaviour
         if (recordMono)
         {
             for (int i = 0; i < outputBuffer.Length; i += 2)
-                streamWriter.Write(outputBuffer[i].ToString() + ", ");
+                WriteSample(outputBuffer[i]);
         }
         else
         {
             foreach (float sample in outputBuffer)
-                streamWriter.Write(sample.ToString() + ", ");
+                WriteSample(sample);
         }
 
         for (int i = 0; i < Mathf.Min(inputBuffer.Length, impulseResponse.Length - idx); i++)
             inputBuffer[i] = 0.0f;
+    }
+
+    void WriteSample(float input)
+    {
+        if (doEchogram)
+            streamWriter.Write(Mathf.Log10(input * input + 1e-10f).ToString() + ", ");
+        else
+            streamWriter.Write(input.ToString() + ", ");
     }
 
     float[] ReadCSV(string path)

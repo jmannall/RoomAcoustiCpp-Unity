@@ -59,7 +59,7 @@ public class RACManager : MonoBehaviour
     // Image Source Model
 
     [DllImport(DLLNAME)]
-    private static extern void RACUpdateIEMConfig(int direct, int reflOrder, int shadowDiffOrder, int specularDiffOrder, bool lateReverb, float minEdgeLength);
+    private static extern void RACUpdateIEMConfig(int direct, int reflOrder, int shadowDiffOrder, int specularDiffOrder, bool lateReverb, float minEdgeLength, float maxPathLength);
 
     [DllImport(DLLNAME)]
     private static extern void RACUpdateReverbTime([In] float[] T60);
@@ -513,7 +513,7 @@ public class RACManager : MonoBehaviour
         int direct = SelectDirectMode(racManager.iemConfig.direct);
 
         Profiler.BeginSample("Update IEM");
-        RACUpdateIEMConfig(direct, racManager.iemConfig.reflectionOrder, racManager.iemConfig.shadowDiffractionOrder, racManager.iemConfig.specularDiffractionOrder, racManager.iemConfig.lateReverb, racManager.iemConfig.minimumEdgeLength);
+        RACUpdateIEMConfig(direct, racManager.iemConfig.reflectionOrder, racManager.iemConfig.shadowDiffractionOrder, racManager.iemConfig.specularDiffractionOrder, racManager.iemConfig.lateReverb, racManager.iemConfig.minimumEdgeLength, racManager.iemConfig.maximumPathLength);
         Profiler.EndSample();
     }
 
