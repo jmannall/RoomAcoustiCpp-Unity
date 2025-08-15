@@ -402,6 +402,8 @@ public class IRController : MonoBehaviour
             //bool success = RACManager.ProcessOutput();
             //Debug.Log("RACManager.ProcessOutput() returned " + success.ToString());
 
+            // TODO: Wait for confirmation that the DSP thread has run a fresh loop, or else the FDNs might get reset after the start of the IR recording.
+
             inputBuffer[0] = 1.0f;
             ProcessAudioBuffer(0);
             inputBuffer[0] = 0.0f;
