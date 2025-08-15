@@ -421,6 +421,9 @@ public class IRController : MonoBehaviour
     {
         RACManager.DisableAudioProcessing();
         RACManager.UpdateImpulseResponseMode(true);
+
+        WriteRunSettings();
+
         doIRs = true;
         Debug.Log("Start IR Runs: " + doIRs);
     }
@@ -552,6 +555,57 @@ public class IRController : MonoBehaviour
             streamWriter.Write(Mathf.Log10(input * input + 1e-30f).ToString() + ", ");
         else
             streamWriter.Write(input.ToString() + ", ");
+    }
+
+    /* Write all information related to the current IR run settings.
+     */
+    void WriteRunSettings()
+    {
+        UpdateStreamWriter("Run_settings");
+
+        streamWriter.Write("Echogram mode: " + doEchogram.ToString());
+
+        // Write configs settings
+        streamWriter.WriteLine("\nConfigurations");
+        int idx = 0;
+        // To extract all members of a struct, see https://stackoverflow.com/a/7613806 and https://stackoverflow.com/a/2762679
+        var fields = typeof(RACManager.IEMConfig).GetFields();
+        foreach (var config in configs)
+        {
+            streamWriter.WriteLine("\tConfig_index " + idx.ToString());
+            foreach (var field in fields)
+                streamWriter.WriteLine("\t\t" + field.Name + " " + field.GetValue(config).ToString());
+            streamWriter.Flush();
+            idx++;
+        }
+
+        // Write spatModes settings
+        streamWriter.WriteLine("\nSpatialisation modes");
+        foreach (var spatMode in spatModes)
+        {
+            streamWriter.WriteLine("\t" + spatMode.ToString());
+            streamWriter.Flush();
+        }
+
+        // Write listeners settings
+        streamWriter.WriteLine("\nListener positions");
+        foreach (var listener in listeners)
+        {
+            streamWriter.WriteLine("\t" + listener.position.x + ", " + listener.position.y + ", " + listener.position.z);
+            // TODO: Write rotations
+            streamWriter.Flush();
+        }
+
+        // Write sources settings
+        streamWriter.WriteLine("\nSource positions");
+        foreach (var source in sources)
+        {
+            streamWriter.WriteLine("\t" + source.position.x + ", " + source.position.y + ", " + source.position.z);
+            // TODO: Write rotations
+            streamWriter.Flush();
+        }
+
+        // TODO: foreach (var transform in transforms)
     }
 
     float[] ReadCSV(string path)
