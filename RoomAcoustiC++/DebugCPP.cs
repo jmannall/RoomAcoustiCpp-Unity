@@ -66,7 +66,16 @@ public class DebugCPP : MonoBehaviour
     static extern void RegisterPathCallback(pathCallback cb);
 
     [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void RegisterIEMCallback(iemCallback cb);
+    public static extern void RegisterIEMStartCallback(iemStartCallback cb);
+
+    [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+    public static extern void RegisterIEMEndCallback(iemEndCallback cb);
+
+    [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+    public static extern void RegisterRTMStartCallback(rtmStartCallback cb);
+
+    [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+    public static extern void RegisterRTMEndCallback(rtmEndCallback cb);
 
     [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
     static extern void UnregisterDebugCallback();
@@ -75,14 +84,26 @@ public class DebugCPP : MonoBehaviour
     static extern void UnregisterPathCallback();
 
     [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void UnregisterIEMCallback();
+    public static extern void UnregisterIEMStartCallback();
+
+    [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+    public static extern void UnregisterIEMEndCallback();
+
+    [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+    public static extern void UnregisterRTMStartCallback();
+
+    [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+    public static extern void UnregisterRTMEndCallback();
 
     //Create string param callback delegate
     delegate void debugCallback(IntPtr request, int colour, int size);
 
     delegate void pathCallback(IntPtr key, IntPtr intersections, int keySize, int intersectionsSize);
 
-    public delegate void iemCallback(int id);
+    public delegate void iemStartCallback();
+    public delegate void iemEndCallback();
+    public delegate void rtmStartCallback();
+    public delegate void rtmEndCallback();
 
     enum Colour { red, green, blue, black, white, yellow, orange };
     [MonoPInvokeCallback(typeof(debugCallback))]

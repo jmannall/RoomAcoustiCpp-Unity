@@ -85,18 +85,29 @@ public class IRController : MonoBehaviour
 
     StreamWriter streamWriter;
 
-    static bool lateReverbCompleted = false;
-    static int iemCounter = 0;
-    static void OnIEMCompleted(int id)
+    static bool iemStarted = false;
+    static bool iemCompleted = false;
+    static bool rtmStarted = false;
+    static bool rtmCompleted = false;
+    static void OnIEMStarted()
     {
-        if (irController == null)
-            return;
-        if (irController.racSource == null)
-            return;
-        if (id == -1)
-            lateReverbCompleted = true;
-        else if (id == irController.racSource.id)
-            iemCounter++;
+        iemStarted = true;
+        iemCompleted = false;
+    }
+    static void OnIEMCompleted()
+    {
+        // Note: DON'T reset `iemStarted` here.
+        iemCompleted = true;
+    }
+    static void OnRTMStarted()
+    {
+        rtmStarted = true;
+        rtmCompleted = false;
+    }
+    static void OnRTMCompleted()
+    {
+        // Note: DON'T reset `rtmStarted` here.
+        rtmCompleted = true;
     }
 
     private static IRController irController;
@@ -104,7 +115,11 @@ public class IRController : MonoBehaviour
     // Start is called before the first frame update
     private void Awake()
     {
-        DebugCPP.RegisterIEMCallback(OnIEMCompleted);
+        DebugCPP.RegisterIEMStartCallback(OnIEMStarted);
+        DebugCPP.RegisterIEMEndCallback(OnIEMCompleted);
+        DebugCPP.RegisterRTMStartCallback(OnRTMStarted);
+        DebugCPP.RegisterRTMEndCallback(OnRTMCompleted);
+
         Debug.AssertFormat(irController == null, "More than one instance of the IRController created! Singleton violated.");
         irController = this;
 
@@ -163,7 +178,10 @@ public class IRController : MonoBehaviour
 
     private void OnDisable()
     {
-        DebugCPP.UnregisterIEMCallback();
+        DebugCPP.UnregisterIEMStartCallback();
+        DebugCPP.UnregisterIEMEndCallback();
+        DebugCPP.UnregisterRTMStartCallback();
+        DebugCPP.UnregisterRTMEndCallback();
     }
 
     private void Update()
@@ -328,16 +346,42 @@ public class IRController : MonoBehaviour
             listenerTransform.position = listener.position;
             listenerTransform.rotation = listener.rotation;
             
-            int count = 0;
             racSource.RestartSource();
-            lateReverbCompleted = false;
-            iemCounter = 0;
-            while (!lateReverbCompleted || iemCounter < 2)
+
+            Debug.Log("Waiting for IEM and RTM to run fresh loops");
+
+            int count = 0;
+            iemStarted = false;
+            rtmStarted = false;
+            // Wait for confirmation that both IEM and RTM have begun fresh loops.
+            while (!iemStarted || !rtmStarted)
             {
                 count++;
+                if (count > 100)
+                {
+                    Debug.Log("ABORTING WAIT: iemStarted=" + iemStarted.ToString() + ", rtmStarted=" + rtmStarted.ToString());
+                    break;
+                }
                 yield return null;
             }
-            // Debug.Log("Time for IEM: " + count.ToString() + " frames");
+            Debug.Log("Time for IEM and RTM to start fresh: " + count.ToString() + " frames");
+
+            count = 0;
+            // Wait for confirmation that both IEM and RTM have finished their loops.
+            // Note: DON'T reset `iemCompleted` nor `rtmCompleted` here.
+            // One of the loops may have started and finished already, while the other was waiting to start.
+            while (!iemCompleted || !rtmCompleted)
+            {
+                count++;
+                if (count > 100)
+                {
+                    Debug.Log("ABORTING WAIT: iemCompleted=" + iemCompleted.ToString() + ", rtmCompleted=" + rtmCompleted.ToString());
+                    break;
+                }
+                yield return null;
+            }
+            Debug.Log("Time for IEM and RTM to finish: " + count.ToString() + " frames");
+
             RACManager.SubmitAudio(racSource.id, ref inputBuffer);
             RACManager.ResetFDN();
             RACManager.ProcessOutput();
