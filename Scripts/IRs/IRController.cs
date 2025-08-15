@@ -92,21 +92,29 @@ public class IRController : MonoBehaviour
     static void OnIEMStarted()
     {
         iemStarted = true;
+        // Reset `iemCompleted` in preparation for the next while loop.
+        // N.B.: DO NOT reset `iemCompleted` outside of this function, it may cause a deadlock.
         iemCompleted = false;
     }
     static void OnIEMCompleted()
     {
-        // Note: DON'T reset `iemStarted` here.
+        // N.B.: DO NOT reset `iemStarted` here.
+        // If RTM has not yet started, while IEM has already finished,
+        // setting `iemStarted = false` here would deadlock the while loop.
         iemCompleted = true;
     }
     static void OnRTMStarted()
     {
         rtmStarted = true;
+        // Reset `rtmCompleted` in preparation for the next while loop.
+        // N.B.: DO NOT reset `rtmCompleted` outside of this function, it may cause a deadlock.
         rtmCompleted = false;
     }
     static void OnRTMCompleted()
     {
-        // Note: DON'T reset `rtmStarted` here.
+        // N.B.: DO NOT reset `rtmStarted` here.
+        // If IEM has not yet started, while RTM has already finished,
+        // setting `rtmStarted = false` here would deadlock the while loop.
         rtmCompleted = true;
     }
 
@@ -348,43 +356,51 @@ public class IRController : MonoBehaviour
             
             racSource.RestartSource();
 
-            Debug.Log("Waiting for IEM and RTM to run fresh loops");
-
-            int count = 0;
+            int countStart = 0;
+            int countEnd = 0;
             iemStarted = false;
             rtmStarted = false;
             // Wait for confirmation that both IEM and RTM have begun fresh loops.
             while (!iemStarted || !rtmStarted)
             {
-                count++;
-                if (count > 100)
+                countStart++;
+                if (countStart > 100)
                 {
-                    Debug.Log("ABORTING WAIT: iemStarted=" + iemStarted.ToString() + ", rtmStarted=" + rtmStarted.ToString());
+                    if (!iemStarted)
+                        Debug.LogError("Failed to start a fresh loop on the IEM thread.");
+                    if (!rtmStarted)
+                        Debug.LogError("Failed to start a fresh loop on the RTM thread.");
                     break;
                 }
                 yield return null;
             }
-            Debug.Log("Time for IEM and RTM to start fresh: " + count.ToString() + " frames");
+            // N.B.: `iemCompleted` and `rtmCompleted` have been reset as part of the function calls `OnIEMStarted` and `OnRTMStarted`.
+            // DO NOT manually reset `iemCompleted` nor `rtmCompleted` at this point.
+            // One thread may already have finished before the other one started.
 
-            count = 0;
             // Wait for confirmation that both IEM and RTM have finished their loops.
-            // Note: DON'T reset `iemCompleted` nor `rtmCompleted` here.
-            // One of the loops may have started and finished already, while the other was waiting to start.
             while (!iemCompleted || !rtmCompleted)
             {
-                count++;
-                if (count > 100)
+                countEnd++;
+                if (countEnd > 100)
                 {
-                    Debug.Log("ABORTING WAIT: iemCompleted=" + iemCompleted.ToString() + ", rtmCompleted=" + rtmCompleted.ToString());
+                    if (!iemCompleted)
+                        Debug.LogError("Failed to complete a fresh loop on the IEM thread.");
+                    if (!rtmCompleted)
+                        Debug.LogError("Failed to complete a fresh loop on the RTM thread.");
                     break;
                 }
                 yield return null;
             }
-            Debug.Log("Time for IEM and RTM to finish: " + count.ToString() + " frames");
+            //Debug.Log("Time for IEM and RTM to start fresh loops: " + countStart.ToString() + " frames");
+            //Debug.Log("Time for IEM and RTM to complete fresh loops: " + countEnd.ToString() + " frames");
+            Debug.Log("Time for IEM and RTM to run fresh loops: " + (countStart + countEnd).ToString() + " frames");
 
             RACManager.SubmitAudio(racSource.id, ref inputBuffer);
             RACManager.ResetFDN();
             RACManager.ProcessOutput();
+            //bool success = RACManager.ProcessOutput();
+            //Debug.Log("RACManager.ProcessOutput() returned " + success.ToString());
 
             inputBuffer[0] = 1.0f;
             ProcessAudioBuffer(0);
@@ -533,7 +549,7 @@ public class IRController : MonoBehaviour
     void WriteSample(float input)
     {
         if (doEchogram)
-            streamWriter.Write(Mathf.Log10(input * input + 1e-10f).ToString() + ", ");
+            streamWriter.Write(Mathf.Log10(input * input + 1e-30f).ToString() + ", ");
         else
             streamWriter.Write(input.ToString() + ", ");
     }
