@@ -398,11 +398,35 @@ public class IRController : MonoBehaviour
 
             RACManager.SubmitAudio(racSource.id, ref inputBuffer);
             RACManager.ResetFDN();
-            RACManager.ProcessOutput();
+
+            //RACManager.ProcessOutput();
             //bool success = RACManager.ProcessOutput();
             //Debug.Log("RACManager.ProcessOutput() returned " + success.ToString());
 
-            // TODO: Wait for confirmation that the DSP thread has run a fresh loop, or else the FDNs might get reset after the start of the IR recording.
+            // Wait for confirmation that the DSP thread has run a fresh loop, or else the FDNs might get reset after the start of the IR recording.
+            // TODO: Use flags and callbacks like for the other threads.
+            int countReset = 0;
+            int countFrames = 0;
+            while (countFrames < 100)
+            {
+                if (RACManager.ProcessOutput())
+                {
+                    RACManager.GetOutputBuffer(ref outputBuffer);
+
+                    countReset += 1;
+                    if (countReset > 3)
+                        break;
+                }
+
+                countFrames++;
+                if (countFrames > 99)
+                {
+                    Debug.LogError("Failed to reset the DSP thread.");
+                    break;
+                }
+                yield return null;
+            }
+            Debug.Log("Time to reset the DSP: " + countFrames.ToString() + " frames");
 
             inputBuffer[0] = 1.0f;
             ProcessAudioBuffer(0);
