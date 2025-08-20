@@ -55,7 +55,7 @@ public class RACMesh : MonoBehaviour
         if (disableMeshRenderers)
             DisableMeshRenderers();
 
-        Debug.Log("Number of objects: " + meshes.Length);
+        Debug.Log("Number of objects: " + objects.Length);
 
         // RACManager.InitLateReverb(volume, roomDimensions.ToArray());
 
