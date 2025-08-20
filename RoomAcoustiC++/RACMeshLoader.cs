@@ -74,14 +74,6 @@ public class RACMeshLoader : MonoBehaviour
         objects = GetComponentsInChildren<RACObject>();
 
         UpdateMeshRenderers();
-
-        Debug.Log("Number of objects: " + meshes.Length);
-
-        // TODO: Add a [SerializeField] TextAsset dataCsv; have the editor assign it alongside the mesh. Here, pass the data directly, not the path. It will be more robust at runtime.
-        RACManager.InitRAVES($"{foldersRoot}" + sep + $"{selectedSubfolder}");
-
-        initialised = true;
-        RACManager.UpdatePlanesAndEdges();
     }
 
     private void UpdateMeshRenderers()
@@ -91,12 +83,29 @@ public class RACMeshLoader : MonoBehaviour
             render.enabled = !disableMeshRenderers;
     }
 
+    private void InitRAVES()
+    {
+        Debug.Log("Number of objects: " + meshes.Length);
+
+        // TODO: Add a [SerializeField] TextAsset dataCsv; have the editor assign it alongside the mesh. Here, pass the data directly, not the path. It will be more robust at runtime.
+        RACManager.InitRAVES($"{foldersRoot.Replace('/', sep)}" + sep + $"{selectedSubfolder}");
+
+        RACManager.UpdatePlanesAndEdges();
+
+        initialised = true;
+    }
+
     // Called by the editor to apply a new selection.
     public void __EditorAssignSelection(string root, string subfolder, GameObject mesh)
     {
         foldersRoot = root;
         selectedSubfolder = subfolder;
         meshObject = mesh;
+
+        ClearChildren();
+        SpawnMesh();
+
+        InitRAVES();
     }
 
     public string GetCurrentSelection()
@@ -112,6 +121,8 @@ public class RACMeshLoader : MonoBehaviour
     // Utility: clear all children
     public void ClearChildren()
     {
+        initialised = false;
+
         for (int i = transform.childCount - 1; i >= 0; i--)
         {
             var child = transform.GetChild(i);

@@ -8,10 +8,13 @@ using static UnityEngine.Mesh;
 [CustomEditor(typeof(RACMeshLoader))]
 public class RACMeshLoaderEditor: Editor
 {
+    private char sep = Path.DirectorySeparatorChar;
     private string MeshesRoot = "Assets/MOD-ART/Meshes";
 
     private string[] optionNames = new string[0];
     private int selectedIndex = -1;
+
+    // TODO: Add RACmaterials component, using existing RACmaterials
 
     public override void OnInspectorGUI()
     {
@@ -32,6 +35,7 @@ public class RACMeshLoaderEditor: Editor
             .Where(n => !string.IsNullOrEmpty(n))
             .OrderBy(n => n)
             .ToArray();
+        // TODO: Smarter sorting (number-aware)
 
         if (optionNames.Length == 0)
         {
@@ -82,6 +86,8 @@ public class RACMeshLoaderEditor: Editor
     {
         string optionPath = $"{MeshesRoot}/{optionName}";
 
+        // TODO: Load materials from file
+
         // Load /mesh.obj as a model GameObject
         GameObject meshGO = AssetDatabase.LoadAssetAtPath<GameObject>($"{optionPath}/mesh.obj");
 
@@ -99,10 +105,6 @@ public class RACMeshLoaderEditor: Editor
         Undo.RecordObject(loader, "Change Option");
         loader.__EditorAssignSelection(MeshesRoot, optionName, meshGO);
         EditorUtility.SetDirty(loader);
-
-        // Update preview in scene
-        loader.ClearChildren();
-        loader.SpawnMesh();
     }
 }
 #endif
