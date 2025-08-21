@@ -8,7 +8,7 @@ public class BasicPlayer : MonoBehaviour
     public float mouseSensitivity = 1;
     public Vector2 pitchMinMax = new Vector2(-60, 85);
 
-    //private float gravity = 9.8f;
+    private float gravity = 9.8f;
 
     private Vector3 currentRotation;
     private Vector3 currentRotationVelocity;
@@ -51,8 +51,8 @@ public class BasicPlayer : MonoBehaviour
         moveDirection.y = 0.0f;
         moveDirection = moveDirection.normalized;
 
-        //if (!characterController.isGrounded)
-        //    moveDirection.y -= gravity * Time.deltaTime;
+        if (!characterController.isGrounded)
+            moveDirection.y -= gravity;
         characterController.Move(moveDirection * Time.deltaTime * speed);
     }
 }

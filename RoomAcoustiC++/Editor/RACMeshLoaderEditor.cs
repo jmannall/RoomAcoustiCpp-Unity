@@ -22,9 +22,9 @@ public class RACMeshLoaderEditor: Editor
 
         if (!AssetDatabase.IsValidFolder(MeshesRoot))
         {
-            EditorGUILayout.HelpBox(
+            Debug.LogError(
                 $"Options root folder not found:\n{MeshesRoot}\n\n" +
-                "Create it or update MeshesRoot constant.", MessageType.Error);
+                "Create it or update MeshesRoot constant.");
             return;
         }
 
@@ -41,7 +41,7 @@ public class RACMeshLoaderEditor: Editor
 
             if (optionNames.Length == 0)
             {
-                EditorGUILayout.HelpBox($"No subfolders found under root:\n{MeshesRoot}", MessageType.Info);
+                Debug.LogError($"No subfolders found under root:\n{MeshesRoot}");
                 return;
             }
         }
@@ -53,7 +53,7 @@ public class RACMeshLoaderEditor: Editor
             // Cannot realign the selection during play mode
             if (string.IsNullOrEmpty(current))
             {
-                EditorGUILayout.HelpBox("Misalignment between RACMeshLoader/Editor selection during play mode.", MessageType.Error);
+                Debug.LogError("Misalignment between RACMeshLoader/Editor selection during play mode.");
                 return;
             }
             else if (selectedIndex < 0)
@@ -127,31 +127,12 @@ public class RACMeshLoaderEditor: Editor
         // Prevent operations during play mode
         if (Application.isPlaying)
         {
-            Debug.LogWarning("Cannot change mesh selection during play mode.");
+            Debug.LogError("Cannot change mesh selection during play mode.");
             return;
         }
 
-        string optionPath = $"{MeshesRoot}/{optionName}";
-
-        // TODO: Load materials from file
-
-        // Load /mesh.obj as a model GameObject
-        GameObject meshGO = AssetDatabase.LoadAssetAtPath<GameObject>($"{optionPath}/mesh.obj");
-
-        if (meshGO == null)
-        {
-            EditorUtility.DisplayDialog(
-                "Missing mesh.obj",
-                $"Expected model at:\n{MeshesRoot}/mesh.obj\n\n" +
-                "Create the file or fix the folder name.",
-                "OK"
-            );
-            return; // keep previous assignment; do NOT clear children
-        }
-
         Undo.RecordObject(racMeshLoader, "Change Option");
-        racMeshLoader.__EditorAssignSelection(MeshesRoot, optionName, meshGO);
-        EditorUtility.SetDirty(racMeshLoader);
+        racMeshLoader.__EditorAssignSelection(MeshesRoot, optionName);
     }
 }
 #endif
