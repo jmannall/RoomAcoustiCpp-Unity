@@ -11,10 +11,10 @@ public class RACMeshLoader : MonoBehaviour
     // global singleton
     public static RACMeshLoader racMeshLoader = null;
 
-    private char sep = Path.DirectorySeparatorChar;
+    public static string meshesRoot = "Assets/MOD-ART/Meshes";
 
-    [SerializeField, Tooltip("If enabled, the acoustic mesh will be rendered during play.")]
-    private bool renderAcousticMeshDuringPlay = false;
+    [SerializeField, Tooltip("If enabled, the acoustic mesh will be rendered.")]
+    private bool renderAcousticMesh = false;
 
     // Serialized to ensure persistence when switching between edit and play mode, but hidden from the GUI
     [SerializeField, HideInInspector]
@@ -35,15 +35,16 @@ public class RACMeshLoader : MonoBehaviour
         Debug.AssertFormat(racMeshLoader == null, "More than one instance of the RACMeshLoader created! Singleton violated.");
         racMeshLoader = this;
 
+        // If this is the start of play, load the appropriate asset (specified by selectedSubfolder).
         LoadOBJ();
     }
 
     private void Start()
     {
-        // Ensure we have a spawned mesh, in case Awake() didn't spawn
+        // Spawn the mesh in case Awake() didn't spawn one (e.g., if this object awoke before its editor).
         LoadOBJ();
 
-        if (!Application.isPlaying || renderAcousticMeshDuringPlay)
+        if (renderAcousticMesh)
         {
             foreach (MeshRenderer render in GetComponentsInChildren<MeshRenderer>())
                 render.enabled = true;
@@ -64,26 +65,36 @@ public class RACMeshLoader : MonoBehaviour
         RACManager.UpdatePlanesAndEdges();
     }
 
+    private void Update()
+    {
+        if (renderAcousticMesh)
+        {
+            foreach (MeshRenderer render in GetComponentsInChildren<MeshRenderer>())
+                render.enabled = true;
+        }
+    }
+
     private void LoadOBJ()
     {
         if (string.IsNullOrEmpty(selectedSubfolder))
         {
             // TODO: Handle this appropriately.
+            return;
         }
 
 #if UNITY_EDITOR
         // Ensure the model importer has Read/Write enabled so meshes are readable at runtime.
-        ModelImporter imp = UnityEditor.AssetImporter.GetAtPath($"Assets/MOD-ART/Meshes/{selectedSubfolder}/mesh.obj") as ModelImporter;
+        ModelImporter imp = UnityEditor.AssetImporter.GetAtPath($"{meshesRoot}/{selectedSubfolder}/mesh.obj") as ModelImporter;
         if (imp && !imp.isReadable)
         {
             imp.isReadable = true;
             imp.SaveAndReimport();
         }
 
-        GameObject src = AssetDatabase.LoadAssetAtPath<GameObject>($"Assets/MOD-ART/Meshes/{selectedSubfolder}/mesh.obj");
+        GameObject src = AssetDatabase.LoadAssetAtPath<GameObject>($"{meshesRoot}/{selectedSubfolder}/mesh.obj");
         if (!src)
         {
-            Debug.LogError($"OBJ not found:\nAssets/MOD-ART/Meshes/{selectedSubfolder}/mesh.obj");
+            Debug.LogError($"OBJ not found:\n{meshesRoot}/{selectedSubfolder}/mesh.obj");
             return;
         }
 
@@ -158,7 +169,7 @@ public class RACMeshLoader : MonoBehaviour
     }
 
     // TODO: retrieve info... to be used while passing triangles to RAC.
-    public void dostuff(int subMeshIndex)
+    private void dostuff(int subMeshIndex)
     {
         MeshRenderer myMeshRenderer = meshGameObject.GetComponentInChildren<MeshRenderer>();
 
@@ -177,7 +188,7 @@ public class RACMeshLoader : MonoBehaviour
 
 
     // Called by the editor to apply a new selection.
-    public void __EditorAssignSelection(string root, string subfolder)
+    public void __EditorAssignSelection(string subfolder)
     {
         // Prevent operations during play mode
         if (Application.isPlaying)
@@ -195,7 +206,7 @@ public class RACMeshLoader : MonoBehaviour
 
         // TODO: modeTextAssets[i] = 
 
-        // TODO: #if UNITY_EDITOR LoadMaterialDataCsv($"Assets/MOD-ART/Meshes/{selectedSubfolder}/material_data.csv", numMaterials, numFreqBands);
+        // TODO: #if UNITY_EDITOR LoadMaterialDataCsv($"{meshesRoot}/{selectedSubfolder}/material_data.csv", numMaterials, numFreqBands);
         // TODO: #else ...load asset from different path
 
         LoadOBJ();
