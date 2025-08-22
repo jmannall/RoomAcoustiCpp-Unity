@@ -70,16 +70,17 @@ public class RACMeshLoaderEditor: Editor
         }
 
         Undo.RecordObject(racMeshLoader, "Change Option");
-        racMeshLoader.__EditorAssignSelection(optionNames[selectedIndex]);
+        bool success = racMeshLoader.__EditorAssignSelection(optionNames[selectedIndex]);
+        // TODO: if (!success) do something smart about it
     }
 
     // Returns true if the load was successful.
     private bool LoadOptions(RACMeshLoader racMeshLoader)
     {
-        if (!AssetDatabase.IsValidFolder(racMeshLoader.meshesRoot))
+        if (!AssetDatabase.IsValidFolder(racMeshLoader.GetRootFolder()))
         {
             Debug.LogError(
-                $"Options root folder not found:\n{racMeshLoader.meshesRoot}\n\n" +
+                $"Options root folder not found:\n{racMeshLoader.GetRootFolder()}\n\n" +
                 "Create it or update MeshesRoot constant.");
             return false;
         }
@@ -88,15 +89,15 @@ public class RACMeshLoaderEditor: Editor
         // N.B.: Before sorting, regex pads any integer in the string
         //       with leading zeros (up to 10 digits),
         //       to achieve smart alphanumerical sorting
-        optionNames = AssetDatabase.GetSubFolders(racMeshLoader.meshesRoot)
-            .Select(s => s.Substring(racMeshLoader.meshesRoot.Length).TrimStart('/'))
+        optionNames = AssetDatabase.GetSubFolders(racMeshLoader.GetRootFolder())
+            .Select(s => s.Substring(racMeshLoader.GetRootFolder().Length).TrimStart('/'))
             .Where(n => !string.IsNullOrEmpty(n))
             .OrderBy(n => Regex.Replace(n, @"\d+", match => match.Value.PadLeft(10, '0')))
             .ToArray();
 
         if (optionNames.Length == 0)
         {
-            Debug.LogError($"No subfolders found under root:\n{racMeshLoader.meshesRoot}");
+            Debug.LogError($"No subfolders found under root:\n{racMeshLoader.GetRootFolder()}");
             return false;
         }
 
