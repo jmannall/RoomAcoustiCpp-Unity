@@ -3,7 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using UnityEditor.PackageManager.UI;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -66,9 +65,6 @@ public class IRController : MonoBehaviour
     private List<RACManager.SpatMode> spatModes;
     bool recordMono = false;
 
-    [SerializeField]
-    private bool doEchogram = false;
-
     private List<Transform> transforms = new List<Transform>();
 
     private IEnumerator transformEnumerator;
@@ -117,6 +113,23 @@ public class IRController : MonoBehaviour
         // setting `rtmStarted = false` here would deadlock the while loop.
         rtmCompleted = true;
     }
+    // If isSource, channelIndex contains the source ID, otherwise, channelIndex contains the reverb direction index
+    static void OnResidueCallback(float residue, bool isSource, int channelIndex, int slopeIndex)
+    {
+        // TODO: do something about it...
+        if (isSource)
+            Debug.Log(
+                "Received source residue." +
+                " Source idx " + channelIndex.ToString() + "," +
+                " slope idx " + slopeIndex.ToString() + ";" +
+                " Residue value: " + residue.ToString());
+        else
+            Debug.Log(
+                "Received listener residue." +
+                " Direction idx " + channelIndex.ToString() + "," +
+                " slope idx " + slopeIndex.ToString() + ";" +
+                " Residue value: " + residue.ToString());
+    }
 
     private static IRController irController;
 
@@ -127,6 +140,8 @@ public class IRController : MonoBehaviour
         DebugCPP.RegisterIEMEndCallback(OnIEMCompleted);
         DebugCPP.RegisterRTMStartCallback(OnRTMStarted);
         DebugCPP.RegisterRTMEndCallback(OnRTMCompleted);
+
+        DebugCPP.RegisterResidueCallback(OnResidueCallback);
 
         Debug.AssertFormat(irController == null, "More than one instance of the IRController created! Singleton violated.");
         irController = this;
@@ -190,6 +205,8 @@ public class IRController : MonoBehaviour
         DebugCPP.UnregisterIEMEndCallback();
         DebugCPP.UnregisterRTMStartCallback();
         DebugCPP.UnregisterRTMEndCallback();
+
+        DebugCPP.UnregisterResidueCallback();
     }
 
     private void Update()
@@ -267,6 +284,7 @@ public class IRController : MonoBehaviour
 
     void OnDestroy()
     {
+        // TODO: Why not unregister the callbacks here?
         listeners.Clear();
         if (streamWriter != null)
             streamWriter.Close();
@@ -577,10 +595,7 @@ public class IRController : MonoBehaviour
 
     void WriteSample(float input)
     {
-        if (doEchogram)
-            streamWriter.Write(Mathf.Log10(input * input + 1e-30f).ToString() + ", ");
-        else
-            streamWriter.Write(input.ToString() + ", ");
+        streamWriter.Write(input.ToString() + ", ");
     }
 
     /* Write all information related to the current IR run settings.
@@ -588,8 +603,6 @@ public class IRController : MonoBehaviour
     void WriteRunSettings()
     {
         UpdateStreamWriter("Run_settings");
-
-        streamWriter.Write("Echogram mode: " + doEchogram.ToString());
 
         // Write configs settings
         streamWriter.WriteLine("\nConfigurations");

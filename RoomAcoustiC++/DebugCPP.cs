@@ -66,6 +66,9 @@ public class DebugCPP : MonoBehaviour
     static extern void RegisterPathCallback(pathCallback cb);
 
     [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+    public static extern void RegisterResidueCallback(residueCallback cb);
+
+    [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
     public static extern void RegisterIEMStartCallback(iemStartCallback cb);
 
     [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
@@ -84,6 +87,9 @@ public class DebugCPP : MonoBehaviour
     static extern void UnregisterPathCallback();
 
     [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+    public static extern void UnregisterResidueCallback();
+
+    [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
     public static extern void UnregisterIEMStartCallback();
 
     [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
@@ -99,6 +105,9 @@ public class DebugCPP : MonoBehaviour
     delegate void debugCallback(IntPtr request, int colour, int size);
 
     delegate void pathCallback(IntPtr key, IntPtr intersections, int keySize, int intersectionsSize);
+
+    // If isSource, channelIndex contains the source ID, otherwise, channelIndex contains the reverb direction index
+    public delegate void residueCallback(float residue, bool isSource, int channelIndex, int slopeIndex);
 
     public delegate void iemStartCallback();
     public delegate void iemEndCallback();
