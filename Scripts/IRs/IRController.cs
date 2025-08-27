@@ -82,6 +82,7 @@ public class IRController : MonoBehaviour
     bool nextTransform = true;
 
     StreamWriter streamWriter;
+    bool expectResidues;
     string wavPath;
 
     static bool iemStarted = false;
@@ -116,20 +117,27 @@ public class IRController : MonoBehaviour
         // setting `rtmStarted = false` here would deadlock the while loop.
         rtmCompleted = true;
     }
-    // If isSource, channelIndex contains the source ID, otherwise, channelIndex contains the reverb direction index
-    static void OnResidueCallback(float residue, bool isSource, int channelIndex, int slopeIndex)
+    // If isSource, sourceIndex contains the source ID, otherwise, sourceIndex contains the reverb direction index
+    static void OnResidueCallback(float residue, bool isSource, int sourceIndex, int slopeIndex)
     {
-        // TODO: do something about it...
+        // Write to file, provided expectResidues is true and streamWriter is available
+        if (irController != null && irController.streamWriter != null && irController.expectResidues)
+            irController.streamWriter.WriteLine(
+                isSource.ToString() + ", " +
+                sourceIndex.ToString() + ", " +
+                slopeIndex.ToString() + ", " +
+                residue.ToString() + ";");
+
         if (isSource)
             Debug.Log(
                 "Received source residue." +
-                " Source idx " + channelIndex.ToString() + "," +
+                " Source idx " + sourceIndex.ToString() + "," +
                 " slope idx " + slopeIndex.ToString() + ";" +
                 " Residue value: " + residue.ToString());
         else
             Debug.Log(
                 "Received listener residue." +
-                " Direction idx " + channelIndex.ToString() + "," +
+                " Direction idx " + sourceIndex.ToString() + "," +
                 " slope idx " + slopeIndex.ToString() + ";" +
                 " Residue value: " + residue.ToString());
     }
@@ -178,14 +186,8 @@ public class IRController : MonoBehaviour
         else
             impulseResponse = ReadCSV(irFilePath);
 
-        UpdateStreamWriter("Data");
-        streamWriter.WriteLine(AudioSettings.outputSampleRate.ToString());
-
         if (listeners.Count > 0)
-        {
-            WriteListenerPositions();
             AddListenerRotations();
-        }
         else
         {
             useTransforms = true;
@@ -310,7 +312,6 @@ public class IRController : MonoBehaviour
         {
             areaName = transform.gameObject.name;
             LocateListenerPositions(transform);
-            WriteListenerPositions();
             yield return null; // Pause and resume in the next frame
             ClearListenerPositions(transform);
         }
@@ -360,7 +361,6 @@ public class IRController : MonoBehaviour
             racSource.transform.rotation = source.rotation;
             if (!useTransforms)
                 areaName = source.gameObject.name;
-            UpdateStreamWriter(areaName + "_" + spatName + "_" + configName);
             yield return null; // Pause and resume in the next frame
         }
         activeSource = -1;
@@ -373,6 +373,11 @@ public class IRController : MonoBehaviour
         foreach (var listener in listeners)
         {
             activeListener++;
+
+            UpdateStreamWriter("Spat_" + spatName + "_Config_" + configName + "_Src_" + activeSource.ToString() + "_Lst_" + activeListener.ToString() + "_Residues.csv");
+            irController.streamWriter.WriteLine("isSource, sourceIndex, slopeIndex, residue;");
+            expectResidues = true;
+
             RACManager.UpdateListener(listener.position, listener.rotation);
             listenerTransform.position = listener.position;
             listenerTransform.rotation = listener.rotation;
@@ -419,6 +424,8 @@ public class IRController : MonoBehaviour
             //Debug.Log("Time for IEM and RTM to complete fresh loops: " + countEnd.ToString() + " frames");
             Debug.Log("Time for IEM and RTM to run fresh loops: " + (countStart + countEnd).ToString() + " frames");
 
+            expectResidues = false;
+
             RACManager.SubmitAudio(racSource.id, ref inputBuffer);
             RACManager.ResetFDN();
 
@@ -451,6 +458,8 @@ public class IRController : MonoBehaviour
             }
             Debug.Log("Time to reset the DSP: " + countFrames.ToString() + " frames");
 
+            UpdateStreamWriter("Spat_" + spatName + "_Config_" + configName + "_Src_" + activeSource.ToString() + "_Lst_" + activeListener.ToString() + "_IR.csv");
+
             inputBuffer[0] = 1.0f;
             ProcessAudioBuffer(0);
             inputBuffer[0] = 0.0f;
@@ -459,9 +468,8 @@ public class IRController : MonoBehaviour
             streamWriter.Write("0, 0\n");
             streamWriter.Flush();
 
-            wavPath = filePath + "/Spat_" + spatName + "_Config_" + configName + "_Src_" + activeSource.ToString() + "_Lst_" + activeListener.ToString() + ".wav";
-            // TODO: Respect `recordMono` setting
-            WavWriter.Save(wavPath, outputSignal, AudioSettings.outputSampleRate, channels: 2, writeFloat32: true);
+            wavPath = filePath + "/Spat_" + spatName + "_Config_" + configName + "_Src_" + activeSource.ToString() + "_Lst_" + activeListener.ToString() + "_IR.wav";
+            WavWriter.Save(wavPath, outputSignal, AudioSettings.outputSampleRate, channels: 2, writeFloat32: true, writeMono: recordMono);
             Debug.Log("<color=green>WAV saved to: " + wavPath + "</color>");
 
             racSource.Stop();
@@ -543,17 +551,7 @@ public class IRController : MonoBehaviour
                 Destroy(children[i].gameObject);
         }
     }
-
-    void WriteListenerPositions()
-    {
-        UpdateStreamWriter(areaName + "_Positions");
-
-        foreach (var listener in listeners)
-        {
-            streamWriter.WriteLine(listener.position.x + ", " + listener.position.y + ", " + listener.position.z);
-            streamWriter.Flush();
-        }
-    }
+    
     void AddListenerRotations()
     {
         if (rotationStep == 0.0f)
@@ -616,11 +614,15 @@ public class IRController : MonoBehaviour
         streamWriter.Write(input.ToString() + ", ");
     }
 
-    /* Write all information related to the current IR run settings.
-     */
+    // TODO: Add summary everywhere it's useful.
+    /// <summary>
+    /// Write all information related to the current IR run settings.
+    /// </summary>
     void WriteRunSettings()
     {
         UpdateStreamWriter("Run_settings");
+
+        streamWriter.WriteLine("Sample rate: " + AudioSettings.outputSampleRate);
 
         // Write configs settings
         streamWriter.WriteLine("\nConfigurations");
@@ -629,35 +631,31 @@ public class IRController : MonoBehaviour
         var fields = typeof(RACManager.IEMConfig).GetFields();
         foreach (var config in configs)
         {
-            streamWriter.WriteLine("\tConfig_index " + idx.ToString());
+            streamWriter.WriteLine("\tConfig_" + idx);
             foreach (var field in fields)
-                streamWriter.WriteLine("\t\t" + field.Name + " " + field.GetValue(config).ToString());
+                streamWriter.WriteLine("\t\t" + field.Name + " " + field.GetValue(config));
             streamWriter.Flush();
             idx++;
         }
 
-        // Write spatModes settings
-        streamWriter.WriteLine("\nSpatialisation modes");
-        foreach (var spatMode in spatModes)
+        // Write sources settings
+        streamWriter.WriteLine("\nSource positions");
+        int scrIdx = 0;
+        foreach (var source in sources)
         {
-            streamWriter.WriteLine("\t" + spatMode.ToString());
+            streamWriter.WriteLine("\tSrc_" + scrIdx + ": " + source.position.x + ", " + source.position.y + ", " + source.position.z);
+            ++scrIdx;
+            // TODO: Write rotations
             streamWriter.Flush();
         }
 
         // Write listeners settings
         streamWriter.WriteLine("\nListener positions");
+        int lstIdx = 0;
         foreach (var listener in listeners)
         {
-            streamWriter.WriteLine("\t" + listener.position.x + ", " + listener.position.y + ", " + listener.position.z);
-            // TODO: Write rotations
-            streamWriter.Flush();
-        }
-
-        // Write sources settings
-        streamWriter.WriteLine("\nSource positions");
-        foreach (var source in sources)
-        {
-            streamWriter.WriteLine("\t" + source.position.x + ", " + source.position.y + ", " + source.position.z);
+            streamWriter.WriteLine("\tLst_" + lstIdx + ": " + listener.position.x + ", " + listener.position.y + ", " + listener.position.z);
+            ++lstIdx;
             // TODO: Write rotations
             streamWriter.Flush();
         }
