@@ -8,8 +8,6 @@ using UnityEngine.SceneManagement;
 
 public class IRController : MonoBehaviour
 {
-#if RAC_Debug && UNITY_EDITOR
-
     [SerializeField]
     private float spacing = 1.0f;
 
@@ -35,7 +33,7 @@ public class IRController : MonoBehaviour
 
     private static bool doIRs = false;
 
-    [SerializeField]
+    [SerializeField, HideInInspector]
     private string sceneName = "";
 
     [SerializeField]
@@ -127,7 +125,8 @@ public class IRController : MonoBehaviour
                 sourceIndex.ToString() + ", " +
                 slopeIndex.ToString() + ", " +
                 residue.ToString() + ";");
-
+        
+        /*
         if (isSource)
             Debug.Log(
                 "Received source residue." +
@@ -140,9 +139,16 @@ public class IRController : MonoBehaviour
                 " Direction idx " + sourceIndex.ToString() + "," +
                 " slope idx " + slopeIndex.ToString() + ";" +
                 " Residue value: " + residue.ToString());
+        */
     }
 
     private static IRController irController;
+
+    private void OnValidate()
+    {
+        Debug.AssertFormat(irController == null, "More than one instance of the IRController created! Singleton violated.");
+        irController = this;
+    }
 
     // Start is called before the first frame update
     private void Awake()
@@ -151,11 +157,7 @@ public class IRController : MonoBehaviour
         DebugCPP.RegisterIEMEndCallback(OnIEMCompleted);
         DebugCPP.RegisterRTMStartCallback(OnRTMStarted);
         DebugCPP.RegisterRTMEndCallback(OnRTMCompleted);
-
         DebugCPP.RegisterResidueCallback(OnResidueCallback);
-
-        Debug.AssertFormat(irController == null, "More than one instance of the IRController created! Singleton violated.");
-        irController = this;
 
         int numFrames = AudioSettings.GetConfiguration().dspBufferSize;
         numSamples = Mathf.CeilToInt(impulseResponseLength * AudioSettings.outputSampleRate);
@@ -165,23 +167,20 @@ public class IRController : MonoBehaviour
         outputBuffer = new float[2 * numFrames];
         outputSignal = new float[numSamples];
 
-        if (sceneName == "")
-            sceneName = SceneManager.GetActiveScene().name;
-
-        filePath = Application.persistentDataPath + "/ImpulseResponses/" + sceneName + "/" + runName;
-        if (!Directory.Exists(filePath))
-            Directory.CreateDirectory(filePath);
+        UpdateSceneName();
 
         cubeSize = Mathf.Min(spacing / 2.0f, cubeSize);
     }
 
     private void Start()
     {
+        UpdateSceneName();
+
         listenerTransform = FindAnyObjectByType<RACAudioListener>().transform;
         if (listenerTransform == null)
             Debug.LogError("RACAudioListener not found");
 
-        if (irFilePath == "")
+        if (string.IsNullOrEmpty(irFilePath))
             impulseResponse = new float[1] { 1.0f };
         else
             impulseResponse = ReadCSV(irFilePath);
@@ -212,7 +211,6 @@ public class IRController : MonoBehaviour
         DebugCPP.UnregisterIEMEndCallback();
         DebugCPP.UnregisterRTMStartCallback();
         DebugCPP.UnregisterRTMEndCallback();
-
         DebugCPP.UnregisterResidueCallback();
     }
 
@@ -295,6 +293,23 @@ public class IRController : MonoBehaviour
         listeners.Clear();
         if (streamWriter != null)
             streamWriter.Close();
+    }
+
+    public void UpdateSceneName()
+    {
+        if ((RACMeshLoader.racMeshLoader != null) && !string.IsNullOrEmpty(RACMeshLoader.racMeshLoader.GetCurrentSelection()))
+            sceneName = RACMeshLoader.racMeshLoader.GetCurrentSelection();
+        else
+            sceneName = SceneManager.GetActiveScene().name;
+
+        filePath = Application.persistentDataPath + "/ImpulseResponses/" + sceneName + "/" + runName;
+        if (!Directory.Exists(filePath))
+            Directory.CreateDirectory(filePath);
+    }
+
+    public string GetSceneName()
+    {
+        return sceneName;
     }
 
     void UpdateStreamWriter(string fileName)
@@ -422,7 +437,7 @@ public class IRController : MonoBehaviour
             }
             //Debug.Log("Time for IEM and RTM to start fresh loops: " + countStart.ToString() + " frames");
             //Debug.Log("Time for IEM and RTM to complete fresh loops: " + countEnd.ToString() + " frames");
-            Debug.Log("Time for IEM and RTM to run fresh loops: " + (countStart + countEnd).ToString() + " frames");
+            //Debug.Log("Time for IEM and RTM to run fresh loops: " + (countStart + countEnd).ToString() + " frames");
 
             expectResidues = false;
 
@@ -456,7 +471,7 @@ public class IRController : MonoBehaviour
                 }
                 yield return null;
             }
-            Debug.Log("Time to reset the DSP: " + countFrames.ToString() + " frames");
+            //Debug.Log("Time to reset the DSP: " + countFrames.ToString() + " frames");
 
             UpdateStreamWriter("Spat_" + spatName + "_Config_" + configName + "_Src_" + activeSource.ToString() + "_Lst_" + activeListener.ToString() + "_IR.csv");
 
@@ -470,7 +485,7 @@ public class IRController : MonoBehaviour
 
             wavPath = filePath + "/Spat_" + spatName + "_Config_" + configName + "_Src_" + activeSource.ToString() + "_Lst_" + activeListener.ToString() + "_IR.wav";
             WavWriter.Save(wavPath, outputSignal, AudioSettings.outputSampleRate, channels: 2, writeFloat32: true, writeMono: recordMono);
-            Debug.Log("<color=green>WAV saved to: " + wavPath + "</color>");
+            //Debug.Log("<color=green>WAV saved to: " + wavPath + "</color>");
 
             racSource.Stop();
 
@@ -701,5 +716,4 @@ public class IRController : MonoBehaviour
         Gizmos.color = Color.white;
         Gizmos.DrawRay(listeners.ElementAt(activeListener).position, listeners.ElementAt(activeListener).forward);
     }
-#endif
 }

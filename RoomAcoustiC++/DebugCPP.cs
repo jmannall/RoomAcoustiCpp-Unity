@@ -24,12 +24,15 @@ public class DebugCPP : MonoBehaviour
 
     private GUIStyle style = new GUIStyle();
 
-    // Use this for initialization
-    void Awake()
+    private void OnValidate()
     {
         Debug.AssertFormat(debug == null, "More than one instance of the DebugCPP created! Singleton violated.");
         debug = this;
+    }
 
+    // Use this for initialization
+    void Awake()
+    {
         RegisterDebugCallback(OnDebugCallback);
         RegisterPathCallback(OnPathCallback);
     }

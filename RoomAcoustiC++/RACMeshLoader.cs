@@ -8,7 +8,6 @@ using System.Collections.Generic;
 using UnityEditor;
 #endif
 
-[AddComponentMenu("RoomAcoustiC++/MeshLoader")]
 public class RACMeshLoader : MonoBehaviour
 {
     // global singleton
@@ -70,11 +69,14 @@ public class RACMeshLoader : MonoBehaviour
     }
 #endif
 
-    private void Awake()
+    private void OnValidate()
     {
         Debug.AssertFormat(racMeshLoader == null, "More than one instance of the RACMeshLoader created! Singleton violated.");
         racMeshLoader = this;
+    }
 
+    private void Awake()
+    {
         // If this is the start of play, load the appropriate assets (specified by selectedSubfolder).
         LoadAllMeshData();
     }

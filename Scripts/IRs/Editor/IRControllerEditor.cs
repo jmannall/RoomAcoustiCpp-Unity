@@ -1,21 +1,26 @@
+#if UNITY_EDITOR
 using UnityEditor;
-using UnityEditor.UIElements;
 using UnityEngine;
-using UnityEngine.UIElements;
 
 [CustomEditor(typeof(IRController))]
-
 public class IRControllerEditor : Editor
 {
-#if RAC_Debug && UNITY_EDITOR
+#if RAC_Debug
     private IRController irController;
 
     private void OnEnable()
     {
         irController = target as IRController;
     }
+
     public override void OnInspectorGUI()
     {
+        // Read-only text field reflecting the output folder
+        irController.UpdateSceneName();
+        EditorGUI.BeginDisabledGroup(true);
+        EditorGUILayout.TextField("Export subfolder:", irController.GetSceneName());
+        EditorGUI.EndDisabledGroup();
+
         DrawDefaultInspector();
 
         if (GUILayout.Button("Run Impulse Responses"))
@@ -37,3 +42,4 @@ public class IRControllerEditor : Editor
     }
 #endif
 }
+#endif

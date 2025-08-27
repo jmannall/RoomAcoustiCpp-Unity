@@ -284,11 +284,14 @@ public class RACManager : MonoBehaviour
 
     //////////////////// Unity Functions ////////////////////
 
-    private void Awake()
+    private void OnValidate()
     {
         Debug.AssertFormat(racManager == null, "More than one instance of the RACManager created! Singleton violated.");
         racManager = this;
+    }
 
+    private void Awake()
+    {
         AudioConfiguration config = AudioSettings.GetConfiguration();
         numFrames = config.dspBufferSize;
         sampleRate = config.sampleRate;
