@@ -29,7 +29,9 @@ public class IRController : MonoBehaviour
 
     private float[] inputBuffer;
     private float[] outputBuffer;
+    private float[] outputSignal;
     int numBuffers;
+    int numSamples;
 
     private static bool doIRs = false;
 
@@ -80,6 +82,7 @@ public class IRController : MonoBehaviour
     bool nextTransform = true;
 
     StreamWriter streamWriter;
+    string wavPath;
 
     static bool iemStarted = false;
     static bool iemCompleted = false;
@@ -147,10 +150,12 @@ public class IRController : MonoBehaviour
         irController = this;
 
         int numFrames = AudioSettings.GetConfiguration().dspBufferSize;
+        numSamples = Mathf.CeilToInt(impulseResponseLength * AudioSettings.outputSampleRate);
+        numBuffers = Mathf.CeilToInt(numSamples / numFrames);
+
         inputBuffer = new float[numFrames];
         outputBuffer = new float[2 * numFrames];
-
-        numBuffers = Mathf.CeilToInt(impulseResponseLength * AudioSettings.outputSampleRate / numFrames);
+        outputSignal = new float[numSamples];
 
         if (sceneName == "")
             sceneName = SceneManager.GetActiveScene().name;
@@ -453,9 +458,17 @@ public class IRController : MonoBehaviour
                 ProcessAudioBuffer(i);
             streamWriter.Write("0, 0\n");
             streamWriter.Flush();
+
+            wavPath = filePath + "/Spat_" + spatName + "_Config_" + configName + "_Src_" + activeSource.ToString() + "_Lst_" + activeListener.ToString() + ".wav";
+            // TODO: Respect `recordMono` setting
+            WavWriter.Save(wavPath, outputSignal, AudioSettings.outputSampleRate, channels: 2, writeFloat32: true);
+            Debug.Log("<color=green>WAV saved to: " + wavPath + "</color>");
+
             racSource.Stop();
+
             if (!doIRs)
                 yield break;
+
             yield return null; // Pause and resume in the next frame
         }
         activeListener = -1;
@@ -569,14 +582,19 @@ public class IRController : MonoBehaviour
 
     void ProcessAudioBuffer(int bufferNumber)
     {
-        int idx = bufferNumber * inputBuffer.Length;
-        for (int i = 0; i < Mathf.Min(inputBuffer.Length, impulseResponse.Length - idx); i++)
-            inputBuffer[i] = impulseResponse[idx + i];
+        int inputIdx = bufferNumber * inputBuffer.Length;
+        int outputIdx = bufferNumber * outputBuffer.Length;
+
+        for (int i = 0; i < Mathf.Min(inputBuffer.Length, impulseResponse.Length - inputIdx); i++)
+            inputBuffer[i] = impulseResponse[inputIdx + i];
 
         RACManager.SubmitAudio(racSource.id, ref inputBuffer);
         bool success = RACManager.ProcessOutput();
         if (success)
             RACManager.GetOutputBuffer(ref outputBuffer);
+
+        for (int i = 0; i < Mathf.Min(outputBuffer.Length, outputSignal.Length - outputIdx); ++i)
+            outputSignal[outputIdx + i] = outputBuffer[i];
 
         if (recordMono)
         {
@@ -589,7 +607,7 @@ public class IRController : MonoBehaviour
                 WriteSample(sample);
         }
 
-        for (int i = 0; i < Mathf.Min(inputBuffer.Length, impulseResponse.Length - idx); i++)
+        for (int i = 0; i < Mathf.Min(inputBuffer.Length, impulseResponse.Length - inputIdx); i++)
             inputBuffer[i] = 0.0f;
     }
 
