@@ -18,10 +18,16 @@ public class RACMeshLoader : MonoBehaviour
 
     // Serialized to ensure persistence when switching between edit and play mode, but hidden from the GUI
     // TODO: For each of these, consider if it's actually necessary to [SerializeField, HideInInspector].
+    // The imported resources are loaded from "Assets/Resources/PythonExports/{sceneName}/{selectedSubfolder}/".
+    // The processed mesh prefabs are stored as "Assets/Resources/ProcessedPrefabs/{sceneName}/{selectedSubfolder}.prefab".
+    // Note that, out of all methods which take a file path as input,
+    //      some assume a path relative to the project root,
+    //      some assume a path relative to "Assets/",
+    //      some assume a path relative to "Assets/Resources/",
+    //      some (external) require a global path.
     [SerializeField, HideInInspector]
     private string selectedSubfolder = "";
-    private static string meshesRoot = "Assets/MOD-ART/Meshes";
-    private static string prefabCache = "MoD-ART";
+    private static string sceneName = "AudioForGames"; // TODO: This will also need to be selected.
 
     [SerializeField, HideInInspector]
     private GameObject meshGameObject = null;
@@ -40,34 +46,9 @@ public class RACMeshLoader : MonoBehaviour
     private static string[] tokenizePath(string path) => path.Split(new[] { '\\', '/' }, StringSplitOptions.RemoveEmptyEntries);
     private static string[] tokenizeFile(string file) => file.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
     private static string[] tokenizeLine(string line) => line.Split(new[] { ',', ';', ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
+    private static string UnityPath(params string[] parts) => string.Join('/', parts);
     private static float ParseF(string s) => float.Parse(s, CultureInfo.InvariantCulture);
     private static int ParseI(string s) => int.Parse(s, CultureInfo.InvariantCulture);
-
-#if UNITY_EDITOR
-    private static void RecursiveMKDir(string pathToFile)
-    {
-        if (Path.HasExtension(pathToFile))
-            pathToFile = Path.GetDirectoryName(pathToFile);
-
-        if (string.IsNullOrEmpty(pathToFile))
-            return;
-
-        string[] parts = tokenizePath(pathToFile);
-
-        string currentRoot = "Assets";
-        int start = Array.IndexOf(parts, currentRoot);
-        if (start < 0)
-            return;
-
-        for (int i = start+1; i < parts.Length; i++)
-        {
-            string nextRoot = currentRoot + "/" + parts[i];
-            if (!AssetDatabase.IsValidFolder(nextRoot))
-                AssetDatabase.CreateFolder(currentRoot, parts[i]);
-            currentRoot = nextRoot;
-        }
-    }
-#endif
 
     private void OnValidate()
     {
@@ -93,8 +74,7 @@ public class RACMeshLoader : MonoBehaviour
         char sep = Path.DirectorySeparatorChar;
         string resourcePath = Path.Combine(
             Application.dataPath.Replace('/', sep),  // This already includes "/Assets"
-            meshesRoot.Replace("Assets/", "").Replace('/', sep),
-            selectedSubfolder);
+            "Resources", "PythonExports", sceneName, selectedSubfolder);
         RACManager.InitRAVES(resourcePath + sep);
 
         RACManager.UpdatePlanesAndEdges();
@@ -152,7 +132,7 @@ public class RACMeshLoader : MonoBehaviour
 
     public string GetRootFolder()
     {
-        return meshesRoot;
+        return UnityPath("Assets", "Resources", "PythonExports", sceneName);
     }
 
     public string GetCurrentSelection()
@@ -164,7 +144,8 @@ public class RACMeshLoader : MonoBehaviour
     {
         if (string.IsNullOrEmpty(selectedSubfolder))
         {
-            // TODO: Handle this appropriately.
+            // TODO: Handle this case appropriately.
+            Debug.LogError("Tried to load mesh, but the selected subfolder string is null or empty.");
             return;
         }
 
@@ -177,48 +158,70 @@ public class RACMeshLoader : MonoBehaviour
 #endif
 
 #if UNITY_EDITOR
-        string importPath = $"{meshesRoot}/{selectedSubfolder}/mesh.obj";
-        string assetPath = $"Assets/Resources/{prefabCache}/{selectedSubfolder}/mesh.prefab";
+        string importPath = UnityPath("Assets", "Resources", "PythonExports", sceneName, selectedSubfolder, "mesh.obj");
+        string prefabPath = UnityPath("Assets", "Resources", "ProcessedPrefabs", sceneName, selectedSubfolder + ".prefab");
+        if (!AssetDatabase.IsValidFolder("Assets/Resources/ProcessedPrefabs"))
+            AssetDatabase.CreateFolder("Assets/Resources", "ProcessedPrefabs");
+        if (!AssetDatabase.IsValidFolder($"Assets/Resources/ProcessedPrefabs/{sceneName}"))
+            AssetDatabase.CreateFolder("Assets/Resources/ProcessedPrefabs", sceneName);
 
         // Ensure the model importer has Read/Write enabled so meshes are readable at runtime.
         // Also, ensure the original material data is respected.
         ModelImporter imp = AssetImporter.GetAtPath(importPath) as ModelImporter;
-        if (imp && !imp.isReadable)
+        if (imp)
         {
             imp.isReadable = true;
-            //imp.materialImportMode = ModelImporterMaterialImportMode.ImportStandard;
-            //imp.materialLocation = ModelImporterMaterialLocation.InPrefab;
-            //imp.materialName = ModelImporterMaterialName.BasedOnMaterialName;
+
+            imp.materialImportMode = ModelImporterMaterialImportMode.ImportStandard;    // for OBJ/MTL
+            imp.materialLocation = ModelImporterMaterialLocation.InPrefab;              // avoid scattering .mat files
+            imp.materialName = ModelImporterMaterialName.BasedOnMaterialName;           // keep material names exactly
+            imp.materialSearch = ModelImporterMaterialSearch.Local;                     // don’t “find” random matches elsewhere
+
             imp.SaveAndReimport();
+        }
+        else
+        {
+            Debug.LogError($"Failed to import OBJ at path:\n{importPath}");
+            return;
         }
 
         GameObject src = AssetDatabase.LoadAssetAtPath<GameObject>(importPath);
         if (!src)
         {
-            Debug.LogError($"OBJ not found at import path:\n{importPath}");
+            Debug.LogError($"Failed to load OBJ at path:\n{importPath}");
             return;
         }
 
+        // Instantiate the loaded mesh as a GameObject.
         meshGameObject = (GameObject)PrefabUtility.InstantiatePrefab(src);
 
+        // Add a collider to the meshGameObject.
         foreach (MeshFilter mf in meshGameObject.GetComponentsInChildren<MeshFilter>())
         {
             MeshCollider mc = mf.gameObject.AddComponent<MeshCollider>();
             mc.sharedMesh = mf.sharedMesh;
         }
 
-        RecursiveMKDir(assetPath);
-        PrefabUtility.SaveAsPrefabAsset(meshGameObject, assetPath);
+        // Save the processed mesh as a prefab, to be loaded during play mode.
+        PrefabUtility.SaveAsPrefabAsset(meshGameObject, prefabPath);
 #else
-        GameObject prefab = Resources.Load<GameObject>($"{prefabCache}/{selectedSubfolder}/mesh");
+        // When using Resources.Load, the path is relative to "Assets/Resources/", and no file extension is needed.
+        string prefabPath = UnityPath("ProcessedPrefabs", sceneName, selectedSubfolder);
+        GameObject prefab = Resources.Load<GameObject>(prefabPath);
         if (!prefab)
         {
-            Debug.LogError($"Runtime prefab not found:\nAssets/Resources/{prefabCache}/{selectedSubfolder}/mesh.prefab");
+            Debug.LogError($"Runtime prefab not found:\nAssets/Resources/{prefabPath}.prefab");
             return;
         }
 
         meshGameObject = Object.Instantiate(prefab);
 #endif
+
+#if UNITY_ASSERTIONS
+        foreach (MeshFilter mf in meshGameObject.GetComponentsInChildren<MeshFilter>())
+            Debug.Assert(mf.sharedMesh.isReadable, $"The MoD-ART mesh ({mf.sharedMesh.name}) must be readable.");
+#endif
+
         // Set the mesh as a child of this RACMeshLoader GameObject
         meshGameObject.transform.SetParent(this.transform);
 
@@ -249,28 +252,18 @@ public class RACMeshLoader : MonoBehaviour
         if (string.IsNullOrEmpty(selectedSubfolder))
         {
             // TODO: Handle this appropriately.
+            Debug.LogError("Tried to load material data, but the selected subfolder string is null or empty.");
             return;
         }
 
-#if UNITY_EDITOR
-        // Write a TextAsset file under Resources so it can be loaded at runtime.
-        string importPath = $"{meshesRoot}/{selectedSubfolder}/materials.csv";
-        string assetPath = $"Assets/Resources/{prefabCache}/{selectedSubfolder}/materials.csv";
-
-        RecursiveMKDir(assetPath);
-        File.WriteAllText(assetPath, File.ReadAllText(importPath));
-
-        AssetDatabase.ImportAsset(assetPath);
-        TextAsset csvTextAsset = AssetDatabase.LoadAssetAtPath<TextAsset>(assetPath);
-#else
-        // Load the TextAsset saved in Resources (path is relative to any Resources/ folder, no extension).
-        TextAsset csvTextAsset = UnityEngine.Resources.Load<UnityEngine.TextAsset>($"{prefabCache}/{subfolderName}/materials");
+        // When using Resources.Load, the path is relative to "Assets/Resources/", and no file extension is needed.
+        string assetPath = UnityPath("PythonExports", sceneName, selectedSubfolder, "materials");
+        TextAsset csvTextAsset = Resources.Load<TextAsset>(assetPath);
         if (!csvTextAsset)
         {
-            Debug.LogError($"Runtime prefab not found:\nAssets/Resources/{prefabCache}/{selectedSubfolder}/materials.csv");
+            Debug.LogError($"Runtime prefab not found:\nAssets/Resources/{assetPath}.csv");
             return;
         }
-#endif
 
         // Get all lines from the TextAsset.
         string[] lines = tokenizeFile(csvTextAsset.text);
@@ -426,3 +419,4 @@ public class RACMeshLoader : MonoBehaviour
         }
     }
 }
+

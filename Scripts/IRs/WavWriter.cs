@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using UnityEngine;
+using static UnityEditor.Experimental.AssetDatabaseExperimental.AssetDatabaseCounters;
 
 public static class WavWriter
 {
@@ -12,7 +13,7 @@ public static class WavWriter
     /// <param name="sampleRate">Samples per second (e.g., 44100 or 48000).</param>
     /// <param name="channels">Number of channels (1 = mono, 2 = stereo, etc.).</param>
     /// <param name="writeFloat32">True = 32-bit IEEE float WAV (format code 3). False = 16-bit PCM (format code 1).</param>
-    public static void Save(string fullPath, float[] samples, int sampleRate, int channels = 1, bool writeFloat32 = true, bool writeMono = false)
+    public static void Save(string fullPath, float[] samples, int sampleRate, int channels = 1, bool writeFloat32 = true, bool writeMono = false, bool echogram = false)
     {
         if (samples == null || samples.Length == 0)
             throw new ArgumentException("Samples array is null or empty.");
@@ -57,14 +58,14 @@ public static class WavWriter
             {
                 // Directly write float samples (assumed in [-1, 1], but not required)
                 for (int i = 0; i < samples.Length; i += outStride)
-                    bw.Write(samples[i]);
+                    bw.Write(Mathf.Pow(samples[i], echogram ? 2f : 1f));
             }
             else
             {
                 // Convert [-1,1] floats to 16-bit PCM with clipping
                 for (int i = 0; i < samples.Length; i += outStride)
                 {
-                    float s = Mathf.Clamp(samples[i], -1f, 1f);
+                    float s = Mathf.Clamp(Mathf.Pow(samples[i], echogram ? 2f : 1f), -1f, 1f);
                     short val = (short)Mathf.RoundToInt(s * 32767f);
                     bw.Write(val);
                 }

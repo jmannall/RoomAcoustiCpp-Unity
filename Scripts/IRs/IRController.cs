@@ -485,6 +485,7 @@ public class IRController : MonoBehaviour
 
             wavPath = filePath + "/Spat_" + spatName + "_Config_" + configName + "_Src_" + activeSource.ToString() + "_Lst_" + activeListener.ToString() + "_IR.wav";
             WavWriter.Save(wavPath, outputSignal, AudioSettings.outputSampleRate, channels: 2, writeFloat32: true, writeMono: recordMono);
+            WavWriter.Save(wavPath.Replace("IR.wav", "echogram.wav"), outputSignal, AudioSettings.outputSampleRate, channels: 2, writeFloat32: true, writeMono: recordMono, echogram: true);
             //Debug.Log("<color=green>WAV saved to: " + wavPath + "</color>");
 
             racSource.Stop();
