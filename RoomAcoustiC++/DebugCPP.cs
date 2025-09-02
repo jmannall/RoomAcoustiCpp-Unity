@@ -26,8 +26,10 @@ public class DebugCPP : MonoBehaviour
 
     private void OnValidate()
     {
-        Debug.AssertFormat(debug == null, "More than one instance of the DebugCPP created! Singleton violated.");
-        debug = this;
+        if (debug == null)
+            debug = this;
+        else
+            Debug.AssertFormat(debug == this, "More than one instance of the DebugCPP created! Singleton violated.");
     }
 
     // Use this for initialization

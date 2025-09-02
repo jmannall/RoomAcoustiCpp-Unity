@@ -286,8 +286,10 @@ public class RACManager : MonoBehaviour
 
     private void OnValidate()
     {
-        Debug.AssertFormat(racManager == null, "More than one instance of the RACManager created! Singleton violated.");
-        racManager = this;
+        if (racManager == null)
+            racManager = this;
+        else
+            Debug.AssertFormat(racManager == this, "More than one instance of the RACManager created! Singleton violated.");
     }
 
     private void Awake()

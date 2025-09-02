@@ -52,8 +52,10 @@ public class RACMeshLoader : MonoBehaviour
 
     private void OnValidate()
     {
-        Debug.AssertFormat(racMeshLoader == null, "More than one instance of the RACMeshLoader created! Singleton violated.");
-        racMeshLoader = this;
+        if (racMeshLoader == null)
+            racMeshLoader = this;
+        else
+            Debug.AssertFormat(racMeshLoader == this, "More than one instance of the RACMeshLoader created! Singleton violated.");
     }
 
     private void Awake()

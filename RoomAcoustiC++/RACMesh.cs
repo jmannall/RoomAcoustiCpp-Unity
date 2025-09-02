@@ -39,10 +39,16 @@ public class RACMesh : MonoBehaviour
 
     //////////////////// Unity Functions ////////////////////
 
-    void Awake()
+    private void OnValidate()
     {
-        Debug.AssertFormat(racMesh == null, "More than one instance of the RACMesh created! Singleton violated.");
-        racMesh = this;
+        if (racMesh == null)
+            racMesh = this;
+        else
+            Debug.AssertFormat(racMesh == this, "More than one instance of the RACMesh created! Singleton violated.");
+    }
+
+    private void Awake()
+    {
     }
 
     void Start()

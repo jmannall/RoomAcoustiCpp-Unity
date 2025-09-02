@@ -146,8 +146,10 @@ public class IRController : MonoBehaviour
 
     private void OnValidate()
     {
-        Debug.AssertFormat(irController == null, "More than one instance of the IRController created! Singleton violated.");
-        irController = this;
+        if (irController == null)
+            irController = this;
+        else
+            Debug.AssertFormat(irController == this, "More than one instance of the IRController created! Singleton violated.");
     }
 
     // Start is called before the first frame update
@@ -316,7 +318,7 @@ public class IRController : MonoBehaviour
     {
         if (streamWriter != null)
             streamWriter.Close();
-        FileStream file = new FileStream(filePath + "/" + fileName + ".csv", FileMode.Create);
+        FileStream file = new FileStream(filePath + "/" + fileName, FileMode.Create);
         streamWriter = new StreamWriter(file);
     }
 
@@ -407,7 +409,7 @@ public class IRController : MonoBehaviour
             while (!iemStarted || !rtmStarted)
             {
                 countStart++;
-                if (countStart > 100)
+                if (countStart > 1000)
                 {
                     if (!iemStarted)
                         Debug.LogError("Failed to start a fresh loop on the IEM thread.");
@@ -425,7 +427,7 @@ public class IRController : MonoBehaviour
             while (!iemCompleted || !rtmCompleted)
             {
                 countEnd++;
-                if (countEnd > 100)
+                if (countEnd > 1000)
                 {
                     if (!iemCompleted)
                         Debug.LogError("Failed to complete a fresh loop on the IEM thread.");
@@ -452,7 +454,7 @@ public class IRController : MonoBehaviour
             // TODO: Use flags and callbacks like for the other threads.
             int countReset = 0;
             int countFrames = 0;
-            while (countFrames < 100)
+            while (countFrames < 1000)
             {
                 if (RACManager.ProcessOutput())
                 {
@@ -630,13 +632,9 @@ public class IRController : MonoBehaviour
         streamWriter.Write(input.ToString() + ", ");
     }
 
-    // TODO: Add summary everywhere it's useful.
-    /// <summary>
-    /// Write all information related to the current IR run settings.
-    /// </summary>
     void WriteRunSettings()
     {
-        UpdateStreamWriter("Run_settings");
+        UpdateStreamWriter("Run_settings.txt");
 
         streamWriter.WriteLine("Sample rate: " + AudioSettings.outputSampleRate);
 
