@@ -106,7 +106,7 @@ public class RACManager : MonoBehaviour
     // Wall
 
     [DllImport(DLLNAME)]
-    private static extern int RACInitWall([In] float[] vertices, [In] float[] absorption);
+    private static extern int RACInitWall([In] float[] vertices, [In] float[] absorption, int polygonId);
 
     [DllImport(DLLNAME)]
     private static extern void RACUpdateWall(int id, [In] float[] vertices);
@@ -654,7 +654,7 @@ public class RACManager : MonoBehaviour
         racManager.vertices[8] = vertices[2].z;
     }
 
-    public static int InitWall(ref Vector3[] vertices, ref float[] absorption)
+    public static int InitWall(ref Vector3[] vertices, ref float[] absorption, int polygonId)
     {
         if (vertices.Length != 3)
         {
@@ -665,7 +665,7 @@ public class RACManager : MonoBehaviour
         UpdateVData(ref vertices);
 
         Profiler.BeginSample("Init Wall");
-        int id = RACInitWall(racManager.vertices, absorption);
+        int id = RACInitWall(racManager.vertices, absorption, polygonId);
         Profiler.EndSample();
         return id;
     }

@@ -172,7 +172,7 @@ public class RACObject : MonoBehaviour
             vertices[2] = mesh.vertices[mesh.triangles[i + 2]];
             transform.TransformPoints(vertices);
 
-            walls.Add(new RACWall(ref vertices, ref absorption));
+            walls.Add(new RACWall(ref vertices, ref absorption, i));
         }
 
         public void Update(ref Mesh mesh, ref SubMeshDescriptor subMesh, Transform transform)
@@ -230,9 +230,9 @@ public class RACObject : MonoBehaviour
 
         public RACWall() { id = -1; }
 
-        public RACWall(ref Vector3[] vertices, ref float[] absorption)
+        public RACWall(ref Vector3[] vertices, ref float[] absorption, int polygonId)
         {
-            id = RACManager.InitWall(ref vertices, ref absorption);
+            id = RACManager.InitWall(ref vertices, ref absorption, polygonId);
         }
 
         // Destructor

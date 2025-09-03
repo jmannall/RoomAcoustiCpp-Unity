@@ -416,7 +416,7 @@ public class RACMeshLoader : MonoBehaviour
                     //Debug.Log($"InitWall: Node index {nodeIndex}, absorption {absBuffer} (material index {matIndex}), vertices {vertsBuffer}");
 
                     absResized = ResizeCoeffs(frequencies, absBuffer);
-                    RACManager.InitWall(ref vertsBuffer, ref absResized);
+                    RACManager.InitWall(ref vertsBuffer, ref absResized, nodeIndex);
                 }
             }
         }
