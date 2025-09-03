@@ -51,6 +51,15 @@ public class RACManager : MonoBehaviour
     private static extern bool RACLoadSpatialisationFiles(int hrtfResampling, string[] filePaths);
 
     [DllImport(DLLNAME)]
+    private static extern bool RACInitEarlyReverb(int direct, int reflOrder, int shadowDiffOrder, int specularDiffOrder, bool lateReverb, float minEdgeLength, float maxPathLength, int diffractionId);
+
+    [DllImport(DLLNAME)]
+    private static extern bool RACInitSingleFDN(float volume, [In] float[] t60, int reverbFormulaId, [In] float[] dimensions, int numDimensions, int numRays, int matrixId);
+
+    [DllImport(DLLNAME)]
+    private static extern bool RACInitMoDART(int numRays, int matrixId, [In] int[] indexing, [In] int[] frequencyIndexing, [In] float[] t60s, [In] float[] energyDecays, [In] float[] leftEigenvectors, [In] float[] rightEigenvectors, float delay, int numFDNs, int numNodes, int numPaths);
+
+    [DllImport(DLLNAME)]
     private static extern void RACSetHeadphoneEQ([In] float[] leftIR, [In] float[] rightIR, int irLength);
 
     [DllImport(DLLNAME)]
@@ -62,24 +71,15 @@ public class RACManager : MonoBehaviour
     private static extern void RACUpdateIEMConfig(int direct, int reflOrder, int shadowDiffOrder, int specularDiffOrder, bool lateReverb, float minEdgeLength, float maxPathLength);
 
     [DllImport(DLLNAME)]
-    private static extern void RACUpdateReverbTime([In] float[] T60);
+    private static extern void RACUpdateReverbTime([In] float[] t60);
 
     [DllImport(DLLNAME)]
-    private static extern void RACUpdateReverbTimeModel(int id);
+    private static extern void RACUpdateReverbTimeModel(int reverbFormulaId);
 
     [DllImport(DLLNAME)]
-    private static extern void RACUpdateDiffractionModel(int id);
-
-    [DllImport(DLLNAME)]
-    private static extern void RACUpdateLateReverbModel(int id);
+    private static extern void RACUpdateDiffractionModel(int difractionId);
 
     // Reverb
-
-    [DllImport(DLLNAME)]
-    private static extern bool RACUpdateRoom(float volume, [In] float[] dimensions, int numDimensions, int id);
-
-    [DllImport(DLLNAME)]
-    private static extern bool RACInitRAVES(string ravesPath, int id);
 
     [DllImport(DLLNAME)]
     private static extern void RACResetFDN();
@@ -438,6 +438,23 @@ public class RACManager : MonoBehaviour
 
     //////////////////// Plugin Function Calls ////////////////////
 
+    public static bool InitEarlyReverb()
+    {
+        int direct = SelectDirectMode(racManager.iemConfig.direct);
+        return RACInitEarlyReverb(direct, racManager.iemConfig.reflectionOrder, racManager.iemConfig.shadowDiffractionOrder, racManager.iemConfig.specularDiffractionOrder, racManager.iemConfig.lateReverb, racManager.iemConfig.minimumEdgeLength, racManager.iemConfig.maximumPathLength, (int)racManager.diffractionModel);
+    }
+
+    public static bool InitSingleFDN(float volume, float[] dimensions)
+    {
+        int numRays = 1;
+        return RACInitSingleFDN(volume, racManager.T60.ToArray(), (int)racManager.reverbTimeModel, dimensions, dimensions.Length, numRays, (int)racManager.fdnMatrix);
+    }
+
+    public static bool InitMoDART(int numRays, int[] indexing, int[] frequencyIndexing, float[] t60s, float[] energyDecays, float[] leftEigenvectors, float[] rightEigenvectors, float delay, int numFDNs, int numNodes, int numPaths)
+    {
+        return RACInitMoDART(numRays, (int)racManager.fdnMatrix, indexing, frequencyIndexing, t60s, energyDecays, leftEigenvectors, rightEigenvectors, delay, numFDNs, numNodes, numPaths);
+    }
+
     public static void UpdateSpatialisationMode()
     {
         if (noHRTFFiles)
@@ -557,38 +574,7 @@ public class RACManager : MonoBehaviour
         }
     }
 
-    public static void UpdateLateReverbModel(LateReverbModel model)
-    {
-        racManager.lateReverbModel = model;
-        UpdateLateReverbModel();
-    }
-
-    public static void UpdateLateReverbModel()
-    {
-        switch (racManager.lateReverbModel)
-        {
-            case LateReverbModel.FDN:
-                { RACUpdateLateReverbModel(0); break; }
-            case LateReverbModel.RAVES:
-                { RACUpdateLateReverbModel(1); break; }
-        }
-    }
-
     // Reverb
-
-    public static void InitLateReverb(float volume, float[] dimensions)
-    {
-        Profiler.BeginSample("Set FDN");
-        RACUpdateRoom(volume, dimensions, dimensions.Length, (int)racManager.fdnMatrix);
-        Profiler.EndSample();
-    }
-
-    public static void InitRAVES(string ravesPath)
-    {
-        Profiler.BeginSample("Set FDN");
-        RACInitRAVES(ravesPath, (int)racManager.fdnMatrix);
-        Profiler.EndSample();
-    }
 
     public static void ResetFDN()
     {

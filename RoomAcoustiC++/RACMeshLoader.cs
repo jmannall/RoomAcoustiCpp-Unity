@@ -77,8 +77,9 @@ public class RACMeshLoader : MonoBehaviour
         string resourcePath = Path.Combine(
             Application.dataPath.Replace('/', sep),  // This already includes "/Assets"
             "Resources", "PythonExports", sceneName, selectedSubfolder);
-        RACManager.InitRAVES(resourcePath + sep);
-
+        
+        // TODO: Load MoDART data
+        // RACManager.InitMoDART();
         RACManager.UpdatePlanesAndEdges();
     }
 

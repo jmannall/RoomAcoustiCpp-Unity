@@ -64,14 +64,8 @@ public class RACMesh : MonoBehaviour
         Debug.Log("Number of meshes: " + meshes.Length);
         Debug.Log("Number of objects: " + objects.Length);
 
-        // RACManager.InitLateReverb(volume, roomDimensions.ToArray());
-
-        string resourcePath = Application.streamingAssetsPath;
-
-        char sep = Path.DirectorySeparatorChar;
-        string ravesPath = resourcePath + sep + "RAVES" + sep;
-        RACManager.InitRAVES(ravesPath);
-
+        RACManager.InitSingleFDN(volume, roomDimensions.ToArray());
+   
         initialised = true;
         if (absorptionSkew != 0.0f)
             UpdateAbsorption();
