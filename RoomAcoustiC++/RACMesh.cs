@@ -64,8 +64,10 @@ public class RACMesh : MonoBehaviour
         Debug.Log("Number of meshes: " + meshes.Length);
         Debug.Log("Number of objects: " + objects.Length);
 
-        RACManager.InitSingleFDN(volume, roomDimensions.ToArray());
-   
+        bool success = RACManager.InitSingleFDN(volume, roomDimensions.ToArray());
+        if (!success)
+            Debug.LogError("Failed to initialize SingleFDN");
+
         initialised = true;
         if (absorptionSkew != 0.0f)
             UpdateAbsorption();

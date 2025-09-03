@@ -348,13 +348,10 @@ public class RACManager : MonoBehaviour
 
         LoadHeadphoneEQ();
 
-        UpdateIEMConfig();
+        bool success = InitEarlyReverb();
+        if (!success)
+            Debug.LogError("Failed to initialize Early Reflections");
         UpdateSpatialisationMode();
-        if (reverbTimeModel == ReverbTime.Custom)
-            UpdateReverbTime();
-        else
-            UpdateReverbTimeModel();
-        UpdateDiffractionModel();
     }
 
     private void Start()
