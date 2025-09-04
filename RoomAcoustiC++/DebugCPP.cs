@@ -56,7 +56,7 @@ public class DebugCPP : MonoBehaviour
         pathDictionary.Clear();
     }
 
-    private const string DLLNAME = "RoomAcoustiCpp_Debug_x64";
+    private const string DLLNAME = "RoomAcoustiCpp_Debug";
 
     //------------------------------------------------------------------------------------------------
     [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
