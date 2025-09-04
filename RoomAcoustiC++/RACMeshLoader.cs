@@ -448,7 +448,22 @@ public class RACMeshLoader : MonoBehaviour
         // The second line contains the frequency band centers.
         frequencies = ParseFloatLine(lines[1], numFreqs);
 
-        // TODO: Assert that `frequencies` form a contiguous range of octave band centers.
+        // Assert that `frequencies` form a contiguous range of octave bands.
+        // Start by checking the validity of the top band.
+        bool validTop = false;
+        for (float f = 32e3f; f > 15; f /= 2)
+        {
+            if (Mathf.Approximately(frequencies[numFreqs - 1], f))
+                validTop = true;
+        }
+        if (!validTop)
+            throw new InvalidDataException($"Invalid octave bands in materials.csv: {frequencies[numFreqs - 1]} is not a valid octave band.");
+        // Next, iteratively check lower bands for contiguity.
+        for (int i = numFreqs - 2; i >= 0; --i)
+        {
+            if (!Mathf.Approximately(frequencies[i], frequencies[i+1] / 2))
+                throw new InvalidDataException($"Invalid octave bands in materials.csv: {frequencies[i]} is not an octave below {frequencies[i+1]}.");
+        }
 
         // Following lines contain material data.
         int lineIndex = 2;
