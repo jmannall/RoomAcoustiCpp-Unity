@@ -12,7 +12,7 @@ public class RACManagerEditor : Editor
     private string[] pluginOptions = new string[] { "RAC_Default", "RAC_Debug", "RAC_Profile", "RAC_ProfileDetailed" };
     private int selectedIndex = 0;
 
-    private SerializedProperty lerpFactor, frequencyBands, hrtfResamplingStep, numReverbSources, fdnMatrix, selectedHRTF, customHRTFFile, selectedHeadphoneEQ, customHeadphoneEQFile, iemConfig, spatialisationMode, diffractionModel, reverbTimeModel, T60;
+    private SerializedProperty lerpFactor, frequencyBands, hrtfResamplingStep, numReverbSources, fdnMatrix, selectedHRTF, customHRTFFile, selectedHeadphoneEQ, customHeadphoneEQFile, earlyConfig, lateConfig, spatialisationMode, diffractionModel, reverbTimeModel, T60;
 
     private void OnEnable()
     {
@@ -26,7 +26,8 @@ public class RACManagerEditor : Editor
         customHRTFFile = serializedObject.FindProperty("customHRTFFile");
         selectedHeadphoneEQ = serializedObject.FindProperty("selectedHeadphoneEQ");
         customHeadphoneEQFile = serializedObject.FindProperty("customHeadphoneEQFile");
-        iemConfig = serializedObject.FindProperty("iemConfig");
+        earlyConfig = serializedObject.FindProperty("earlyConfig");
+        lateConfig = serializedObject.FindProperty("lateConfig");
         spatialisationMode = serializedObject.FindProperty("spatialisationMode");
         diffractionModel = serializedObject.FindProperty("diffractionModel");
         reverbTimeModel = serializedObject.FindProperty("reverbTimeModel");
@@ -154,12 +155,21 @@ public class RACManagerEditor : Editor
         //GUI.enabled = true;
         GUI.changed = false;
 
-        EditorGUILayout.PropertyField(iemConfig, new GUIContent("Image Edge Model", "Control the acoustic components modelled by the image edge model."), true);
+        EditorGUILayout.PropertyField(earlyConfig, new GUIContent("Early sound", "Control the settings of the image edge model."), true);
         serializedObject.ApplyModifiedProperties();
 
         if (isPlaying && GUI.changed)
         {
-            RACManager.UpdateIEMConfig();
+            RACManager.UpdateEarlyConfig();
+            GUI.changed = false;
+        }
+
+        EditorGUILayout.PropertyField(lateConfig, new GUIContent("Late reverberation", "Control the settings of the MoD-ART model."), true);
+        serializedObject.ApplyModifiedProperties();
+
+        if (isPlaying && GUI.changed)
+        {
+            RACManager.UpdateLateConfig();
             GUI.changed = false;
         }
 
