@@ -80,6 +80,38 @@ public class RACMeshLoader : MonoBehaviour
     private static float ParseF(string s) => float.Parse(s, CultureInfo.InvariantCulture);
     private static int ParseI(string s) => int.Parse(s, CultureInfo.InvariantCulture);
 
+#if UNITY_EDITOR
+    private static void RecursiveMKDir(string pathToFile)
+    {
+        if (Path.HasExtension(pathToFile))
+            pathToFile = Path.GetDirectoryName(pathToFile);
+
+        if (string.IsNullOrEmpty(pathToFile))
+        {
+            Debug.LogError("Cannot create folder: null or empty path.");
+            return;
+        }
+
+        string[] parts = tokenizePath(pathToFile);
+
+        string currentRoot = "Assets";
+        int start = Array.IndexOf(parts, currentRoot);
+        if (start < 0)
+        {
+            Debug.LogError("Cannot create folder: requested location is not in \"Assets\".");
+            return;
+        }
+
+        for (int i = start + 1; i < parts.Length; i++)
+        {
+            string nextRoot = currentRoot + "/" + parts[i];
+            if (!AssetDatabase.IsValidFolder(nextRoot))
+                AssetDatabase.CreateFolder(currentRoot, parts[i]);
+            currentRoot = nextRoot;
+        }
+    }
+#endif
+
     private void OnValidate()
     {
         if (racMeshLoader == null)
@@ -102,8 +134,11 @@ public class RACMeshLoader : MonoBehaviour
             Debug.LogError("Cannot start MeshLoader: it has not been loaded.");
             return;
         }
-
-        List<float> targetFreqs = null;
+        if (RACManager.racManager == null)
+        {
+            Debug.LogError("Unable to locate RACManager instance: failed to start RACMeshLoader.");
+            return;
+        }
 
         // TODO: Is this old approach still necessary? The way `RACManager.racManager` works has changed slightly.
         //        if (Application.isPlaying && RACManager.racManager != null)
@@ -116,13 +151,7 @@ public class RACMeshLoader : MonoBehaviour
         //                targetFreqs = racManagerInstance.GetFrequencyBands();
         //#endif
         //        }
-        if (RACManager.racManager != null)
-            targetFreqs = RACManager.racManager.GetFrequencyBands();
-        else
-        {
-            Debug.LogError("Unable to retrieve frequency band centers from RACManager.");
-            return;
-        }
+        List<float> targetFreqs = RACManager.racManager.GetFrequencyBands();
 
         SendWallsToRAC(targetFreqs);
 
@@ -254,6 +283,7 @@ public class RACMeshLoader : MonoBehaviour
             return false;
         }
 
+        /*
         try
         {
             LoadMeshFromObj();
@@ -268,8 +298,16 @@ public class RACMeshLoader : MonoBehaviour
             // TODO: Make sure that all parameters are reset as they were before the failed attempt.
             return false;
         }
+        */
+        LoadMeshFromObj();
+        LoadMaterialsFromCsv();
+        LoadIndexingFromCsv();
+        LoadModesFromCsv();
 
-        RACManager.racManager.SetFrequencyBands(frequencies);
+        if (RACManager.racManager == null)
+            Debug.LogError("Unable to locate RACManager instance: failed to set frequency bands related to the loaded mesh.");
+        else
+            RACManager.racManager.SetFrequencyBands(frequencies);
 
         return true;
     }
@@ -285,9 +323,10 @@ public class RACMeshLoader : MonoBehaviour
             return false;
         }
 
+        selectedSubfolder = subfolder;
+
         if (LoadAllMeshData())
         {
-            selectedSubfolder = subfolder;
             loadedAndReady = true;
             return true;
         }
@@ -324,10 +363,7 @@ public class RACMeshLoader : MonoBehaviour
 #if UNITY_EDITOR
         string importPath = UnityPath("Assets", "Resources", "PythonExports", sceneName, selectedSubfolder, "mesh.obj");
         string prefabPath = UnityPath("Assets", "Resources", "ProcessedPrefabs", sceneName, selectedSubfolder + ".prefab");
-        if (!AssetDatabase.IsValidFolder("Assets/Resources/ProcessedPrefabs"))
-            AssetDatabase.CreateFolder("Assets/Resources", "ProcessedPrefabs");
-        if (!AssetDatabase.IsValidFolder($"Assets/Resources/ProcessedPrefabs/{sceneName}"))
-            AssetDatabase.CreateFolder("Assets/Resources/ProcessedPrefabs", sceneName);
+        RecursiveMKDir(prefabPath);
 
         // Ensure the model importer has Read/Write enabled so meshes are readable at runtime.
         // Also, ensure the original material data is respected.
@@ -385,6 +421,8 @@ public class RACMeshLoader : MonoBehaviour
             render.enabled = renderAcousticMesh;
     }
 
+    // TODO: Move generic helper functions in a separate script
+
     // Parser for one float vector of length M
     private float[] ParseFloatLine(string line, int M)
     {
@@ -437,7 +475,7 @@ public class RACMeshLoader : MonoBehaviour
         }
         catch (Exception e)
         {
-            throw new InvalidDataException($"The first line of materials.csv should have two integer tokens (number of materials and number of frequency bands).\nInstead, the line was:\n{lines[0]}");
+            throw new InvalidDataException($"The first line of materials.csv should have two integer tokens (number of materials and number of frequency bands).\nInstead, the line was:\n{lines[0]}\n\nSpecific message: {e.Message}");
         }
         numMaterials = parsedIntLine[0];
         numFreqs = parsedIntLine[1];
@@ -501,7 +539,7 @@ public class RACMeshLoader : MonoBehaviour
         }
         catch (Exception e)
         {
-            throw new InvalidDataException($"The first line of path_indexing.csv should have two integer tokens (number of scattering nodes and number of propagation paths).\nInstead, the line was:\n{lines[0]}");
+            throw new InvalidDataException($"The first line of path_indexing.csv should have two integer tokens (number of scattering nodes and number of propagation paths).\nInstead, the line was:\n{lines[0]}\n\nSpecific message: {e.Message}");
         }
         numNodes = parsedIntLine[0];
         numPaths = parsedIntLine[1];
@@ -519,7 +557,7 @@ public class RACMeshLoader : MonoBehaviour
                 if ((parsedIntLine[j] < -1) || (parsedIntLine[j] >= numPaths))
                     throw new InvalidDataException($"All path indices should be in the range [-1, numPaths={numPaths}). The value {parsedIntLine[j]} is outside of the range.");
 
-                pathIndexing[i, j] = parsedIntLine[j];
+                pathIndexing[i-1, j] = parsedIntLine[j];
             }
         }
     }
@@ -549,14 +587,14 @@ public class RACMeshLoader : MonoBehaviour
         }
         catch (Exception e)
         {
-            throw new InvalidDataException($"The first line of modal_data.csv should have two integer tokens (number of slopes and number of frequency bands).\nInstead, the line was:\n{lines[0]}");
+            throw new InvalidDataException($"The first line of modal_data.csv should have two integer tokens (number of slopes and number of frequency bands).\nInstead, the line was:\n{lines[0]}\n\nSpecific message: {e.Message}");
         }
         numSlopes = parsedIntLine[0];
         numBands = parsedIntLine[1];
         numFDNs = numSlopes * numBands;
 
-        if (lines.Length != (numFDNs + 1))
-            throw new InvalidDataException($"Expected {numFDNs + 1} CSV lines, got {lines.Length}.");
+        if (lines.Length != (1 + numFDNs *3))
+            throw new InvalidDataException($"Expected {1 + numFDNs * 3} CSV lines, got {lines.Length}.");
 
         bandIdxs = new int[numFDNs];
         decayRates = new float[numFDNs];
@@ -567,7 +605,7 @@ public class RACMeshLoader : MonoBehaviour
         // Following lines contain the modal data, in groups of three.
         int lineIndex = 1;
         float freqFromFile;
-        for (int i = 1; i < numFDNs + 1; i++)
+        for (int i = 0; i < numFDNs; i++)
         {
             parsedFloatLine = ParseFloatLine(lines[lineIndex++], 3);
 
@@ -699,8 +737,6 @@ public class RACMeshLoader : MonoBehaviour
                     vertsBuffer[0] = meshTransform.TransformPoint(allVerts[flattenedVertexTriplets[i]]);
                     vertsBuffer[1] = meshTransform.TransformPoint(allVerts[flattenedVertexTriplets[i+1]]);
                     vertsBuffer[2] = meshTransform.TransformPoint(allVerts[flattenedVertexTriplets[i+2]]);
-
-                    //Debug.Log($"InitWall: Node index {nodeIndex}, absorption {absBuffer} (material index {matIndex}), vertices {vertsBuffer}");
 
                     absResized = ResizeCoeffs(targetFreqs, frequencies, absBuffer);
                     RACManager.InitWall(ref vertsBuffer, ref absResized, nodeIndex);

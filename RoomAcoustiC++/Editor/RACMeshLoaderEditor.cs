@@ -10,6 +10,13 @@ public class RACMeshLoaderEditor: Editor
     private int selectedIndex = -1;
     private string[] optionNames = new string[0];
 
+    public void OnValidate()
+    {
+        AssetDatabase.Refresh();
+        LoadOptions((RACMeshLoader)target);
+        Repaint();
+    }
+
     public override void OnInspectorGUI()
     {
         RACMeshLoader racMeshLoader = (RACMeshLoader)target;
@@ -55,6 +62,8 @@ public class RACMeshLoaderEditor: Editor
             }
         }
 
+        // TODO: Should Update() be called earlier? Later?
+        // TODO: Is there a way to make "renderAcousticMesh" have an effect in the editor view?
         serializedObject.Update();
         DrawDefaultInspector();
         serializedObject.ApplyModifiedProperties();
@@ -107,6 +116,7 @@ public class RACMeshLoaderEditor: Editor
     // Returns true if the object's selection should be updated.
     private bool alignSelection(string current)
     {
+        //TODO: Improve the logic of this method. It is redundant.
         if (Application.isPlaying)
         {
             // Cannot realign the selection during play mode, even if it's incorrect.
@@ -122,7 +132,17 @@ public class RACMeshLoaderEditor: Editor
             }
             return false;
         }
-        
+
+        if (System.Array.IndexOf(optionNames, current) < 0)
+        {
+            // If the selection does not match any member of the list
+            // (e.g., disk contents have changed but the class kept its state),
+            // default to the first option
+            Debug.LogWarning("RACMeshLoader selection does not match any known option.");
+            selectedIndex = 0;
+            return true;
+        }
+
         if (selectedIndex < 0 || selectedIndex >= optionNames.Length)
         {
             // If the selected index is not initialized (or out of bounds, somehow) set it back.
@@ -138,7 +158,7 @@ public class RACMeshLoaderEditor: Editor
                 selectedIndex = System.Array.IndexOf(optionNames, current);
                 if (selectedIndex < 0)
                 {
-                    Debug.LogError("RACMeshLoader selection during play mode does not match any known option.");
+                    Debug.LogWarning("RACMeshLoader selection during play mode does not match any known option.");
                     selectedIndex = 0;
                     return true;
                 }

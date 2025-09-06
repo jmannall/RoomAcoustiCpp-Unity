@@ -40,9 +40,11 @@ public class IRController : MonoBehaviour
     private string runName = "Run1";
 
     private string filePath;
-    private string configName = "";
+    private string earlyConfigName = "";
+    private string lateConfigName = "";
     private string areaName = "";
     private string spatName = "";
+    private string currentSetup = "";
 
     [SerializeField]
     private string irFilePath;
@@ -59,7 +61,10 @@ public class IRController : MonoBehaviour
     private List<Transform> sources;
 
     [SerializeField]
-    private List<RACManager.IEMConfig> configs;
+    private List<RACManager.EarlyConfig> earlyConfigs;
+
+    [SerializeField]
+    private List<RACManager.LateConfig> lateConfigs;
 
     [SerializeField]
     private List<RACManager.SpatMode> spatModes;
@@ -69,19 +74,20 @@ public class IRController : MonoBehaviour
 
     private IEnumerator transformEnumerator;
     private IEnumerator spatModeEnumerator;
-    private IEnumerator configEnumerator;
+    private IEnumerator earlyConfigEnumerator;
+    private IEnumerator lateConfigEnumerator;
     private IEnumerator sourceEnumerator;
     private IEnumerator listenerEnumerator;
 
     private bool useTransforms = false;
     bool nextSource = true;
-    bool nextConfig = true;
+    bool nextEarlyConfig = true;
+    bool nextLateConfig = true;
     bool nextSpatMode = true;
     bool nextTransform = true;
 
     StreamWriter streamWriter;
     bool expectResidues;
-    string wavPath;
 
     static bool iemStarted = false;
     static bool iemCompleted = false;
@@ -202,7 +208,8 @@ public class IRController : MonoBehaviour
 
         transformEnumerator = ProcessTransforms();
         spatModeEnumerator = ProcessSpatModes();
-        configEnumerator = ProcessConfigs();
+        earlyConfigEnumerator = ProcessEarlyConfigs();
+        lateConfigEnumerator = ProcessLateConfigs();
         sourceEnumerator = ProcessSources();
         listenerEnumerator = ProcessListeners();
     }
@@ -254,26 +261,39 @@ public class IRController : MonoBehaviour
 
         nextSpatMode = false;
 
-        if (nextConfig)
+        if (nextEarlyConfig)
         {
-            if (!configEnumerator.MoveNext())
+            if (!earlyConfigEnumerator.MoveNext())
             {
                 nextSpatMode = true;
-                configEnumerator = ProcessConfigs();
+                earlyConfigEnumerator = ProcessEarlyConfigs();
                 Debug.Log("Next spat mode");
                 return;
             }
         }
 
-        nextConfig = false;
+        nextEarlyConfig = false;
+
+        if (nextLateConfig)
+        {
+            if (!lateConfigEnumerator.MoveNext())
+            {
+                nextEarlyConfig = true;
+                lateConfigEnumerator = ProcessLateConfigs();
+                Debug.Log("Next early config");
+                return;
+            }
+        }
+
+        nextLateConfig = false;
 
         if (nextSource)
         {
             if (!sourceEnumerator.MoveNext())
             {
-                nextConfig = true;
+                nextLateConfig = true;
                 sourceEnumerator = ProcessSources();
-                Debug.Log("Next config");
+                Debug.Log("Next late config");
                 return;
             }
         }
@@ -355,14 +375,27 @@ public class IRController : MonoBehaviour
         }
     }
 
-    // Enumerator for the config foreach loop
-    private IEnumerator ProcessConfigs()
+    // Enumerator for the earlyConfig foreach loop
+    private IEnumerator ProcessEarlyConfigs()
     {
         int idx = 0;
-        foreach (var config in configs)
+        foreach (var config in earlyConfigs)
         {
-            RACManager.UpdateIEMConfig(config);
-            configName = idx.ToString();
+            RACManager.UpdateEarlyConfig(config);
+            earlyConfigName = idx.ToString();
+            idx++;
+            yield return null; // Pause and resume in the next frame
+        }
+    }
+
+    // Enumerator for the earlyConfig foreach loop
+    private IEnumerator ProcessLateConfigs()
+    {
+        int idx = 0;
+        foreach (var config in lateConfigs)
+        {
+            RACManager.UpdateLateConfig(config);
+            lateConfigName = idx.ToString();
             idx++;
             yield return null; // Pause and resume in the next frame
         }
@@ -391,7 +424,9 @@ public class IRController : MonoBehaviour
         {
             activeListener++;
 
-            UpdateStreamWriter("Spat_" + spatName + "_Config_" + configName + "_Src_" + activeSource.ToString() + "_Lst_" + activeListener.ToString() + "_Residues.csv");
+            currentSetup = "Spat_" + spatName + "_Early_" + earlyConfigName + "_Late_" + lateConfigName + "_Src_" + activeSource.ToString() + "_Lst_" + activeListener.ToString();
+
+            UpdateStreamWriter(currentSetup + "_Residues.csv");
             irController.streamWriter.WriteLine("isSource, sourceIndex, slopeIndex, residue;");
             expectResidues = true;
 
@@ -475,7 +510,7 @@ public class IRController : MonoBehaviour
             }
             //Debug.Log("Time to reset the DSP: " + countFrames.ToString() + " frames");
 
-            UpdateStreamWriter("Spat_" + spatName + "_Config_" + configName + "_Src_" + activeSource.ToString() + "_Lst_" + activeListener.ToString() + "_IR.csv");
+            UpdateStreamWriter(currentSetup + "_IR.csv");
 
             inputBuffer[0] = 1.0f;
             ProcessAudioBuffer(0);
@@ -485,9 +520,8 @@ public class IRController : MonoBehaviour
             streamWriter.Write("0, 0\n");
             streamWriter.Flush();
 
-            wavPath = filePath + "/Spat_" + spatName + "_Config_" + configName + "_Src_" + activeSource.ToString() + "_Lst_" + activeListener.ToString() + "_IR.wav";
-            WavWriter.Save(wavPath, outputSignal, AudioSettings.outputSampleRate, channels: 2, writeFloat32: true, writeMono: recordMono);
-            WavWriter.Save(wavPath.Replace("IR.wav", "echogram.wav"), outputSignal, AudioSettings.outputSampleRate, channels: 2, writeFloat32: true, writeMono: recordMono, echogram: true);
+            WavWriter.Save(filePath + "/" + currentSetup + "_IR.wav", outputSignal, AudioSettings.outputSampleRate, channels: 2, writeFloat32: true, writeMono: recordMono);
+            WavWriter.Save(filePath + "/" + currentSetup + "_echogram.wav", outputSignal, AudioSettings.outputSampleRate, channels: 2, writeFloat32: true, writeMono: recordMono, echogram: true);
             //Debug.Log("<color=green>WAV saved to: " + wavPath + "</color>");
 
             racSource.Stop();
@@ -639,11 +673,22 @@ public class IRController : MonoBehaviour
         streamWriter.WriteLine("Sample rate: " + AudioSettings.outputSampleRate);
 
         // Write configs settings
-        streamWriter.WriteLine("\nConfigurations");
-        int idx = 0;
         // To extract all members of a struct, see https://stackoverflow.com/a/7613806 and https://stackoverflow.com/a/2762679
-        var fields = typeof(RACManager.IEMConfig).GetFields();
-        foreach (var config in configs)
+        streamWriter.WriteLine("\nEarly configurations");
+        int idx = 0;
+        var fields = typeof(RACManager.EarlyConfig).GetFields();
+        foreach (var config in earlyConfigs)
+        {
+            streamWriter.WriteLine("\tConfig_" + idx);
+            foreach (var field in fields)
+                streamWriter.WriteLine("\t\t" + field.Name + " " + field.GetValue(config));
+            streamWriter.Flush();
+            idx++;
+        }
+        streamWriter.WriteLine("\nLate configurations");
+        idx = 0;
+        fields = typeof(RACManager.LateConfig).GetFields();
+        foreach (var config in lateConfigs)
         {
             streamWriter.WriteLine("\tConfig_" + idx);
             foreach (var field in fields)
