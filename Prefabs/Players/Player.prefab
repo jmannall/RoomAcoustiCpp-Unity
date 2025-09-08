@@ -11,8 +11,8 @@ GameObject:
   - component: {fileID: 6194889284471079498}
   - component: {fileID: 1567334951886174561}
   - component: {fileID: 4252930283768853303}
-  - component: {fileID: 8433636063662376224}
-  - component: {fileID: 1953582393570172425}
+  - component: {fileID: 1842233478574732099}
+  - component: {fileID: 8298365033211860490}
   m_Layer: 0
   m_Name: Camera
   m_TagString: Untagged
@@ -94,7 +94,7 @@ AudioListener:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4389832639380028857}
   m_Enabled: 1
---- !u!114 &8433636063662376224
+--- !u!114 &1842233478574732099
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -103,25 +103,25 @@ MonoBehaviour:
   m_GameObject: {fileID: 4389832639380028857}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e03b2d7bfb464d24bb8f89701bd6e81d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
---- !u!114 &1953582393570172425
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4389832639380028857}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c2666619857c95a4294806b178adf275, type: 3}
+  m_Script: {fileID: 11500000, guid: 02f832da319c6cb44ba08e94b2d2a4c6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   lockCursor: 0
   mouseSensitivity: 1
   pitchMinMax: {x: -40, y: 85}
   rotationSmoothTime: 0.12
+--- !u!114 &8298365033211860490
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4389832639380028857}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7d29f04630fe6984b8add7d6c3ec072e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &8761139404786669987
 GameObject:
   m_ObjectHideFlags: 0
@@ -269,12 +269,12 @@ MonoBehaviour:
   m_GameObject: {fileID: 8761139404786669987}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 685ebbab3153938499dd905fd2ea94ff, type: 3}
+  m_Script: {fileID: 11500000, guid: 84c9e5af90df3a4479b723fd44dcefa6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   speed: 0
   cameraTransform: {fileID: 6194889284471079498}
-  inputActions: {fileID: -944628639613478452, guid: a73382d59bb1a2e4d932f3aa74351a57, type: 3}
+  inputActions: {fileID: -944628639613478452, guid: 702dc6ac5c8f4064981bad9846421123, type: 3}
   playerActionMap:
     m_Name: 
     m_Id: 

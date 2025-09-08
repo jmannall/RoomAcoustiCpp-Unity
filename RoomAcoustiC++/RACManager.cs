@@ -56,7 +56,7 @@ public class RACManager : MonoBehaviour
     private static extern bool RACInitSingleFDN(float volume, [In] float[] t60, int reverbFormulaId, [In] float[] dimensions, int numDimensions, int numRays, int matrixId);
 
     [DllImport(DLLNAME)]
-    private static extern bool RACInitMoDART(float delay, int matrixId, int numRays, [In] int[] indexing, [In] int[] frequencyIndexing, [In] float[] t60s, [In] float[] energyDecays, [In] float[] leftEigenvectors, [In] float[] rightEigenvectors, int numFDNs, int numNodes, int numPaths);
+    private static extern bool RACInitMoDART(int numRays, int matrixId, float delay, [In] int[] indexing, [In] int[] frequencyIndexing, [In] float[] t60s, [In] float[] energyDecays, [In] float[] leftEigenvectors, [In] float[] rightEigenvectors, int numFDNs, int numNodes, int numPaths);
 
     [DllImport(DLLNAME)]
     private static extern void RACSetHeadphoneEQ([In] float[] leftIR, [In] float[] rightIR, int irLength);
@@ -68,9 +68,12 @@ public class RACManager : MonoBehaviour
 
     [DllImport(DLLNAME)]
     private static extern void RACUpdateEarlyConfig(int direct, int reflOrder, int shadowDiffOrder, int specularDiffOrder, float minEdgeLength, float maxPathLength);
-    
+
     [DllImport(DLLNAME)]
-    private static extern void RACUpdateLateConfig(bool enabled, float delay, int numRays);
+    private static extern void RACUpdateSingleFDNLateConfig(bool enabled, int numRays);
+
+    [DllImport(DLLNAME)]
+    private static extern void RACUpdateMoDARTLateConfig(bool enabled, float delay, int numRays);
 
     [DllImport(DLLNAME)]
     private static extern void RACUpdateReverbTime([In] float[] t60);
@@ -137,7 +140,6 @@ public class RACManager : MonoBehaviour
 
     #endregion
 
-
     public event Action enableAudioProcessing;
     public event Action disableAudioProcessing;
 
@@ -155,8 +157,8 @@ public class RACManager : MonoBehaviour
     public enum SpatMode { None, Performance, Quality }
     public enum ReverbTime { Sabine, Eyring, Custom }
     public enum FDNMatrix { Householder, RandomOrthogonal }
+    public enum LateReverbModel { SingleFDN, MoDART }
     public enum DiffractionModel { Attenuate, LowPass, UDFA, UDFAI, NNBest, NNSmall, UTD, BTM }
-    public enum LateReverbModel { FDN, RAVES }
     public enum SourceDirectivity { Omni, Subcardioid, Cardioid, Supercardioid, Hypercardioid, Bidirectional, Genelec8020c, Genelec8020cDTF, QSC_K8 }
     public enum DirectSound { None, Check, AlwaysOn }
     public enum DiffractionSound { None, ShadowZone, AllZones }
@@ -284,7 +286,7 @@ public class RACManager : MonoBehaviour
     private DiffractionModel diffractionModel = DiffractionModel.BTM;
 
     [SerializeField, HideInInspector]
-    private LateReverbModel lateReverbModel = LateReverbModel.FDN;
+    private LateReverbModel lateReverbModel = LateReverbModel.SingleFDN;
 
     [SerializeField, HideInInspector]
     private List<float> T60;
@@ -484,7 +486,7 @@ public class RACManager : MonoBehaviour
     public static bool InitMoDART(int[] indexing, int[] frequencyIndexing, float[] t60s, float[] energyDecays, float[] leftEigenvectors, float[] rightEigenvectors, int numFDNs, int numNodes, int numPaths)
     {
         return RACInitMoDART(
-            racManager.lateConfig.delay, (int)racManager.fdnMatrix, racManager.lateConfig.numRays,
+            racManager.lateConfig.numRays, (int)racManager.fdnMatrix, racManager.lateConfig.delay,
             indexing, frequencyIndexing, t60s, energyDecays, leftEigenvectors, rightEigenvectors,
             numFDNs, numNodes, numPaths);
     }
@@ -567,10 +569,13 @@ public class RACManager : MonoBehaviour
     public static void UpdateEarlyConfig()
     {
         Profiler.BeginSample("Update early config");
-        RACUpdateEarlyConfig(
-            SelectDirectMode(racManager.earlyConfig.direct),
-            racManager.earlyConfig.reflectionOrder, racManager.earlyConfig.shadowDiffractionOrder, racManager.earlyConfig.specularDiffractionOrder,
-            racManager.earlyConfig.minimumEdgeLength, racManager.earlyConfig.maximumPathLength);
+        if (racManager.earlyConfig.enabled)
+            RACUpdateEarlyConfig(
+                SelectDirectMode(racManager.earlyConfig.direct),
+                racManager.earlyConfig.reflectionOrder, racManager.earlyConfig.shadowDiffractionOrder, racManager.earlyConfig.specularDiffractionOrder,
+                racManager.earlyConfig.minimumEdgeLength, racManager.earlyConfig.maximumPathLength);
+        else // Disable early reflections
+            RACUpdateEarlyConfig(SelectDirectMode(DirectSound.None), 0, 0, 0, racManager.earlyConfig.minimumEdgeLength, racManager.earlyConfig.maximumPathLength); // Disable early reflections
         Profiler.EndSample();
     }
 
@@ -580,20 +585,20 @@ public class RACManager : MonoBehaviour
         UpdateEarlyConfig();
     }
 
-    public static void UpdateLateConfig()
+    public static void UpdateMoDARTLateConfig()
     {
-        Profiler.BeginSample("Update late config");
-        RACUpdateLateConfig(
+        Profiler.BeginSample("Update MoDART late config");
+        RACUpdateMoDARTLateConfig(
             racManager.lateConfig.enabled,
             racManager.lateConfig.delay,
             racManager.lateConfig.numRays);
         Profiler.EndSample();
     }
 
-    public static void UpdateLateConfig(LateConfig config)
+    public static void UpdateMoDARTLateConfig(LateConfig config)
     {
         racManager.lateConfig = config;
-        UpdateLateConfig();
+        UpdateMoDARTLateConfig();
     }
 
     public static void UpdateDiffractionModel(DiffractionModel model)

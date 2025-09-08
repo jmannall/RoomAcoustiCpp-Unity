@@ -12,7 +12,9 @@ public class RACManagerEditor : Editor
     private string[] pluginOptions = new string[] { "RAC_Default", "RAC_Debug", "RAC_Profile", "RAC_ProfileDetailed" };
     private int selectedIndex = 0;
 
-    private SerializedProperty lerpFactor, frequencyBands, hrtfResamplingStep, numReverbSources, fdnMatrix, selectedHRTF, customHRTFFile, selectedHeadphoneEQ, customHeadphoneEQFile, earlyConfig, lateConfig, spatialisationMode, diffractionModel, reverbTimeModel, T60;
+    private SerializedProperty lerpFactor, frequencyBands, hrtfResamplingStep, numReverbSources,
+        fdnMatrix, selectedHRTF, customHRTFFile, selectedHeadphoneEQ, customHeadphoneEQFile, earlyConfig,
+        lateConfig, spatialisationMode, diffractionModel, lateReverbModel, reverbTimeModel, T60;
 
     private void OnEnable()
     {
@@ -30,6 +32,7 @@ public class RACManagerEditor : Editor
         lateConfig = serializedObject.FindProperty("lateConfig");
         spatialisationMode = serializedObject.FindProperty("spatialisationMode");
         diffractionModel = serializedObject.FindProperty("diffractionModel");
+        lateReverbModel = serializedObject.FindProperty("lateReverbModel");
         reverbTimeModel = serializedObject.FindProperty("reverbTimeModel");
         T60 = serializedObject.FindProperty("T60");
     }
@@ -169,7 +172,7 @@ public class RACManagerEditor : Editor
 
         if (isPlaying && GUI.changed)
         {
-            RACManager.UpdateLateConfig();
+            RACManager.UpdateMoDARTLateConfig();
             GUI.changed = false;
         }
 
@@ -191,10 +194,21 @@ public class RACManagerEditor : Editor
             GUI.changed = false;
         }
 
-        EditorGUILayout.PropertyField(reverbTimeModel, new GUIContent("Reverberation Time", "Select the formula used to calculate the reverberation time"));
+        EditorGUILayout.PropertyField(lateReverbModel, new GUIContent("Late Reverb Model", "Select the late reverberation model."));
+        serializedObject.ApplyModifiedProperties();
+
+        if (isPlaying && GUI.changed)
+        {
+            // TODO: update late reverb model
+            GUI.changed = false;
+        }
+
+        bool isSingleFDN = lateReverbModel.enumValueIndex == (int)RACManager.LateReverbModel.SingleFDN;
+        if (isSingleFDN)
+            EditorGUILayout.PropertyField(reverbTimeModel, new GUIContent("Reverberation Time", "Select the formula used to calculate the reverberation time"));
 
         bool isCustom = reverbTimeModel.enumValueIndex == (int)RACManager.ReverbTime.Custom;
-        if (isCustom)
+        if (isSingleFDN && isCustom)
         {
             if (T60.arraySize < frequencyBands.arraySize)
             {

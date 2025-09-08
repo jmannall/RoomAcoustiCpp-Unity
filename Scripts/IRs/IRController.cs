@@ -394,7 +394,7 @@ public class IRController : MonoBehaviour
         int idx = 0;
         foreach (var config in lateConfigs)
         {
-            RACManager.UpdateLateConfig(config);
+            RACManager.UpdateMoDARTLateConfig(config);
             lateConfigName = idx.ToString();
             idx++;
             yield return null; // Pause and resume in the next frame

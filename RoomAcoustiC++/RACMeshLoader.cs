@@ -198,8 +198,8 @@ public class RACMeshLoader : MonoBehaviour
                 resized_decayRates[numAssigned] = decayRates[localIdx];
                 for (int i = 0; i < numPaths; ++i)
                 {
-                    resized_leftVecs[numAssigned * numPaths + i] = newBandIdx;
-                    resized_rightVecs[numAssigned * numPaths + i] = newBandIdx;
+                    resized_leftVecs[numAssigned * numPaths + i] = leftVecs[localIdx, i];
+                    resized_rightVecs[numAssigned * numPaths + i] = rightVecs[localIdx, i];
                 }
                 numAssigned++;
             }
@@ -226,8 +226,8 @@ public class RACMeshLoader : MonoBehaviour
                             resized_decayRates[numAssigned] = decayRates[localIdx];
                             for (int i = 0; i < numPaths; ++i)
                             {
-                                resized_leftVecs[numAssigned * numPaths + i] = newBandIdx;
-                                resized_rightVecs[numAssigned * numPaths + i] = newBandIdx;
+                                resized_leftVecs[numAssigned * numPaths + i] = leftVecs[localIdx, i];
+                                resized_rightVecs[numAssigned * numPaths + i] = rightVecs[localIdx, i];
                             }
                             numAssigned++;
                         }
@@ -610,8 +610,8 @@ public class RACMeshLoader : MonoBehaviour
             parsedFloatLine = ParseFloatLine(lines[lineIndex++], 3);
 
             freqFromFile = parsedFloatLine[0];
-            decayRates[i] = parsedFloatLine[1];
-            T60s[i] = parsedFloatLine[2];
+            T60s[i] = parsedFloatLine[1];
+            decayRates[i] = parsedFloatLine[2];
 
             bandIdxs[i] = BestMatch(freqFromFile, frequencies);
             if (!Mathf.Approximately(frequencies[bandIdxs[i]], freqFromFile))
