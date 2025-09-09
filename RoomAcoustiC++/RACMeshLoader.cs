@@ -37,7 +37,7 @@ public class RACMeshLoader : MonoBehaviour
 
     // Data read from materials.csv
     [SerializeField, HideInInspector]
-    private int numFreqs = -1;
+    private int numFreqBands = -1;
     [SerializeField, HideInInspector]
     private int numMaterials = -1;
     [SerializeField, HideInInspector]
@@ -58,8 +58,6 @@ public class RACMeshLoader : MonoBehaviour
     // Data read from modal_data.csv
     [SerializeField, HideInInspector]
     private int numSlopes = -1;
-    [SerializeField, HideInInspector]
-    private int numBands = -1;
     [SerializeField, HideInInspector]
     private int numFDNs = -1;
     [SerializeField, HideInInspector]
@@ -241,13 +239,13 @@ public class RACMeshLoader : MonoBehaviour
                         }
                     }
                 }
-                else if (targetFreq > frequencies[numFreqs-1])
+                else if (targetFreq > frequencies[numFreqBands - 1])
                 {
                     // An additional frequency band is higher than the highest available band.
                     // It should be filled by replicating all of the slopes from the highest available band.
                     for (int localIdx = 0; localIdx < numFDNs; ++localIdx)
                     {
-                        if (bandIdxs[localIdx] == numFreqs-1)
+                        if (bandIdxs[localIdx] == numFreqBands - 1)
                         {
                             resized_bandIdxs[numAssigned] = newBandIdx;
                             resized_T60s[numAssigned] = T60s[localIdx];
@@ -486,26 +484,26 @@ public class RACMeshLoader : MonoBehaviour
             throw new InvalidDataException($"The first line of materials.csv should have two integer tokens (number of materials and number of frequency bands).\nInstead, the line was:\n{lines[0]}\n\nSpecific message: {e.Message}");
         }
         numMaterials = parsedIntLine[0];
-        numFreqs = parsedIntLine[1];
+        numFreqBands = parsedIntLine[1];
 
         if (lines.Length != (2 * numMaterials + 2))
             throw new InvalidDataException($"Expected 2 * {numMaterials} + 2 = {2 * numMaterials + 2} CSV lines, got {lines.Length}.");
 
         // The second line contains the frequency band centers.
-        frequencies = ParseFloatLine(lines[1], numFreqs);
+        frequencies = ParseFloatLine(lines[1], numFreqBands);
 
         // Assert that `frequencies` form a contiguous range of octave bands.
         // Start by checking the validity of the top band.
         bool validTop = false;
         for (float f = 32e3f; f > 15; f /= 2)
         {
-            if (Mathf.Approximately(frequencies[numFreqs - 1], f))
+            if (Mathf.Approximately(frequencies[numFreqBands - 1], f))
                 validTop = true;
         }
         if (!validTop)
-            throw new InvalidDataException($"Invalid octave bands in materials.csv: {frequencies[numFreqs - 1]} is not a valid octave band.");
+            throw new InvalidDataException($"Invalid octave bands in materials.csv: {frequencies[numFreqBands - 1]} is not a valid octave band.");
         // Next, iteratively check lower bands for contiguity.
-        for (int i = numFreqs - 2; i >= 0; --i)
+        for (int i = numFreqBands - 2; i >= 0; --i)
         {
             if (!Mathf.Approximately(frequencies[i], frequencies[i+1] / 2))
                 throw new InvalidDataException($"Invalid octave bands in materials.csv: {frequencies[i]} is not an octave below {frequencies[i+1]}.");
@@ -513,15 +511,15 @@ public class RACMeshLoader : MonoBehaviour
 
         // Following lines contain material data.
         int lineIndex = 2;
-        absorptions = new float[numMaterials, numFreqs];
-        scatterings = new float[numMaterials, numFreqs];
+        absorptions = new float[numMaterials, numFreqBands];
+        scatterings = new float[numMaterials, numFreqBands];
         for (int i = 0; i < numMaterials; i++)
         {
-            parsedFloatLine = ParseFloatLine(lines[lineIndex++], numFreqs);
-            for (int j = 0; j < numFreqs; j++)
+            parsedFloatLine = ParseFloatLine(lines[lineIndex++], numFreqBands);
+            for (int j = 0; j < numFreqBands; j++)
                 absorptions[i, j] = parsedFloatLine[j];
-            parsedFloatLine = ParseFloatLine(lines[lineIndex++], numFreqs);
-            for (int j = 0; j < numFreqs; j++)
+            parsedFloatLine = ParseFloatLine(lines[lineIndex++], numFreqBands);
+            for (int j = 0; j < numFreqBands; j++)
                 scatterings[i, j] = parsedFloatLine[j];
         }
     }
@@ -598,8 +596,9 @@ public class RACMeshLoader : MonoBehaviour
             throw new InvalidDataException($"The first line of modal_data.csv should have two integer tokens (number of slopes and number of frequency bands).\nInstead, the line was:\n{lines[0]}\n\nSpecific message: {e.Message}");
         }
         numSlopes = parsedIntLine[0];
-        numBands = parsedIntLine[1];
-        numFDNs = numSlopes * numBands;
+        if (parsedIntLine[1] != numFreqBands)
+            throw new InvalidDataException($"The number of frequency bands declared in modal_data.csv ({parsedIntLine[1]}) does not match the one declared in materials.csv ({numFreqBands}).");
+        numFDNs = numSlopes * numFreqBands;
 
         if (lines.Length != (1 + numFDNs *3))
             throw new InvalidDataException($"Expected {1 + numFDNs * 3} CSV lines, got {lines.Length}.");
@@ -703,10 +702,10 @@ public class RACMeshLoader : MonoBehaviour
     private void SendWallsToRAC(List<float> targetFreqs)
     {
         // Some "buffer" variables which will hold temporary values during the loop
-        int[] flattenedVertexTriplets;              // Indices of the vertices forming all triangles in a submesh (flattened Nx3 array)
-        float[] absBuffer = new float[numFreqs];    // Absorption coeffs of one material
-        float[] absResized;                         // Absorption coeffs of one material, resized to the expected frequency bands
-        Vector3[] vertsBuffer = new Vector3[3];     // 3D coordinates of three vertices forming a triangle
+        int[] flattenedVertexTriplets;                  // Indices of the vertices forming all triangles in a submesh (flattened Nx3 array)
+        float[] absBuffer = new float[numFreqBands];    // Absorption coeffs of one material
+        float[] absResized;                             // Absorption coeffs of one material, resized to the expected frequency bands
+        Vector3[] vertsBuffer = new Vector3[3];         // 3D coordinates of three vertices forming a triangle
 
         foreach (MeshFilter mf in meshGameObject.GetComponentsInChildren<MeshFilter>())
         {
@@ -736,7 +735,7 @@ public class RACMeshLoader : MonoBehaviour
                 int nodeIndex = int.Parse(matMatch.Groups[1].Value);
                 int matIndex = int.Parse(matMatch.Groups[2].Value);
 
-                for (int j = 0; j < numFreqs; j++)
+                for (int j = 0; j < numFreqBands; j++)
                     absBuffer[j] = absorptions[matIndex, j];
 
                 flattenedVertexTriplets = mesh.GetIndices(s);
