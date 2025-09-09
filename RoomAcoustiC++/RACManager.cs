@@ -23,11 +23,11 @@ public class RACManager : MonoBehaviour
 #if RAC_Default
     private const string PluginType = "";
 #elif RAC_Debug
-    private const string PluginType = "Debug";
+    private const string PluginType = "_Debug";
 #elif RAC_Profile
-    private const string PluginType = "Profile";
+    private const string PluginType = "_Profile";
 #elif RAC_ProfileDetailed
-    private const string PluginType = "ProfileDetailed";
+    private const string PluginType = "_ProfileDetailed";
 #else
     private const string PluginType = "";
 #endif
@@ -35,7 +35,7 @@ public class RACManager : MonoBehaviour
 #if UNITY_IOS
     private const string DLLNAME = "__Internal";
 #else
-    private const string DLLNAME = PluginName + "_" + PluginType + "_x64";
+    private const string DLLNAME = PluginName + PluginType + "_x64";
 #endif
 
     // Load and Destroy

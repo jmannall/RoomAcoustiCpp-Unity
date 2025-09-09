@@ -122,6 +122,14 @@ public class RACMeshLoader : MonoBehaviour
 
     private void Awake()
     {
+        // Ensure that the mesh loader has no children, before attempting a fresh load of the mesh.
+        foreach (Transform child in this.transform)
+#if UNITY_EDITOR
+            DestroyImmediate(meshGameObject);
+#else
+            Destroy(meshGameObject);
+#endif
+
         // If this is the start of play, load the appropriate assets (specified by selectedSubfolder).
         if (LoadAllMeshData())
             loadedAndReady = true;

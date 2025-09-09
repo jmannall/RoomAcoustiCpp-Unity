@@ -8,6 +8,7 @@ using UnityEngine.SceneManagement;
 
 public class IRController : MonoBehaviour
 {
+#if RAC_Debug
     [SerializeField]
     private float spacing = 1.0f;
 
@@ -760,4 +761,5 @@ public class IRController : MonoBehaviour
         Gizmos.color = Color.white;
         Gizmos.DrawRay(listeners.ElementAt(activeListener).position, listeners.ElementAt(activeListener).forward);
     }
+#endif
 }
