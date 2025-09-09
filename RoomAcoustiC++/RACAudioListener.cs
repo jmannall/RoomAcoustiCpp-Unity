@@ -7,23 +7,18 @@ using UnityEngine;
 public class RACAudioListener : MonoBehaviour
 {
     // singleton
-    private static RACAudioListener racAudioListener = null;
+    public static RACAudioListener racAudioListener = null;
 
     #region Unity Functions
 
     //////////////////// Unity Functions ////////////////////
 
-    private void OnValidate()
+    private void Awake()
     {
         if (racAudioListener == null)
             racAudioListener = this;
         else
             Debug.AssertFormat(racAudioListener == this, "More than one instance of the RACAudioListener created! Singleton violated.");
-    }
-
-    private void Awake()
-    {
-        // UpdateListener();
     }
 
     void Update()

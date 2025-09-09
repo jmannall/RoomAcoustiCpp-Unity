@@ -473,8 +473,10 @@ public class RACManager : MonoBehaviour
 
     public static bool InitEarlyReverb()
     {
-        int direct = SelectDirectMode(racManager.earlyConfig.direct);
-        return RACInitEarlyReverb(direct, racManager.earlyConfig.reflectionOrder, racManager.earlyConfig.shadowDiffractionOrder, racManager.earlyConfig.specularDiffractionOrder, racManager.earlyConfig.minimumEdgeLength, racManager.earlyConfig.maximumPathLength, (int)racManager.diffractionModel);
+        if (racManager.earlyConfig.enabled)
+            return RACInitEarlyReverb(SelectDirectMode(racManager.earlyConfig.direct), racManager.earlyConfig.reflectionOrder, racManager.earlyConfig.shadowDiffractionOrder, racManager.earlyConfig.specularDiffractionOrder, racManager.earlyConfig.minimumEdgeLength, racManager.earlyConfig.maximumPathLength, (int)racManager.diffractionModel);
+        else
+            return RACInitEarlyReverb(SelectDirectMode(DirectSound.None), 0, 0, 0, racManager.earlyConfig.minimumEdgeLength, racManager.earlyConfig.maximumPathLength, (int)racManager.diffractionModel);
     }
 
     public static bool InitSingleFDN(float volume, float[] dimensions)
