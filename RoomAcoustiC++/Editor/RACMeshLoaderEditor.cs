@@ -58,6 +58,7 @@ public class RACMeshLoaderEditor: Editor
             {
                 AssetDatabase.Refresh();
                 LoadOptions(racMeshLoader);
+                ApplySelection(racMeshLoader);
                 Repaint();
             }
         }

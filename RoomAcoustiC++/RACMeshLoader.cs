@@ -193,7 +193,7 @@ public class RACMeshLoader : MonoBehaviour
         {
             // Find the best match for this slope's frequency band among the requested bands.
             oldBandIdx = bandIdxs[localIdx];
-            newBandIdx = BestMatch(frequencies[oldBandIdx], targetFreqs);
+            newBandIdx = BestBandMatch(frequencies[oldBandIdx], targetFreqs);
 
             // Only record this slope if its frequency band matches one of the requested bands.
             // If the user removed any of the octave bands through the GUI, some slopes will not find a match and will be ignored.
@@ -620,7 +620,7 @@ public class RACMeshLoader : MonoBehaviour
             T60s[i] = parsedFloatLine[1];
             decayRates[i] = parsedFloatLine[2];
 
-            bandIdxs[i] = BestMatch(freqFromFile, frequencies);
+            bandIdxs[i] = BestBandMatch(freqFromFile, frequencies);
             if (!Mathf.Approximately(frequencies[bandIdxs[i]], freqFromFile))
                 throw new InvalidDataException($"The frequency {freqFromFile} read from modal_data.csv does not match any of the frequencies {frequencies} read from materials.csv.");
 
@@ -634,52 +634,54 @@ public class RACMeshLoader : MonoBehaviour
         }
     }
 
-    private int BestMatch(float target, float[] references)
+    private int BestBandMatch(float targetBand, float[] referenceBands)
     {
-        if (target < references[0])
+        if (targetBand < referenceBands[0])
             return 0;
-        else if (target > references[references.Length - 1])
-            return references.Length - 1;
+        else if (targetBand > referenceBands[referenceBands.Length - 1])
+            return referenceBands.Length - 1;
         else
         {
+            float diff;
             int closestIndex = 0;
-            float smallestDiff = Mathf.Abs(target - references[0]);
+            float smallestDiff = Mathf.Abs(targetBand - referenceBands[0]);
 
-            for (int j = 1; j < references.Length; j++)
+            for (int j = 1; j < referenceBands.Length; j++)
             {
-                float diff = Mathf.Abs(target - references[j]);
+                diff = Mathf.Abs(targetBand - referenceBands[j]);
                 if (diff < smallestDiff)
                 {
-                    smallestDiff = diff;
                     closestIndex = j;
+                    smallestDiff = diff;
                 }
             }
 
-            return Mathf.Clamp(closestIndex, 0, references.Length - 1);
+            return closestIndex;
         }
     }
-    private int BestMatch(float target, List<float> references)
+    private int BestBandMatch(float targetBand, List<float> referenceBands)
     {
-        if (target < references[0])
+        if (targetBand < referenceBands[0])
             return 0;
-        else if (target > references[references.Count - 1])
-            return references.Count - 1;
+        else if (targetBand > referenceBands[referenceBands.Count - 1])
+            return referenceBands.Count - 1;
         else
         {
             int closestIndex = 0;
-            float smallestDiff = Mathf.Abs(target - references[0]);
+            float smallestDiff = Mathf.Abs(targetBand - referenceBands[0]);
+            float diff = smallestDiff;
 
-            for (int j = 1; j < references.Count; j++)
+            for (int j = 1; j < referenceBands.Count; j++)
             {
-                float diff = Mathf.Abs(target - references[j]);
+                diff = Mathf.Abs(targetBand - referenceBands[j]);
                 if (diff < smallestDiff)
                 {
-                    smallestDiff = diff;
                     closestIndex = j;
+                    smallestDiff = diff;
                 }
             }
 
-            return Mathf.Clamp(closestIndex, 0, references.Count - 1);
+            return closestIndex;
         }
     }
 
@@ -694,7 +696,7 @@ public class RACMeshLoader : MonoBehaviour
         }
 
         for (int i = 0; i < targetFreqs.Count; i++)
-            resizedCoeffs[i] = inputCoeffs[BestMatch(targetFreqs[i], inputCoeffs)];
+            resizedCoeffs[i] = inputCoeffs[BestBandMatch(targetFreqs[i], inputFreqs)];
 
         return resizedCoeffs;
     }
