@@ -1,6 +1,7 @@
-using UnityEngine;
-using UnityEngine.InputSystem;
 using System;
+using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
 
 [RequireComponent(typeof(CharacterController))]
 
@@ -8,15 +9,15 @@ public class PlayerController : MonoBehaviour
 {
 
     [SerializeField, Range(0, 10)]
-    private float speed;
+    private float speed = 1f;
 
-    public Transform cameraTransform;
+    public Transform firstPersonCamera;
 
     private Vector2 direction;
-
     private Vector3 worldDirection;
 
     private float gravity = 9.8f;
+    private float verticalVelocity = 0f;
 
     public InputActionAsset inputActions;
     private CharacterController controller;
@@ -50,26 +51,22 @@ public class PlayerController : MonoBehaviour
     {
         if (inputActions == null)
             return;
-        UpdateDirection();
-        UpdateWorldDirection();
-        controller.Move(speed * worldDirection * Time.deltaTime);
-    }
 
-    void UpdateDirection()
-    {
         direction = move.ReadValue<Vector2>().normalized;
         transform.TransformDirection(direction);
-    }
 
-    void UpdateWorldDirection()
-    {
         // transform direction to world space using the camera's transform
-        worldDirection.x = cameraTransform.forward.x * direction.y + cameraTransform.right.x * direction.x;
-        worldDirection.z = cameraTransform.forward.z * direction.y + cameraTransform.right.z * direction.x;
+        worldDirection = firstPersonCamera.forward * direction.y + firstPersonCamera.right * direction.x;
+        worldDirection.y = 0.0f;
+        worldDirection = worldDirection.normalized;
 
         if (controller.isGrounded)
-            worldDirection.y = 0.0f;
+            verticalVelocity = Mathf.Min(verticalVelocity, -0.5f); // small stick-to-ground force
         else
-            worldDirection.y -= gravity * Time.deltaTime;
+            verticalVelocity -= gravity * Time.deltaTime;
+
+        worldDirection.y = verticalVelocity;
+
+        controller.Move(speed * worldDirection * Time.deltaTime);
     }
 }
