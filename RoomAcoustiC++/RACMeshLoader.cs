@@ -62,6 +62,7 @@ public class RACMeshLoader : MonoBehaviour
     private int numFDNs = -1;
     [SerializeField, HideInInspector]
     private int[] bandIdxs;
+    // TODO: Remove loading of decayRates
     [SerializeField, HideInInspector]
     private float[] decayRates;
     [SerializeField, HideInInspector]
@@ -169,19 +170,17 @@ public class RACMeshLoader : MonoBehaviour
             for (int j = 0; j < numNodes; j++)
                 flattenedPathIndexing[i * numNodes + j] = pathIndexing[i, j];
 
-        // Internal parameters `bandIdxs, T60s, decayRates, leftVecs, rightVecs, numFDNs` match what was read from the files.
+        // Internal parameters `bandIdxs, T60s, leftVecs, rightVecs, numFDNs` match what was read from the files.
         // They need to be truncated/repeated to match the current frequency bands of RACManager.
         // Also, the eigenvectors need to be flattened.
         int resized_numFDNs = numSlopes * targetFreqs.Count;
         int[] resized_bandIdxs = new int[resized_numFDNs];
         float[] resized_T60s = new float[resized_numFDNs];
-        float[] resized_decayRates = new float[resized_numFDNs];
         float[] resized_leftVecs = new float[resized_numFDNs * numPaths];
         float[] resized_rightVecs = new float[resized_numFDNs * numPaths];
         // The internal variables' shapes are:
         // numFDNs = numSlopes * numBands;
         // bandIdxs = new int[numFDNs];
-        // decayRates = new float[numFDNs];
         // T60s = new float[numFDNs];
         // rightVecs = new float[numFDNs, numPaths];
         // leftVecs = new float[numFDNs, numPaths];
@@ -201,7 +200,6 @@ public class RACMeshLoader : MonoBehaviour
             {
                 resized_bandIdxs[numAssigned] = newBandIdx;
                 resized_T60s[numAssigned] = T60s[localIdx];
-                resized_decayRates[numAssigned] = decayRates[localIdx];
                 for (int i = 0; i < numPaths; ++i)
                 {
                     resized_leftVecs[numAssigned * numPaths + i] = leftVecs[localIdx, i];
@@ -229,7 +227,6 @@ public class RACMeshLoader : MonoBehaviour
                         {
                             resized_bandIdxs[numAssigned] = newBandIdx;
                             resized_T60s[numAssigned] = T60s[localIdx];
-                            resized_decayRates[numAssigned] = decayRates[localIdx];
                             for (int i = 0; i < numPaths; ++i)
                             {
                                 resized_leftVecs[numAssigned * numPaths + i] = leftVecs[localIdx, i];
@@ -249,7 +246,6 @@ public class RACMeshLoader : MonoBehaviour
                         {
                             resized_bandIdxs[numAssigned] = newBandIdx;
                             resized_T60s[numAssigned] = T60s[localIdx];
-                            resized_decayRates[numAssigned] = decayRates[localIdx];
                             for (int i = 0; i < numPaths; ++i)
                             {
                                 resized_leftVecs[numAssigned * numPaths + i] = newBandIdx;
@@ -267,7 +263,7 @@ public class RACMeshLoader : MonoBehaviour
 
         RACManager.InitMoDART(
           flattenedPathIndexing,
-          resized_bandIdxs, resized_T60s, resized_decayRates,
+          resized_bandIdxs, resized_T60s,
           resized_leftVecs, resized_rightVecs,
           resized_numFDNs, numNodes, numPaths
           );

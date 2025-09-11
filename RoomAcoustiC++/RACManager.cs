@@ -56,7 +56,7 @@ public class RACManager : MonoBehaviour
     private static extern bool RACInitSingleFDN(bool enabled, float volume, [In] float[] t60, int reverbFormulaId, [In] float[] dimensions, int numDimensions, int numRays, int matrixId);
 
     [DllImport(DLLNAME)]
-    private static extern bool RACInitMoDART(bool enabled, int numRays, int matrixId, float delay, [In] int[] indexing, [In] int[] frequencyIndexing, [In] float[] t60s, [In] float[] energyDecays, [In] float[] leftEigenvectors, [In] float[] rightEigenvectors, int numFDNs, int numNodes, int numPaths);
+    private static extern bool RACInitMoDART(bool enabled, int numRays, int matrixId, float delay, [In] int[] indexing, [In] int[] frequencyIndexing, [In] float[] t60s, [In] float[] leftEigenvectors, [In] float[] rightEigenvectors, int numFDNs, int numNodes, int numPaths);
 
     [DllImport(DLLNAME)]
     private static extern void RACSetHeadphoneEQ([In] float[] leftIR, [In] float[] rightIR, int irLength);
@@ -228,7 +228,6 @@ public class RACManager : MonoBehaviour
         [Tooltip("Toggle the late reverberation component as a whole.")]
         public bool enabled;
 
-        // TODO: Make the range slider logarithmic.
         [LogarithmicRange(2, 5, true)]
         [Tooltip("Number of rays used for MoD-ART energy injection and detection.")]
         public float numRays;
@@ -502,11 +501,11 @@ public class RACManager : MonoBehaviour
             (int)racManager.reverbTimeModel, dimensions, dimensions.Length, numRays, (int)racManager.fdnMatrix);
     }
 
-    public static bool InitMoDART(int[] indexing, int[] frequencyIndexing, float[] t60s, float[] energyDecays, float[] leftEigenvectors, float[] rightEigenvectors, int numFDNs, int numNodes, int numPaths)
+    public static bool InitMoDART(int[] indexing, int[] frequencyIndexing, float[] t60s, float[] leftEigenvectors, float[] rightEigenvectors, int numFDNs, int numNodes, int numPaths)
     {
         return RACInitMoDART(
             racManager.lateConfig.enabled, racManager.lateConfig.GetNumRays(), (int)racManager.fdnMatrix,
-            racManager.lateConfig.delay, indexing, frequencyIndexing, t60s, energyDecays, leftEigenvectors,
+            racManager.lateConfig.delay, indexing, frequencyIndexing, t60s, leftEigenvectors,
             rightEigenvectors, numFDNs, numNodes, numPaths);
     }
 
