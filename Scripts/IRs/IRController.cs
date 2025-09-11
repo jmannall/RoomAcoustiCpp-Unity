@@ -395,7 +395,7 @@ public class IRController : MonoBehaviour
         int idx = 0;
         foreach (var config in lateConfigs)
         {
-            RACManager.UpdateMoDARTLateConfig(config);
+            // RACManager.UpdateMoDARTLateConfig(config);
             lateConfigName = idx.ToString();
             idx++;
             yield return null; // Pause and resume in the next frame
@@ -480,7 +480,7 @@ public class IRController : MonoBehaviour
             expectResidues = false;
 
             RACManager.SubmitAudio(racSource.id, ref inputBuffer);
-            RACManager.ResetFDN();
+            RACManager.ResetLateReverb();
 
             //RACManager.ProcessOutput();
             //bool success = RACManager.ProcessOutput();

@@ -130,8 +130,6 @@ public class RACManagerEditor : Editor
 
         EditorGUILayout.EndHorizontal();
 
-        
-
         EditorGUILayout.Separator();
 
         EditorGUILayout.PropertyField(hrtfResamplingStep, new GUIContent("HRTF Resampling Step", "Control the HRTF angular resolution."));
@@ -155,24 +153,40 @@ public class RACManagerEditor : Editor
                 RACManager.LoadHeadphoneEQ();
         }
         serializedObject.ApplyModifiedProperties();
-        //GUI.enabled = true;
         GUI.changed = false;
+
+        SerializedProperty enableEarly = earlyConfig.FindPropertyRelative("enabled");
+        bool oldEnableEarly = enableEarly.boolValue;
 
         EditorGUILayout.PropertyField(earlyConfig, new GUIContent("Early sound", "Control the settings of the image edge model."), true);
         serializedObject.ApplyModifiedProperties();
 
         if (isPlaying && GUI.changed)
         {
-            RACManager.UpdateEarlyConfig();
+            if (enableEarly.boolValue != oldEnableEarly)
+                RACManager.EnableEarlyReverb();
+            else
+                RACManager.UpdateEarlyConfig();
             GUI.changed = false;
         }
+        SerializedProperty enableLate = lateConfig.FindPropertyRelative("enabled");
+        SerializedProperty numRays = lateConfig.FindPropertyRelative("numRays");
+        SerializedProperty delay = lateConfig.FindPropertyRelative("delay");
+        bool oldEnableLate = enableLate.boolValue;
+        float oldNumRays = numRays.floatValue;
+        float oldDelay = delay.floatValue;
 
         EditorGUILayout.PropertyField(lateConfig, new GUIContent("Late reverberation", "Control the settings of the MoD-ART model."), true);
         serializedObject.ApplyModifiedProperties();
 
         if (isPlaying && GUI.changed)
         {
-            RACManager.UpdateMoDARTLateConfig();
+            if (enableLate.boolValue != oldEnableLate)
+                RACManager.EnableLateReverb();
+            if (numRays.floatValue != oldNumRays)
+                RACManager.UpdateLateReverbNumberOfRays();
+            if (delay.floatValue != oldDelay)
+                RACManager.UpdateMoDARTDelay();
             GUI.changed = false;
         }
 
@@ -226,9 +240,9 @@ public class RACManagerEditor : Editor
         if (isPlaying && GUI.changed)
         {
             if (isCustom)
-                RACManager.UpdateReverbTime();
+                RACManager.UpdateSingleFDNReverbTime();
             else
-                RACManager.UpdateReverbTimeModel();
+                RACManager.UpdateSingleFDNReverbTimeModel();
             GUI.changed = false;
         }
     }

@@ -273,7 +273,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   speed: 0
-  cameraTransform: {fileID: 6194889284471079498}
+  firstPersonCamera: {fileID: 6194889284471079498}
   inputActions: {fileID: -944628639613478452, guid: 702dc6ac5c8f4064981bad9846421123, type: 3}
   playerActionMap:
     m_Name: 
