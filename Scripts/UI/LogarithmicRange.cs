@@ -52,12 +52,14 @@ public class LogarithmicRangeDrawer : PropertyDrawer
 
         if (GUI.changed)
         {
-            // If user changed the int field, update the exponent accordingly
+            // If user changed the numerical field, update the exponent accordingly
             value = Mathf.Clamp(value, (int)Mathf.Pow(10f, expAttr.min), (int)Mathf.Pow(10f, expAttr.max));
             property.floatValue = Mathf.Log10(value);
             property.serializedObject.ApplyModifiedProperties();
+            GUI.changed = true;
         }
-        GUI.changed = hasChanged;
+        else
+            GUI.changed = hasChanged;
 
         // Show computed value as a single-line float field (read-only)
         //using (new EditorGUI.DisabledScope(true))
