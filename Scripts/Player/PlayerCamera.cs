@@ -6,6 +6,9 @@ public class PlayerCamera : MonoBehaviour
     [SerializeField]
     private bool lockCursor;
 
+    [SerializeField]
+    private bool lockPitch;
+
     [SerializeField, Range(0, 1)]
     private float mouseSensitivity = 1f;
 
@@ -60,8 +63,11 @@ public class PlayerCamera : MonoBehaviour
             return;
 
         yaw += look.ReadValue<Vector2>().x * mouseSensitivity;
-        pitch -= look.ReadValue<Vector2>().y * mouseSensitivity;
-        pitch = Mathf.Clamp(pitch, pitchMinMax.x, pitchMinMax.y);
+        if (!lockPitch)
+        {
+            pitch -= look.ReadValue<Vector2>().y * mouseSensitivity;
+            pitch = Mathf.Clamp(pitch, pitchMinMax.x, pitchMinMax.y);
+        }
 
         currentRotation = Vector3.SmoothDamp(currentRotation, new Vector3(pitch, yaw), ref currentRotationVelocity, rotationSmoothTime);
         firstPersonCamera.eulerAngles = currentRotation;
