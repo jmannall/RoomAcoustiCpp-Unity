@@ -26,7 +26,7 @@ public class PlayerController : MonoBehaviour
     public InputActionMap playerActionMap;
     private InputAction move;
 
-    private void Awake()
+    void Awake()
     {
         if (inputActions == null)
         {
@@ -36,7 +36,7 @@ public class PlayerController : MonoBehaviour
         playerActionMap = inputActions.FindActionMap("Player");
         playerActionMap.Enable();
     }
-    private void Start()
+    void Start()
     {
         controller = GetComponent<CharacterController>();
         worldDirection.y = 0.0f;

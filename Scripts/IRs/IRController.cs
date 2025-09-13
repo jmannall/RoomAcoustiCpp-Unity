@@ -151,7 +151,7 @@ public class IRController : MonoBehaviour
 
     private static IRController irController;
 
-    private void OnValidate()
+    void OnValidate()
     {
         if (irController == null)
             irController = this;
@@ -160,7 +160,7 @@ public class IRController : MonoBehaviour
     }
 
     // Start is called before the first frame update
-    private void Awake()
+    void Awake()
     {
         DebugCPP.RegisterIEMStartCallback(OnIEMStarted);
         DebugCPP.RegisterIEMEndCallback(OnIEMCompleted);
@@ -181,7 +181,7 @@ public class IRController : MonoBehaviour
         cubeSize = Mathf.Min(spacing / 2.0f, cubeSize);
     }
 
-    private void Start()
+    void Start()
     {
         UpdateSceneName();
 
@@ -215,7 +215,7 @@ public class IRController : MonoBehaviour
         listenerEnumerator = ProcessListeners();
     }
 
-    private void OnDisable()
+    void OnDisable()
     {
         DebugCPP.UnregisterIEMStartCallback();
         DebugCPP.UnregisterIEMEndCallback();
@@ -224,7 +224,7 @@ public class IRController : MonoBehaviour
         DebugCPP.UnregisterResidueCallback();
     }
 
-    private void Update()
+    void Update()
     {
         if (!doIRs)
         {
@@ -734,7 +734,7 @@ public class IRController : MonoBehaviour
                     .ToArray();
     }
 
-    private void OnDrawGizmos()
+    void OnDrawGizmos()
     {
         if (!doIRs)
             return;

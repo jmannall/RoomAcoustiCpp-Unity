@@ -16,7 +16,7 @@ public class RACManagerEditor : Editor
         fdnMatrix, selectedHRTF, customHRTFFile, selectedHeadphoneEQ, customHeadphoneEQFile, earlyConfig,
         lateConfig, spatialisationMode, diffractionModel, lateReverbModel, reverbTimeModel, T60;
 
-    private void OnEnable()
+    void OnEnable()
     {
         // Link the SerializedProperty to the serialized field in the target class
         lerpFactor = serializedObject.FindProperty("lerpFactor");

@@ -10,7 +10,7 @@ public class RACMaterial : MonoBehaviour
     [Tooltip("List of materials to be used by the acoustic model.")]
     public List<RACMaterialEntry> materials;
 
-    public void Awake()
+    void Awake()
     {
         if (materials == null)
             materials = new List<RACMaterialEntry>();

@@ -11,7 +11,7 @@ public class AudioControl : MonoBehaviour
     public InputActionMap audioActionMap;
     private InputAction playPause;
 
-    private void Awake()
+    void Awake()
     {
         audioActionMap = GetComponent<PlayerController>().inputActions.FindActionMap("Audio");
         audioActionMap.Enable();

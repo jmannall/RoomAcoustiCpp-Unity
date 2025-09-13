@@ -54,7 +54,7 @@ public class RACObject : MonoBehaviour
         transform.hasChanged = false;
     }
 
-    private void Update()
+    void Update()
     {
         currentMeshFilter = GetComponent<MeshFilter>();
         if (transform.hasChanged || !ReferenceEquals(savedMeshFilter, currentMeshFilter))
@@ -90,7 +90,7 @@ public class RACObject : MonoBehaviour
         subMeshes.Add(new RACSubMesh(ref mesh, ref subMesh, transform, materialEntry.GetAbsorption()));
     }
 
-    private void OnDestroy()
+    void OnDestroy()
     {
         Remove();
     }
@@ -101,7 +101,7 @@ public class RACObject : MonoBehaviour
 
     //////////////////// Functions ////////////////////
 
-    private void Remove()
+    public void Remove()
     {
         foreach (RACSubMesh subMesh in subMeshes)
         {

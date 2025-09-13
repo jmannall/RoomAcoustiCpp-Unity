@@ -8,7 +8,7 @@ public class RACAudioSourceEditor : Editor
 {
     private SerializedProperty directivity;
 
-    private void OnEnable()
+    void OnEnable()
     {
         directivity = serializedObject.FindProperty("directivity");
     }

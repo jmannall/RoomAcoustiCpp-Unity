@@ -56,7 +56,7 @@ public class RACAudioSource : MonoBehaviour
 
     //////////////////// Unity Functions ////////////////////
 
-    private void Awake()
+    void Awake()
     {
         source = GetComponent<AudioSource>();
         if (clip != null)
@@ -94,12 +94,12 @@ public class RACAudioSource : MonoBehaviour
         isPlaying = source.isPlaying;
     }
 
-    private void OnDestroy()
+    void OnDestroy()
     {
         RemoveSource();
     }
 
-    private void OnAudioFilterRead(float[] data, int channels)
+    void OnAudioFilterRead(float[] data, int channels)
     {
         if (RACManager.racManager.isRunning)
         {

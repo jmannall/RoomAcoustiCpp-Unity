@@ -10,7 +10,7 @@ public class RACMeshLoaderEditor: Editor
     private int selectedIndex = -1;
     private string[] optionNames = new string[0];
 
-    public void OnValidate()
+    void OnValidate()
     {
         AssetDatabase.Refresh();
         LoadOptions((RACMeshLoader)target);
@@ -172,19 +172,19 @@ public class RACMeshLoaderEditor: Editor
             return false;
     }
 
-    private void OnUndoRedoPerformed()
+    void OnUndoRedoPerformed()
     {
         // Resynchronize UI with component state after undo/redo
         selectedIndex = -1; // Force resync on next GUI call
         Repaint();
     }
 
-    private void OnEnable()
+    void OnEnable()
     {
         Undo.undoRedoPerformed += OnUndoRedoPerformed;
     }
 
-    private void OnDisable()
+    void OnDisable()
     {
         Undo.undoRedoPerformed -= OnUndoRedoPerformed;
     }

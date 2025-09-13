@@ -111,7 +111,7 @@ public class RACMeshLoader : MonoBehaviour
     }
 #endif
 
-    private void OnValidate()
+    void OnValidate()
     {
         if (racMeshLoader == null)
             racMeshLoader = this;
@@ -119,22 +119,22 @@ public class RACMeshLoader : MonoBehaviour
             Debug.AssertFormat(racMeshLoader == this, "More than one instance of the RACMeshLoader created! Singleton violated.");
     }
 
-    private void Awake()
+    void Awake()
     {
         // Ensure that the mesh loader has no children, before attempting a fresh load of the mesh.
-        foreach (Transform child in this.transform)
+        for (int i = this.transform.childCount - 1; i >= 0; i--)
 #if UNITY_EDITOR
-            DestroyImmediate(meshGameObject);
+            DestroyImmediate(this.transform.GetChild(i).gameObject);
 #else
-            Destroy(meshGameObject);
-#endif
+            Destroy(this.transform.GetChild(i).gameObject);
+# endif
 
         // If this is the start of play, load the appropriate assets (specified by selectedSubfolder).
         if (LoadAllMeshData())
             loadedAndReady = true;
     }
 
-    private void Start()
+    void Start()
     {
         if (!loadedAndReady)
         {
@@ -271,7 +271,7 @@ public class RACMeshLoader : MonoBehaviour
         RACManager.UpdatePlanesAndEdges();
     }
 
-    private void Update()
+    void Update()
     {
         foreach (MeshRenderer render in meshGameObject.GetComponentsInChildren<MeshRenderer>())
             render.enabled = renderAcousticMesh;

@@ -201,7 +201,7 @@ public class RACMaterialEntry : ScriptableObject
 
     //////////////////// Unity Functions ////////////////////
 
-    private void Awake()
+    void Awake()
     {
         SetAbsorption();
     }

@@ -335,7 +335,7 @@ public class RACManager : MonoBehaviour
 
     //////////////////// Unity Functions ////////////////////
 
-    private void OnValidate()
+    void OnValidate()
     {
         if (racManager == null)
             racManager = this;
@@ -343,7 +343,7 @@ public class RACManager : MonoBehaviour
             Debug.AssertFormat(racManager == this, "More than one instance of the RACManager created! Singleton violated.");
     }
 
-    private void Awake()
+    void Awake()
     {
         AudioConfiguration config = AudioSettings.GetConfiguration();
         numFrames = config.dspBufferSize;
@@ -405,7 +405,7 @@ public class RACManager : MonoBehaviour
         UpdateSpatialisationMode();
     }
 
-    private void Start()
+    void Start()
     {
 #if UNITY_EDITOR
         Debug.Log("Unity Editor");
@@ -429,13 +429,13 @@ public class RACManager : MonoBehaviour
         interleavedData = new float[numReverbSources * numFrames];
     }
 
-    private void OnDestroy()
+    void OnDestroy()
     {
         isRunning = false;
         RACExit();
     }
 
-    private void OnAudioFilterRead(float[] data, int channels)
+    void OnAudioFilterRead(float[] data, int channels)
     {
         if (isRunning)
         {

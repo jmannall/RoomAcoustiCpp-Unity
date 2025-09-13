@@ -39,7 +39,7 @@ public class RACMesh : MonoBehaviour
 
     //////////////////// Unity Functions ////////////////////
 
-    private void OnValidate()
+    void OnValidate()
     {
         if (racMesh == null)
             racMesh = this;
@@ -47,7 +47,7 @@ public class RACMesh : MonoBehaviour
             Debug.AssertFormat(racMesh == this, "More than one instance of the RACMesh created! Singleton violated.");
     }
 
-    private void Awake()
+    void Awake()
     {
     }
 
@@ -74,7 +74,7 @@ public class RACMesh : MonoBehaviour
         RACManager.UpdatePlanesAndEdges();
     }
 
-    private void LateUpdate()
+    void LateUpdate()
     {
         meshes = GetComponentsInChildren<MeshFilter>();
         objects = GetComponentsInChildren<RACObject>();

@@ -24,7 +24,7 @@ public class DebugCPP : MonoBehaviour
 
     private GUIStyle style = new GUIStyle();
 
-    private void OnValidate()
+    void OnValidate()
     {
         if (debug == null)
             debug = this;
@@ -39,7 +39,7 @@ public class DebugCPP : MonoBehaviour
         RegisterPathCallback(OnPathCallback);
     }
 
-    private void Start()
+    void Start()
     {
         listenerPosition = FindAnyObjectByType<RACAudioListener>().transform;
         if (listenerPosition == null)
@@ -50,13 +50,13 @@ public class DebugCPP : MonoBehaviour
         style.normal.textColor = Color.white; // Text color
     }
 
-    private void OnDisable()
+    void OnDisable()
     {
         UnregisterDebugCallback();
         UnregisterPathCallback();
     }
 
-    private void OnDestroy()
+    void OnDestroy()
     {
         pathDictionary.Clear();
     }
@@ -163,7 +163,7 @@ public class DebugCPP : MonoBehaviour
         pathDictionary[keyString] = vectors;
     }
 
-    private void OnDrawGizmos()
+    void OnDrawGizmos()
     {
         if (source == null || listenerPosition == null)
             return;

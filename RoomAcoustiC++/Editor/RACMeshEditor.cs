@@ -8,7 +8,7 @@ public class RACMeshEditor : Editor
 {
     private SerializedProperty absorptionSkew;
 
-    private void OnEnable()
+    void OnEnable()
     {
         absorptionSkew = serializedObject.FindProperty("absorptionSkew");
     }

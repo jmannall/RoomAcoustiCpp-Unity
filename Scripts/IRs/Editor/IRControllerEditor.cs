@@ -10,7 +10,7 @@ public class IRControllerEditor : Editor
 #if RAC_Debug
     private IRController irController;
 
-    private void OnEnable()
+    void OnEnable()
     {
         irController = target as IRController;
     }

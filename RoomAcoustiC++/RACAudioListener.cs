@@ -13,7 +13,7 @@ public class RACAudioListener : MonoBehaviour
 
     //////////////////// Unity Functions ////////////////////
 
-    private void Awake()
+    void Awake()
     {
         if (racAudioListener == null)
             racAudioListener = this;

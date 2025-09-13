@@ -13,7 +13,7 @@ public class RACMaterialEntryEditor : Editor
 
     List<RACMaterialEntry.Entry> materialEntries;
 
-    public void OnEnable()
+    void OnEnable()
     {
         RACMaterialEntry mGameObject = target as RACMaterialEntry;
         mGameObject.ResetCustomAbsorption();
