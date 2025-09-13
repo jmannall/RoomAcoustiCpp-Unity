@@ -5,7 +5,7 @@ public class CanvasProjector : MonoBehaviour {
     public Canvas targetCanvas;
     public Camera targetCamera;
     public Transform targetObject;
-    public float minDistance = 0.1f;
+    public float minDistance = 0.5f;
     [SerializeField, Range(0, 1)]
     public float distanceScaling;
 
@@ -28,7 +28,9 @@ public class CanvasProjector : MonoBehaviour {
     void Update()
     {
         worldToUISpace();
-        if (distanceFromCanvas > minDistance)
+        if (distanceFromCanvas > minDistance
+            && screenPos.x > 0 && screenPos.x < targetCanvas.pixelRect.width
+            && screenPos.y > 0 && screenPos.y < targetCanvas.pixelRect.height)
         {
             textBox.text = defaultText;
             textBox.fontSize = defaultSize / Mathf.Pow(distanceFromCanvas, distanceScaling);
