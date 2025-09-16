@@ -41,7 +41,7 @@ public class RACManager : MonoBehaviour
     // Load and Destroy
 
     [DllImport(DLLNAME)]
-    private static extern bool RACInit(int fs, int numFrames, int numReverbSources, float lerpFactor, float Q, [In] float[] frequencyBands, int numFrequencyBands);
+    private static extern bool RACInit(int fs, int numFrames, int numReverbSources, int fdnSize, float lerpFactor, float Q, [In] float[] frequencyBands, int numFrequencyBands);
 
     [DllImport(DLLNAME)]
     private static extern void RACExit();
@@ -287,8 +287,11 @@ public class RACManager : MonoBehaviour
     [SerializeField, Range(1, 45)]
     private int hrtfResamplingStep = 5;
 
-    [SerializeField, Range(0, 32)]
+    [SerializeField, Range(1, 32)]
     private int numReverbSources = 12;
+
+    [SerializeField, Range(6, 32)]
+    private int fdnSize = 12;
 
     [SerializeField]
     private FDNMatrix fdnMatrix = FDNMatrix.Householder;
@@ -397,7 +400,7 @@ public class RACManager : MonoBehaviour
         char sep = Path.DirectorySeparatorChar;
         string[] filePaths = { resourcePath + sep + hrtfFile, resourcePath + sep + nearFieldFile, resourcePath + sep + ildFile };
 
-        isRunning = RACInit(sampleRate, numFrames, numReverbSources, lerpFactor, Q, frequencyBands.ToArray(), frequencyBands.Count);
+        isRunning = RACInit(sampleRate, numFrames, numReverbSources, fdnSize, lerpFactor, Q, frequencyBands.ToArray(), frequencyBands.Count);
         bool filesLoaded = RACLoadSpatialisationFiles(hrtfResamplingStep, filePaths);
         if (!filesLoaded)
         {

@@ -12,7 +12,7 @@ public class RACManagerEditor : Editor
     private string[] pluginOptions = new string[] { "RAC_Default", "RAC_Debug", "RAC_Profile", "RAC_ProfileDetailed" };
     private int selectedIndex = 0;
 
-    private SerializedProperty lerpFactor, frequencyBands, hrtfResamplingStep, numReverbSources,
+    private SerializedProperty lerpFactor, frequencyBands, hrtfResamplingStep, numReverbSources, fdnSize,
         fdnMatrix, selectedHRTF, customHRTFFile, selectedHeadphoneEQ, customHeadphoneEQFile, earlyConfig,
         lateConfig, spatialisationMode, diffractionModel, lateReverbModel, reverbTimeModel, T60;
 
@@ -23,6 +23,7 @@ public class RACManagerEditor : Editor
         frequencyBands = serializedObject.FindProperty("frequencyBands");
         hrtfResamplingStep = serializedObject.FindProperty("hrtfResamplingStep");
         numReverbSources = serializedObject.FindProperty("numReverbSources");
+        fdnSize = serializedObject.FindProperty("fdnSize");
         fdnMatrix = serializedObject.FindProperty("fdnMatrix");
         selectedHRTF = serializedObject.FindProperty("selectedHRTF");
         customHRTFFile = serializedObject.FindProperty("customHRTFFile");
@@ -134,6 +135,7 @@ public class RACManagerEditor : Editor
 
         EditorGUILayout.PropertyField(hrtfResamplingStep, new GUIContent("HRTF Resampling Step", "Control the HRTF angular resolution."));
         EditorGUILayout.PropertyField(numReverbSources, new GUIContent("Reverb Sources", "Control the number of reverb sources used for late reverberation spatialisation."));
+        EditorGUILayout.PropertyField(fdnSize, new GUIContent("FDN Size", "Control the number of delay lines in each feedback delay matrix."));
         EditorGUILayout.PropertyField(fdnMatrix, new GUIContent("FDN Matrix", "Select the design of the FDN feedback matrix."));
 
         EditorGUILayout.PropertyField(selectedHRTF, new GUIContent("HRTF File", "Select HRTF File."));
