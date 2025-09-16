@@ -8,12 +8,12 @@ using UnityEngine;
 public class RACMeshLoaderEditor: Editor
 {
     private int selectedIndex = -1;
-    private string[] optionNames = new string[0];
+    private string[] subfolderOptions = new string[0];
 
     void OnValidate()
     {
         AssetDatabase.Refresh();
-        LoadOptions((RACMeshLoader)target);
+        LoadSubfolderOptions();
         Repaint();
     }
 
@@ -21,15 +21,15 @@ public class RACMeshLoaderEditor: Editor
     {
         RACMeshLoader racMeshLoader = (RACMeshLoader)target;
 
-        if (optionNames.Length == 0)
+        if (subfolderOptions.Length == 0)
         {
-            bool success = LoadOptions(racMeshLoader);
+            bool success = LoadSubfolderOptions();
             if (!success)
                 return;
         }
 
         // If required, align UI index with the loader's current selection
-        bool needsUpdate = alignSelection(racMeshLoader.GetCurrentSelection());
+        bool needsUpdate = alignSelection(racMeshLoader.GetSelectedSubfolder());
         if (needsUpdate)
             ApplySelection(racMeshLoader);
 
@@ -37,7 +37,7 @@ public class RACMeshLoaderEditor: Editor
         if (Application.isPlaying)
         {
             // During play mode: show read-only selection and disabled button
-            EditorGUILayout.LabelField("Mesh version", optionNames[selectedIndex]);
+            EditorGUILayout.LabelField("Mesh version", subfolderOptions[selectedIndex]);
             
             EditorGUI.BeginDisabledGroup(true);
             GUILayout.Button(new GUIContent("Reload from disk", "Disabled during play mode"));
@@ -47,7 +47,7 @@ public class RACMeshLoaderEditor: Editor
         {
             // During edit mode: show interactable drop-down menu and button
             EditorGUI.BeginChangeCheck();
-            int newIndex = EditorGUILayout.Popup("Mesh version", selectedIndex, optionNames);
+            int newIndex = EditorGUILayout.Popup("Mesh version", selectedIndex, subfolderOptions);
             if (EditorGUI.EndChangeCheck())
             {
                 selectedIndex = newIndex;
@@ -57,7 +57,7 @@ public class RACMeshLoaderEditor: Editor
             if (GUILayout.Button(new GUIContent("Reload from disk", "Rescan the root meshes folder and update the dropdown menu.")))
             {
                 AssetDatabase.Refresh();
-                LoadOptions(racMeshLoader);
+                LoadSubfolderOptions();
                 ApplySelection(racMeshLoader);
                 Repaint();
             }
@@ -80,18 +80,22 @@ public class RACMeshLoaderEditor: Editor
         }
 
         Undo.RecordObject(racMeshLoader, "Change Option");
-        bool success = racMeshLoader.__EditorAssignSelection(optionNames[selectedIndex]);
+        bool success = racMeshLoader.__EditorAssignSelection(subfolderOptions[selectedIndex]);
         // TODO: if (!success) do something smart about it
     }
 
     // Returns true if the load was successful.
-    private bool LoadOptions(RACMeshLoader racMeshLoader)
+    private bool LoadSubfolderOptions()
     {
-        if (!AssetDatabase.IsValidFolder(racMeshLoader.GetRootFolder()))
+        if (!AssetDatabase.IsValidFolder("Assets/Resources/PythonExports"))
         {
-            Debug.LogError(
-                $"Options root folder not found:\n{racMeshLoader.GetRootFolder()}\n\n" +
-                "Create it or update MeshesRoot constant.");
+            Debug.LogError("Mesh root folder \"Assets/Resources/PythonExports\" not found.");
+            return false;
+        }
+
+        if (AssetDatabase.GetSubFolders("Assets/Resources/PythonExports").Length == 0)
+        {
+            Debug.LogError("Mesh root folder \"Assets/Resources/PythonExports\" has no subfolders.");
             return false;
         }
 
@@ -99,17 +103,10 @@ public class RACMeshLoaderEditor: Editor
         // N.B.: Before sorting, regex pads any integer in the string
         //       with leading zeros (up to 10 digits),
         //       to achieve smart alphanumerical sorting
-        optionNames = AssetDatabase.GetSubFolders(racMeshLoader.GetRootFolder())
-            .Select(s => s.Substring(racMeshLoader.GetRootFolder().Length).TrimStart('/'))
-            .Where(n => !string.IsNullOrEmpty(n))
+        subfolderOptions = AssetDatabase.GetSubFolders("Assets/Resources/PythonExports")
+            .Select(s => s.Substring(31))
             .OrderBy(n => Regex.Replace(n, @"\d+", match => match.Value.PadLeft(10, '0')))
             .ToArray();
-
-        if (optionNames.Length == 0)
-        {
-            Debug.LogError($"No subfolders found under root:\n{racMeshLoader.GetRootFolder()}");
-            return false;
-        }
 
         return true;
     }
@@ -127,14 +124,14 @@ public class RACMeshLoaderEditor: Editor
             else
             {
                 // Editor was reset; reconstruct selectedIndex from the persistent selectedSubfolder
-                selectedIndex = System.Array.IndexOf(optionNames, current);
+                selectedIndex = System.Array.IndexOf(subfolderOptions, current);
                 if (selectedIndex < 0)
                     Debug.LogError("RACMeshLoader selection during play mode does not match any known option.");
             }
             return false;
         }
 
-        if (System.Array.IndexOf(optionNames, current) < 0)
+        if (System.Array.IndexOf(subfolderOptions, current) < 0)
         {
             // If the selection does not match any member of the list
             // (e.g., disk contents have changed but the class kept its state),
@@ -144,7 +141,7 @@ public class RACMeshLoaderEditor: Editor
             return true;
         }
 
-        if (selectedIndex < 0 || selectedIndex >= optionNames.Length)
+        if (selectedIndex < 0 || selectedIndex >= subfolderOptions.Length)
         {
             // If the selected index is not initialized (or out of bounds, somehow) set it back.
             if (string.IsNullOrEmpty(current))
@@ -156,7 +153,7 @@ public class RACMeshLoaderEditor: Editor
             else
             {
                 // If the component has a selection, reconstruct selectedIndex from it
-                selectedIndex = System.Array.IndexOf(optionNames, current);
+                selectedIndex = System.Array.IndexOf(subfolderOptions, current);
                 if (selectedIndex < 0)
                 {
                     Debug.LogWarning("RACMeshLoader selection during play mode does not match any known option.");
@@ -166,7 +163,7 @@ public class RACMeshLoaderEditor: Editor
             }
         }
 
-        if (selectedIndex != System.Array.IndexOf(optionNames, current))
+        if (selectedIndex != System.Array.IndexOf(subfolderOptions, current))
             return true;
         else
             return false;

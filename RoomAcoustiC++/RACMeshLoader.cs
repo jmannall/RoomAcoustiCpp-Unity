@@ -26,8 +26,7 @@ public class RACMeshLoader : MonoBehaviour
     //      some assume a path relative to "Assets/Resources/",
     //      some (external) require a global path.
     [SerializeField, HideInInspector]
-    private string selectedSubfolder = "";
-    private static string sceneName = "AudioForGames"; // TODO: This will also need to be selectable for the user.
+    private string selectedSceneFolder = "";
 
     [SerializeField, HideInInspector]
     private bool loadedAndReady = false;
@@ -279,7 +278,7 @@ public class RACMeshLoader : MonoBehaviour
 
     private bool LoadAllMeshData()
     {
-        if (string.IsNullOrEmpty(selectedSubfolder))
+        if (string.IsNullOrEmpty(selectedSceneFolder))
         {
             Debug.LogWarning("Cannot load mesh and materials: no subfolder selected.");
             return false;
@@ -325,7 +324,7 @@ public class RACMeshLoader : MonoBehaviour
             return false;
         }
 
-        selectedSubfolder = subfolder;
+        selectedSceneFolder = subfolder;
 
         if (LoadAllMeshData())
         {
@@ -339,19 +338,19 @@ public class RACMeshLoader : MonoBehaviour
         }
     }
 
-    public string GetRootFolder()
+    public string GetSelectedPath()
     {
-        return UnityPath("Assets", "Resources", "PythonExports", sceneName);
+        return UnityPath("Assets", "Resources", "PythonExports", selectedSceneFolder);
     }
 
-    public string GetCurrentSelection()
+    public string GetSelectedSubfolder()
     {
-        return selectedSubfolder;
+        return selectedSceneFolder;
     }
 
     private void LoadMeshFromObj()
     {
-        if (string.IsNullOrEmpty(selectedSubfolder))
+        if (string.IsNullOrEmpty(selectedSceneFolder))
             throw new InvalidOperationException("Tried to load mesh, but the selected subfolder string is null or empty.");
 
         // Clean up previous mesh if it exists
@@ -363,8 +362,8 @@ public class RACMeshLoader : MonoBehaviour
 #endif
 
 #if UNITY_EDITOR
-        string importPath = UnityPath("Assets", "Resources", "PythonExports", sceneName, selectedSubfolder, "mesh.obj");
-        string prefabPath = UnityPath("Assets", "Resources", "ProcessedPrefabs", sceneName, selectedSubfolder + ".prefab");
+        string importPath = UnityPath("Assets", "Resources", "PythonExports", selectedSceneFolder, "mesh.obj");
+        string prefabPath = UnityPath("Assets", "Resources", "ProcessedPrefabs", selectedSceneFolder + ".prefab");
         RecursiveMKDir(prefabPath);
 
         // Ensure the model importer has Read/Write enabled so meshes are readable at runtime.
@@ -457,11 +456,11 @@ public class RACMeshLoader : MonoBehaviour
     // Read the material data file
     private void LoadMaterialsFromCsv()
     {
-        if (string.IsNullOrEmpty(selectedSubfolder))
+        if (string.IsNullOrEmpty(selectedSceneFolder))
             throw new InvalidOperationException("Tried to load material data, but the selected subfolder string is null or empty.");
 
         // When using Resources.Load, the path is relative to "Assets/Resources/", and no file extension is needed.
-        string assetPath = UnityPath("PythonExports", sceneName, selectedSubfolder, "materials");
+        string assetPath = UnityPath("PythonExports", selectedSceneFolder, "materials");
         TextAsset csvTextAsset = Resources.Load<TextAsset>(assetPath);
         if (!csvTextAsset)
             throw new FileNotFoundException($"CSV not found:\nAssets/Resources/{assetPath}.csv");
@@ -523,11 +522,11 @@ public class RACMeshLoader : MonoBehaviour
     // Read the path indexing data file
     private void LoadIndexingFromCsv()
     {
-        if (string.IsNullOrEmpty(selectedSubfolder))
+        if (string.IsNullOrEmpty(selectedSceneFolder))
             throw new InvalidOperationException("Tried to load indexing data, but the selected subfolder string is null or empty.");
 
         // When using Resources.Load, the path is relative to "Assets/Resources/", and no file extension is needed.
-        string assetPath = UnityPath("PythonExports", sceneName, selectedSubfolder, "path_indexing");
+        string assetPath = UnityPath("PythonExports", selectedSceneFolder, "path_indexing");
         TextAsset csvTextAsset = Resources.Load<TextAsset>(assetPath);
         if (!csvTextAsset)
             throw new FileNotFoundException($"CSV not found:\nAssets/Resources/{assetPath}.csv");
@@ -567,13 +566,13 @@ public class RACMeshLoader : MonoBehaviour
     // Read the mode data file
     private void LoadModesFromCsv()
     {
-        if (string.IsNullOrEmpty(selectedSubfolder))
+        if (string.IsNullOrEmpty(selectedSceneFolder))
             throw new InvalidOperationException("Tried to load mode data, but the selected subfolder string is null or empty.");
         if (numPaths < 0)
             throw new InvalidOperationException("LoadModesFromCsv() should only be called after LoadIndexingFromCsv().");
 
         // When using Resources.Load, the path is relative to "Assets/Resources/", and no file extension is needed.
-        string assetPath = UnityPath("PythonExports", sceneName, selectedSubfolder, "modal_data");
+        string assetPath = UnityPath("PythonExports", selectedSceneFolder, "modal_data");
         TextAsset csvTextAsset = Resources.Load<TextAsset>(assetPath);
         if (!csvTextAsset)
             throw new FileNotFoundException($"CSV not found:\nAssets/Resources/{assetPath}.csv");

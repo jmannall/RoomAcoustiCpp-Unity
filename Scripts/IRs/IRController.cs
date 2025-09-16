@@ -320,8 +320,8 @@ public class IRController : MonoBehaviour
 
     public void UpdateSceneName()
     {
-        if ((RACMeshLoader.racMeshLoader != null) && !string.IsNullOrEmpty(RACMeshLoader.racMeshLoader.GetCurrentSelection()))
-            sceneName = RACMeshLoader.racMeshLoader.GetCurrentSelection();
+        if ((RACMeshLoader.racMeshLoader != null) && !string.IsNullOrEmpty(RACMeshLoader.racMeshLoader.GetSelectedSubfolder()))
+            sceneName = RACMeshLoader.racMeshLoader.GetSelectedSubfolder();
         else
             sceneName = SceneManager.GetActiveScene().name;
 
