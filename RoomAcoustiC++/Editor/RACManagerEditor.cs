@@ -172,9 +172,11 @@ public class RACManagerEditor : Editor
         SerializedProperty enableLate = lateConfig.FindPropertyRelative("enabled");
         SerializedProperty numRays = lateConfig.FindPropertyRelative("numRays");
         SerializedProperty delay = lateConfig.FindPropertyRelative("delay");
+        SerializedProperty minT60 = lateConfig.FindPropertyRelative("minT60");
         bool oldEnableLate = enableLate.boolValue;
         float oldNumRays = numRays.floatValue;
         float oldDelay = delay.floatValue;
+        float oldMinT60 = minT60.floatValue;
 
         EditorGUILayout.PropertyField(lateConfig, new GUIContent("Late reverberation", "Control the settings of the MoD-ART model."), true);
         serializedObject.ApplyModifiedProperties();
@@ -187,6 +189,8 @@ public class RACManagerEditor : Editor
                 RACManager.UpdateLateReverbNumberOfRays();
             if (delay.floatValue != oldDelay)
                 RACManager.UpdateMoDARTDelay();
+            if (minT60.floatValue != oldMinT60)
+                RACManager.UpdateMoDARTMinimumReverbTime();
             GUI.changed = false;
         }
 

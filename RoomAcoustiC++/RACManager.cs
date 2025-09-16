@@ -56,7 +56,7 @@ public class RACManager : MonoBehaviour
     private static extern bool RACInitSingleFDN(bool enabled, float volume, [In] float[] t60, int reverbFormulaId, [In] float[] dimensions, int numDimensions, int numRays, int matrixId);
 
     [DllImport(DLLNAME)]
-    private static extern bool RACInitMoDART(bool enabled, int numRays, int matrixId, float delay, [In] int[] indexing, [In] int[] frequencyIndexing, [In] float[] t60s, [In] float[] leftEigenvectors, [In] float[] rightEigenvectors, int numFDNs, int numNodes, int numPaths);
+    private static extern bool RACInitMoDART(bool enabled, int numRays, int matrixId, float delay, float minT60, [In] int[] indexing, [In] int[] frequencyIndexing, [In] float[] t60s, [In] float[] leftEigenvectors, [In] float[] rightEigenvectors, int numFDNs, int numNodes, int numPaths);
 
     [DllImport(DLLNAME)]
     private static extern void RACSetHeadphoneEQ([In] float[] leftIR, [In] float[] rightIR, int irLength);
@@ -85,6 +85,9 @@ public class RACManager : MonoBehaviour
 
     [DllImport(DLLNAME)]
     private static extern void RACUpdateMoDARTDelay(float delay);
+
+    [DllImport(DLLNAME)]
+    private static extern void RACUpdateMoDARTMinimumReverbTime(float T60);
 
     [DllImport(DLLNAME)]
     private static extern void RACUpdateSingleFDNReverbTime([In] float[] t60);
@@ -236,22 +239,33 @@ public class RACManager : MonoBehaviour
         [Tooltip("Delay preceding the late reverberation component, in seconds.")]
         public float delay;
 
+        [LogarithmicRange(-2, 1, false)]
+        [Tooltip("Minimum reverberation time for each mode. A higher minimum reduces the number of slopes, and hence FDNs, used to model later reverberation.")]
+        public float minT60;
+
         public int GetNumRays()
         {
             return Mathf.RoundToInt(Mathf.Pow(10f, numRays));
         }
 
-        public LateConfig(bool enabled, float numRays, float delay)
+        public float GetMinReverbTime()
+        {
+            return Mathf.Pow(10f, minT60);
+        }
+
+        public LateConfig(bool enabled, float numRays, float delay, float minT60)
         {
             this.enabled = enabled;
             this.numRays = numRays;
             this.delay = delay;
+            this.minT60 = minT60;
         }
 
         public static LateConfig Default => new LateConfig(
             enabled: true,
             numRays: 3f,
-            delay: 0f
+            delay: 0f,
+            minT60: 0.01f
         );
     }
 
@@ -505,8 +519,8 @@ public class RACManager : MonoBehaviour
     {
         return RACInitMoDART(
             racManager.lateConfig.enabled, racManager.lateConfig.GetNumRays(), (int)racManager.fdnMatrix,
-            racManager.lateConfig.delay, indexing, frequencyIndexing, t60s, leftEigenvectors,
-            rightEigenvectors, numFDNs, numNodes, numPaths);
+            racManager.lateConfig.delay, racManager.lateConfig.GetMinReverbTime(), indexing, frequencyIndexing, t60s,
+            leftEigenvectors, rightEigenvectors, numFDNs, numNodes, numPaths);
     }
 
     public static void UpdateSpatialisationMode()
@@ -635,6 +649,13 @@ public class RACManager : MonoBehaviour
     {
         Profiler.BeginSample("Update number of rays");
         RACUpdateMoDARTDelay(racManager.lateConfig.delay);
+        Profiler.EndSample();
+    }
+
+    public static void UpdateMoDARTMinimumReverbTime()
+    {
+        Profiler.BeginSample("Update minimum reverb time");
+        RACUpdateMoDARTMinimumReverbTime(racManager.lateConfig.GetMinReverbTime());
         Profiler.EndSample();
     }
 
