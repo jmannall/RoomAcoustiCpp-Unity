@@ -735,6 +735,9 @@ public class RACMeshLoader : MonoBehaviour
                 for (int j = 0; j < numFreqBands; j++)
                     absBuffer[j] = absorptions[matIndex, j];
 
+                absResized = ResizeCoeffs(targetFreqs, frequencies, absBuffer);
+                RACManager.UpdateMaterial(nodeIndex, ref absResized);
+
                 flattenedVertexTriplets = mesh.GetIndices(s);
                 for (int i = 0; i < flattenedVertexTriplets.Length; i += 3)
                 {
@@ -742,8 +745,7 @@ public class RACMeshLoader : MonoBehaviour
                     vertsBuffer[1] = meshTransform.TransformPoint(allVerts[flattenedVertexTriplets[i+1]]);
                     vertsBuffer[2] = meshTransform.TransformPoint(allVerts[flattenedVertexTriplets[i+2]]);
 
-                    absResized = ResizeCoeffs(targetFreqs, frequencies, absBuffer);
-                    RACManager.InitWall(ref vertsBuffer, ref absResized, nodeIndex);
+                    RACManager.InitWall(ref vertsBuffer, nodeIndex);
                 }
             }
         }

@@ -140,14 +140,14 @@ public class RACObject : MonoBehaviour
     {
         // Constructor
 
-        public RACSubMesh(ref Mesh mesh, ref SubMeshDescriptor subMesh, Transform transform, float[] abs)
+        public RACSubMesh(ref Mesh mesh, ref SubMeshDescriptor subMesh, Transform transform, float[] absorption)
         {
             mesh.name = "RACSubMesh";
             int numWalls = subMesh.indexCount / 3;
 
-            absorption = abs;
+            materialId = RACManager.InitMaterial(ref absorption);
             for (int i = 0; i < numWalls; i++)
-                Init(subMesh.indexStart + i * 3, ref mesh, ref transform);
+                Init(subMesh.indexStart + i * 3, ref mesh, ref transform, materialId);
         }
 
         // Destructor
@@ -158,21 +158,19 @@ public class RACObject : MonoBehaviour
 
         public int GetId() { return walls[0].GetId(); }
 
-        public void UpdateAbsorption(ref float[] abs)
+        public void UpdateAbsorption(ref float[] absorption)
         {
-            absorption = abs;
-            foreach (RACWall wall in walls)
-                wall.UpdateAbsorption(ref abs);
+            RACManager.UpdateMaterial(materialId, ref absorption);
         }
 
-        private void Init(int i, ref Mesh mesh, ref Transform transform)
+        private void Init(int i, ref Mesh mesh, ref Transform transform, int materialId)
         {
             vertices[0] = mesh.vertices[mesh.triangles[i]];
             vertices[1] = mesh.vertices[mesh.triangles[i + 1]];
             vertices[2] = mesh.vertices[mesh.triangles[i + 2]];
             transform.TransformPoints(vertices);
 
-            walls.Add(new RACWall(ref vertices, ref absorption, i));
+            walls.Add(new RACWall(ref vertices, materialId));
         }
 
         public void Update(ref Mesh mesh, ref SubMeshDescriptor subMesh, Transform transform)
@@ -183,7 +181,7 @@ public class RACObject : MonoBehaviour
             if (numWalls > walls.Count)
             {
                 for (int i = walls.Count; i < numWalls; i++)
-                    Init(subMesh.indexStart + i * 3, ref mesh, ref transform);
+                    Init(subMesh.indexStart + i * 3, ref mesh, ref transform, materialId);
             }
             else if (numWalls < walls.Count)
                 walls.RemoveRange(numWalls, walls.Count - numWalls);
@@ -205,6 +203,11 @@ public class RACObject : MonoBehaviour
             foreach (RACWall wall in walls)
                 wall.Remove();
             walls.Clear();
+            if (materialId > -1)
+            {
+                RACManager.RemoveMaterial(materialId);
+                materialId = -1;
+            }
         }
 
         // Parameters
@@ -214,7 +217,7 @@ public class RACObject : MonoBehaviour
         private Vector3[] vertices = new Vector3[3];
 
         [SerializeField]
-        private float[] absorption;
+        int materialId = -1;
     }
 
     #endregion
@@ -230,9 +233,9 @@ public class RACObject : MonoBehaviour
 
         public RACWall() { id = -1; }
 
-        public RACWall(ref Vector3[] vertices, ref float[] absorption, int polygonId)
+        public RACWall(ref Vector3[] vertices, int materialId)
         {
-            id = RACManager.InitWall(ref vertices, ref absorption, polygonId);
+            id = RACManager.InitWall(ref vertices, materialId);
         }
 
         // Destructor
@@ -242,14 +245,6 @@ public class RACObject : MonoBehaviour
         // Functions
 
         public int GetId() { return id; }
-
-        public void UpdateAbsorption(ref float[] absorption)
-        {
-            if (id > -1)
-            {
-                RACManager.UpdateWallAbsorption(id, ref absorption);
-            }
-        }
 
         public void UpdateWall(ref Vector3[] vertices)
         {

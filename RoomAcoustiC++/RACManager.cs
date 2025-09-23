@@ -117,16 +117,24 @@ public class RACManager : MonoBehaviour
     [DllImport(DLLNAME)]
     private static extern void RACRemoveSource(int id);
 
+    // Material
+
+    [DllImport(DLLNAME)]
+    private static extern int RACInitMaterial([In] float[] absorption);
+
+    [DllImport(DLLNAME)]
+    private static extern int RACUpdateMaterial(int id, [In] float[] absorption);
+
+    [DllImport(DLLNAME)]
+    private static extern void RACRemoveMaterial(int id);
+
     // Wall
 
     [DllImport(DLLNAME)]
-    private static extern int RACInitWall([In] float[] vertices, [In] float[] absorption, int polygonId);
+    private static extern int RACInitWall([In] float[] vertices, int materialId);
 
     [DllImport(DLLNAME)]
     private static extern void RACUpdateWall(int id, [In] float[] vertices);
-
-    [DllImport(DLLNAME)]
-    private static extern int RACUpdateWallAbsorption(int id, [In] float[] absorption);
 
     [DllImport(DLLNAME)]
     private static extern void RACRemoveWall(int id);
@@ -513,9 +521,8 @@ public class RACManager : MonoBehaviour
 
     public static bool InitSingleFDN(float volume, float[] dimensions)
     {
-        int numRays = 1;
         return RACInitSingleFDN(racManager.lateConfig.enabled, volume, racManager.T60.ToArray(),
-            (int)racManager.reverbTimeModel, dimensions, dimensions.Length, numRays, (int)racManager.fdnMatrix);
+            (int)racManager.reverbTimeModel, dimensions, dimensions.Length, racManager.lateConfig.GetNumRays(), (int)racManager.fdnMatrix);
     }
 
     public static bool InitMoDART(int[] indexing, int[] frequencyIndexing, float[] t60s, float[] leftEigenvectors, float[] rightEigenvectors, int numFDNs, int numNodes, int numPaths)
@@ -758,6 +765,30 @@ public class RACManager : MonoBehaviour
         Profiler.EndSample();
     }
 
+    // Material
+
+    public static int InitMaterial(ref float[] absorption)
+    {
+        Profiler.BeginSample("Init Material");
+        int id = RACInitMaterial(absorption);
+        Profiler.EndSample();
+        return id;
+    }
+
+    public static void UpdateMaterial(int id, ref float[] absorption)
+    {
+        Profiler.BeginSample("Update Material");
+        RACUpdateMaterial(id, absorption);
+        Profiler.EndSample();
+    }
+
+    public static void RemoveMaterial(int id)
+    {
+        Profiler.BeginSample("Remove Material");
+        RACRemoveMaterial(id);
+        Profiler.EndSample();
+    }
+
     // Wall
 
     public static void UpdateVData(ref Vector3[] vertices)
@@ -773,7 +804,7 @@ public class RACManager : MonoBehaviour
         racManager.vertices[8] = vertices[2].z;
     }
 
-    public static int InitWall(ref Vector3[] vertices, ref float[] absorption, int polygonId)
+    public static int InitWall(ref Vector3[] vertices, int materialId)
     {
         if (vertices.Length != 3)
         {
@@ -784,7 +815,7 @@ public class RACManager : MonoBehaviour
         UpdateVData(ref vertices);
 
         Profiler.BeginSample("Init Wall");
-        int id = RACInitWall(racManager.vertices, absorption, polygonId);
+        int id = RACInitWall(racManager.vertices, materialId);
         Profiler.EndSample();
         return id;
     }
@@ -801,13 +832,6 @@ public class RACManager : MonoBehaviour
 
         Profiler.BeginSample("Update Wall");
         RACUpdateWall(id, racManager.vertices);
-        Profiler.EndSample();
-    }
-
-    public static void UpdateWallAbsorption(int id, ref float[] absorption)
-    {
-        Profiler.BeginSample("Update Wall Absorption");
-        RACUpdateWallAbsorption(id, absorption);
         Profiler.EndSample();
     }
 
