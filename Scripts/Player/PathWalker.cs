@@ -16,6 +16,9 @@ public class PathWalker : MonoBehaviour
     public bool switchDirection = false;
     public bool closedLoop = false;
 
+    [Range(20f, 50f)]
+    public float rotationSpeed = 40f;
+
     [SerializeField, HideInInspector]
     private bool drawETAs = true;
 
@@ -25,6 +28,11 @@ public class PathWalker : MonoBehaviour
 
     [Min(0.0f)]
     public float distanceThreshold = 0.1f;
+
+    private bool startedWait = false;
+    private float rotationSmoothTime = 1f;
+    float targetYaw = 0f;
+    private float currentRotationVelocity = 0f;
 
     void OnValidate()
     {
@@ -43,7 +51,33 @@ public class PathWalker : MonoBehaviour
     void Update()
     {
         if (waypoints.Count != 0 && !targetAgent.isStopped && targetAgent.remainingDistance <= distanceThreshold)
+        {
+            if (!startedWait)
+            {
+                StartWaitingAtWaypoint();
+                startedWait = true;
+            }
+            if (IsWaitingAtWaypoint())
+            {
+                FaceTarget();
+                return;
+            }
+            startedWait = false;
             targetAgent.destination = NextWaypoint();
+        }
+    }
+
+    void FaceTarget()
+    {
+        if (targetObject.transform.eulerAngles.y == targetYaw)
+            return;
+
+        float yaw = Mathf.SmoothDamp(targetObject.transform.eulerAngles.y, targetYaw, ref currentRotationVelocity, rotationSmoothTime);
+        targetObject.transform.eulerAngles = new Vector3(0f, yaw, 0f);
+        if (targetYaw < 0f && yaw > targetYaw + 360f)
+            targetYaw += 360f;
+        if (targetYaw > 360f && yaw < targetYaw - 360f)
+            targetYaw -= 360f;
     }
 
     public List<int> GetWaypointETAs()
@@ -60,6 +94,36 @@ public class PathWalker : MonoBehaviour
         for (int i = 0; i < waypoints.Count; ++i)
             waypointVecs.Add(waypoints[i].position);
         return waypointVecs;
+    }
+
+    private bool IsWaitingAtWaypoint()
+    {
+        if (idx < 0 || idx >= waypoints.Count)
+            return false;
+        PathPause pathPause = waypoints[idx].GetComponent<PathPause>();
+        if (pathPause == null)
+            return false;
+
+        return pathPause.IsWaiting();
+    }
+
+    private void StartWaitingAtWaypoint()
+    {
+        if (idx < 0 || idx >= waypoints.Count)
+            return;
+        PathPause pathPause = waypoints[idx].GetComponent<PathPause>();
+        if (pathPause == null)
+            return;
+
+        pathPause.StartWait();
+    }
+
+    private bool RotateClockwise()
+    {
+        PathPause pathPause = waypoints[idx].GetComponent<PathPause>();
+        if (pathPause == null)
+            return true;
+        return pathPause.clockwise;
     }
 
     public Vector3 GetCurrentWaypoint()
@@ -88,7 +152,6 @@ public class PathWalker : MonoBehaviour
                     switchDirection = false;
                 }
             }
-            return waypoints[idx].position;
         }
         else
         {
@@ -104,8 +167,27 @@ public class PathWalker : MonoBehaviour
 
                 }
             }
-            return waypoints[idx].position;
         }
+
+        currentRotationVelocity = 0f;
+        Vector3 direction = waypoints[idx].forward;
+        targetYaw = Mathf.Rad2Deg * Mathf.Atan2(direction.x, direction.z);
+        float currentYaw = targetObject.transform.eulerAngles.y;
+        if (targetYaw < 0f)
+            targetYaw += 360f;
+
+        if (RotateClockwise())
+        {
+            if (targetYaw < currentYaw)
+                targetYaw += 360f;
+        }
+        else
+        {
+            if (targetYaw > currentYaw)
+                targetYaw -= 360f;
+        }
+        rotationSmoothTime = Mathf.Abs(targetYaw - currentYaw) / rotationSpeed;
+        return waypoints[idx].position;
     }
 
     void OnDrawGizmos()
