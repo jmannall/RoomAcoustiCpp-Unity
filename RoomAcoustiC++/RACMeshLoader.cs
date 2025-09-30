@@ -1,7 +1,6 @@
 using UnityEngine;
 using System;
 using System.IO;
-using System.Linq;
 using System.Globalization;
 using System.Collections.Generic;
 
@@ -371,6 +370,9 @@ public class RACMeshLoader : MonoBehaviour
 
         // Instantiate the loaded mesh as a GameObject.
         meshGameObject = (GameObject)PrefabUtility.InstantiatePrefab(src);
+
+        // Rotate and mirror the mesh to match Unity's coordinate system.
+        meshGameObject.transform.localRotation = Quaternion.Euler(-90, 180, 0);
 
         // Add a collider to the meshGameObject.
         foreach (MeshFilter mf in meshGameObject.GetComponentsInChildren<MeshFilter>())
