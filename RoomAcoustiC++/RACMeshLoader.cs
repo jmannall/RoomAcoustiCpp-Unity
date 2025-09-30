@@ -1,6 +1,7 @@
 using UnityEngine;
 using System;
 using System.IO;
+using System.Linq;
 using System.Globalization;
 using System.Collections.Generic;
 
@@ -42,6 +43,8 @@ public class RACMeshLoader : MonoBehaviour
     [SerializeField, HideInInspector]
     private float[] frequencies;
     [SerializeField, HideInInspector]
+    private string[] materialNames;
+    [SerializeField, HideInInspector]
     private float[,] absorptions;
     [SerializeField, HideInInspector]
     private float[,] scatterings;
@@ -54,16 +57,11 @@ public class RACMeshLoader : MonoBehaviour
     [SerializeField, HideInInspector]
     private int[,] pathIndexing;
 
-    // Data read from modal_data.csv
-    [SerializeField, HideInInspector]
-    private int numSlopes = -1;
+    // Data read from MoD-ART.csv
     [SerializeField, HideInInspector]
     private int numFDNs = -1;
     [SerializeField, HideInInspector]
     private int[] bandIdxs;
-    // TODO: Remove loading of decayRates
-    [SerializeField, HideInInspector]
-    private float[] decayRates;
     [SerializeField, HideInInspector]
     private float[] T60s;
     [SerializeField, HideInInspector]
@@ -172,21 +170,19 @@ public class RACMeshLoader : MonoBehaviour
         // Internal parameters `bandIdxs, T60s, leftVecs, rightVecs, numFDNs` match what was read from the files.
         // They need to be truncated/repeated to match the current frequency bands of RACManager.
         // Also, the eigenvectors need to be flattened.
-        int resized_numFDNs = numSlopes * targetFreqs.Count;
-        int[] resized_bandIdxs = new int[resized_numFDNs];
-        float[] resized_T60s = new float[resized_numFDNs];
-        float[] resized_leftVecs = new float[resized_numFDNs * numPaths];
-        float[] resized_rightVecs = new float[resized_numFDNs * numPaths];
+        int resized_numFDNs = 0;
+        List<int> resized_bandIdxs = new();
+        List<float> resized_T60s = new();
+        List<float> resized_leftVecs = new();
+        List<float> resized_rightVecs = new();
         // The internal variables' shapes are:
-        // numFDNs = numSlopes * numBands;
-        // bandIdxs = new int[numFDNs];
-        // T60s = new float[numFDNs];
-        // rightVecs = new float[numFDNs, numPaths];
-        // leftVecs = new float[numFDNs, numPaths];
+        // bandIdxs = int[numFDNs];
+        // T60s = float[numFDNs];
+        // rightVecs = float[numFDNs, numPaths];
+        // leftVecs = float[numFDNs, numPaths];
 
         // Fill out all resized variables.
         int oldBandIdx, newBandIdx;
-        int numAssigned = 0;
         for (int localIdx = 0; localIdx < numFDNs; ++localIdx)
         {
             // Find the best match for this slope's frequency band among the requested bands.
@@ -197,73 +193,60 @@ public class RACMeshLoader : MonoBehaviour
             // If the user removed any of the octave bands through the GUI, some slopes will not find a match and will be ignored.
             if (Mathf.Approximately(frequencies[oldBandIdx], targetFreqs[newBandIdx]))
             {
-                resized_bandIdxs[numAssigned] = newBandIdx;
-                resized_T60s[numAssigned] = T60s[localIdx];
+                resized_numFDNs++;
+                resized_bandIdxs.Add(newBandIdx);
+                resized_T60s.Add(T60s[localIdx]);
                 for (int i = 0; i < numPaths; ++i)
                 {
-                    resized_leftVecs[numAssigned * numPaths + i] = leftVecs[localIdx, i];
-                    resized_rightVecs[numAssigned * numPaths + i] = rightVecs[localIdx, i];
+                    resized_leftVecs.Add(leftVecs[localIdx, i]);
+                    resized_rightVecs.Add(rightVecs[localIdx, i]);
                 }
-                numAssigned++;
             }
         }
 
-        if (numAssigned < resized_numFDNs - 1)
+        // TODO: If the user added any octave bands through the GUI, the requested bands need to be filled by replicating "edge" attributes.
+        for (int targetFreqIdx = 0; targetFreqIdx < targetFreqs.Count; ++targetFreqIdx)
         {
-            float targetFreq;
-            // If the user added any the octave bands through the GUI, the requested bands need to be filled by replicating "edge" attributes.
-            for (newBandIdx = 0; newBandIdx < targetFreqs.Count; ++newBandIdx)
+            if (targetFreqs[targetFreqIdx] < frequencies[0])
             {
-                targetFreq = targetFreqs[newBandIdx];
-
-                if (targetFreq < frequencies[0])
+                for (int localIdx = 0; localIdx < numFDNs; ++localIdx)
                 {
-                    // An additional frequency band is lower than the lowest available band.
-                    // It should be filled by replicating all of the slopes from the lowest available band.
-                    for (int localIdx = 0; localIdx < numFDNs; ++localIdx)
+                    if (bandIdxs[localIdx] == 0)
                     {
-                        if (bandIdxs[localIdx] == 0)
+                        resized_numFDNs++;
+                        resized_bandIdxs.Add(targetFreqIdx);
+                        resized_T60s.Add(T60s[localIdx]);
+                        for (int i = 0; i < numPaths; ++i)
                         {
-                            resized_bandIdxs[numAssigned] = newBandIdx;
-                            resized_T60s[numAssigned] = T60s[localIdx];
-                            for (int i = 0; i < numPaths; ++i)
-                            {
-                                resized_leftVecs[numAssigned * numPaths + i] = leftVecs[localIdx, i];
-                                resized_rightVecs[numAssigned * numPaths + i] = rightVecs[localIdx, i];
-                            }
-                            numAssigned++;
+                            resized_leftVecs.Add(leftVecs[localIdx, i]);
+                            resized_rightVecs.Add(rightVecs[localIdx, i]);
                         }
                     }
                 }
-                else if (targetFreq > frequencies[numFreqBands - 1])
+            }
+            else if (targetFreqs[targetFreqIdx] > frequencies[numFreqBands - 1])
+            {
+                for (int localIdx = 0; localIdx < numFDNs; ++localIdx)
                 {
-                    // An additional frequency band is higher than the highest available band.
-                    // It should be filled by replicating all of the slopes from the highest available band.
-                    for (int localIdx = 0; localIdx < numFDNs; ++localIdx)
+                    if (bandIdxs[localIdx] == numFreqBands - 1)
                     {
-                        if (bandIdxs[localIdx] == numFreqBands - 1)
+                        resized_numFDNs++;
+                        resized_bandIdxs.Add(targetFreqIdx);
+                        resized_T60s.Add(T60s[localIdx]);
+                        for (int i = 0; i < numPaths; ++i)
                         {
-                            resized_bandIdxs[numAssigned] = newBandIdx;
-                            resized_T60s[numAssigned] = T60s[localIdx];
-                            for (int i = 0; i < numPaths; ++i)
-                            {
-                                resized_leftVecs[numAssigned * numPaths + i] = newBandIdx;
-                                resized_rightVecs[numAssigned * numPaths + i] = newBandIdx;
-                            }
-                            numAssigned++;
+                            resized_leftVecs.Add(leftVecs[localIdx, i]);
+                            resized_rightVecs.Add(rightVecs[localIdx, i]);
                         }
                     }
                 }
             }
         }
-
-        if (numAssigned < resized_numFDNs - 1)
-            Debug.LogError("The data required by InitMoDART() was not filled entirely.");
 
         RACManager.InitMoDART(
           flattenedPathIndexing,
-          resized_bandIdxs, resized_T60s,
-          resized_leftVecs, resized_rightVecs,
+          resized_bandIdxs.ToArray(), resized_T60s.ToArray(),
+          resized_leftVecs.ToArray(), resized_rightVecs.ToArray(),
           resized_numFDNs, numNodes, numPaths
           );
 
@@ -284,12 +267,11 @@ public class RACMeshLoader : MonoBehaviour
             return false;
         }
 
-        /*
         try
         {
             LoadMeshFromObj();
             LoadMaterialsFromCsv();
-            LoadIndexingFromCsv();
+            LoadIndexingFromMtx();
             LoadModesFromCsv();
         }
         catch (Exception e)
@@ -299,11 +281,10 @@ public class RACMeshLoader : MonoBehaviour
             // TODO: Make sure that all parameters are reset as they were before the failed attempt.
             return false;
         }
-        */
-        LoadMeshFromObj();
-        LoadMaterialsFromCsv();
-        LoadIndexingFromCsv();
-        LoadModesFromCsv();
+        //LoadMeshFromObj();
+        //LoadMaterialsFromCsv();
+        //LoadIndexingFromMtx();
+        //LoadModesFromCsv();
 
         if (RACManager.racManager == null)
             Debug.LogError("Unable to locate RACManager instance: failed to set frequency bands related to the loaded mesh.");
@@ -422,37 +403,6 @@ public class RACMeshLoader : MonoBehaviour
             render.enabled = renderAcousticMesh;
     }
 
-    // TODO: Move generic helper functions in a separate script
-
-    // Parser for one float vector of length M
-    private float[] ParseFloatLine(string line, int M)
-    {
-        float[] v = new float[M];
-
-        string[] tokens = tokenizeLine(line);
-
-        if (tokens.Length != M)
-            throw new InvalidDataException($"Expected {M} floats, got {tokens.Length}.");
-
-        for (int i = 0; i < M; i++)
-            v[i] = ParseF(tokens[i]);
-        return v;
-    }
-
-    // Parser for one int vector of length M
-    private int[] ParseIntLine(string line, int M)
-    {
-        int[] v = new int[M];
-
-        string[] tokens = tokenizeLine(line);
-        if (tokens.Length != M)
-            throw new InvalidDataException($"Expected {M} ints, got {tokens.Length}.");
-
-        for (int i = 0; i < M; i++)
-            v[i] = ParseI(tokens[i]);
-        return v;
-    }
-
     // Read the material data file
     private void LoadMaterialsFromCsv()
     {
@@ -467,27 +417,27 @@ public class RACMeshLoader : MonoBehaviour
 
         // Get all lines from the TextAsset.
         string[] lines = tokenizeFile(csvTextAsset.text);
-        int[] parsedIntLine;
-        float[] parsedFloatLine;
 
-        try
-        {
-            parsedIntLine = ParseIntLine(lines[0], 2);
-        }
-        catch (Exception e)
-        {
-            throw new InvalidDataException($"The first line of materials.csv should have two integer tokens (number of materials and number of frequency bands).\nInstead, the line was:\n{lines[0]}\n\nSpecific message: {e.Message}");
-        }
-        numMaterials = parsedIntLine[0];
-        numFreqBands = parsedIntLine[1];
+        // Perform sanity checks and retrieve the array sizes.
+        if (lines.Length < 3)
+            throw new InvalidDataException($"materials.csv should contain at least 3 lines, but it has {lines.Length}.");
+        if ((lines.Length % 2) != 1)
+            throw new InvalidDataException($"materials.csv should contain an odd number of lines, but it has {lines.Length}.");
+        numMaterials = (lines.Length - 1) / 2;
 
-        if (lines.Length != (2 * numMaterials + 2))
-            throw new InvalidDataException($"Expected 2 * {numMaterials} + 2 = {2 * numMaterials + 2} CSV lines, got {lines.Length}.");
+        string[] tokens = tokenizeLine(lines[0]);
+        if (tokens.Length < 2)
+            throw new InvalidDataException($"The first line of materials.csv should have at least two elements, but it has {tokens.Length}.");
+        numFreqBands = tokens.Length - 1;
+        if (tokens[0] != "Frequencies")
+            throw new InvalidDataException($"The first word on the first line of materials.csv should be \"Frequencies\", but it is {tokens[0]}.");
 
-        // The second line contains the frequency band centers.
-        frequencies = ParseFloatLine(lines[1], numFreqBands);
+        // The first line contains the frequency band centers.
+        frequencies = new float[numFreqBands];
+        for (int i = 1; i < numFreqBands + 1; i++)
+            frequencies[i-1] = ParseF(tokens[i]);
 
-        // Assert that `frequencies` form a contiguous range of octave bands.
+        // Assert that `frequencies` forms a contiguous range of octave bands.
         // Start by checking the validity of the top band.
         bool validTop = false;
         for (float f = 32e3f; f > 15; f /= 2)
@@ -505,60 +455,68 @@ public class RACMeshLoader : MonoBehaviour
         }
 
         // Following lines contain material data.
-        int lineIndex = 2;
+        materialNames = new string[numMaterials];
         absorptions = new float[numMaterials, numFreqBands];
         scatterings = new float[numMaterials, numFreqBands];
         for (int i = 0; i < numMaterials; i++)
         {
-            parsedFloatLine = ParseFloatLine(lines[lineIndex++], numFreqBands);
-            for (int j = 0; j < numFreqBands; j++)
-                absorptions[i, j] = parsedFloatLine[j];
-            parsedFloatLine = ParseFloatLine(lines[lineIndex++], numFreqBands);
-            for (int j = 0; j < numFreqBands; j++)
-                scatterings[i, j] = parsedFloatLine[j];
+            // Read the absorption coefficients (and retrieve the material name).
+            tokens = tokenizeLine(lines[(i * 2) + 1]);
+            if (tokens.Length != numFreqBands + 1)
+                throw new InvalidDataException($"Each line of materials.csv should have the same number of elements as the first ({numFreqBands + 1}), but line {(i * 2) + 2} has {tokens.Length}.");
+
+            materialNames[i] = tokens[0];
+            for (int j = 1; j < numFreqBands + 1; j++)
+                absorptions[i, j-1] = ParseF(tokens[j]);
+
+            // Read the scattering coefficients (and cross-check the material name).
+            tokens = tokenizeLine(lines[(i * 2) + 2]);
+            if (tokens.Length != numFreqBands + 1)
+                throw new InvalidDataException($"Each line of materials.csv should have the same number of elements as the first ({numFreqBands + 1}), but line {(i * 2) + 3} has {tokens.Length}.");
+            if (tokens[0] != materialNames[i])
+                throw new InvalidDataException($"Each scattering coefficient line of materials.csv should have the same material name as the preceding absorption coefficient line, but line {(i * 2) + 3} does not ({tokens[0]} != {materialNames[i]}).");
+
+            for (int j = 1; j < numFreqBands + 1; j++)
+                scatterings[i, j-1] = ParseF(tokens[j]);
         }
     }
 
     // Read the path indexing data file
-    private void LoadIndexingFromCsv()
+    private void LoadIndexingFromMtx()
     {
         if (string.IsNullOrEmpty(selectedSceneFolder))
             throw new InvalidOperationException("Tried to load indexing data, but the selected subfolder string is null or empty.");
 
         // When using Resources.Load, the path is relative to "Assets/Resources/", and no file extension is needed.
+        // Note that `.mtx` is not a valid extension for TextAsset, so we need a special importer.
+        // https://discussions.unity.com/t/loading-a-file-with-a-custom-extension-as-a-textasset/731294/5
         string assetPath = UnityPath("PythonExports", selectedSceneFolder, "path_indexing");
-        TextAsset csvTextAsset = Resources.Load<TextAsset>(assetPath);
-        if (!csvTextAsset)
-            throw new FileNotFoundException($"CSV not found:\nAssets/Resources/{assetPath}.csv");
+        TextAsset mtxTextAsset = Resources.Load<TextAsset>(assetPath);
+        if (!mtxTextAsset)
+            throw new FileNotFoundException($"MTX not found:\nAssets/Resources/{assetPath}.mtx");
 
         // Get all lines from the TextAsset.
-        string[] lines = tokenizeFile(csvTextAsset.text);
-        int[] parsedIntLine;
+        string[] lines = tokenizeFile(mtxTextAsset.text);
 
-        try {
-            parsedIntLine = ParseIntLine(lines[0], 2);
-        }
-        catch (Exception e)
+        int numNonZero;
+        pathIndexing = MtxParser.toArray(lines, out numNonZero);
+
+        if (pathIndexing.Rank != 2)
+            throw new InvalidDataException($"The matrix in path_indexing.mtx should be square, but it has {pathIndexing.Rank} dimensions.");
+        if (pathIndexing.GetLength(0) != pathIndexing.GetLength(1))
+            throw new InvalidDataException($"The matrix in path_indexing.mtx should be square, but it has shape {pathIndexing.GetLength(0)}x{pathIndexing.GetLength(1)}.");
+
+        numNodes = pathIndexing.GetLength(0);
+        numPaths = numNonZero;
+
+        // Assert that the nonzero elements of pathIndexing range from 1 to numPaths, then translate to 0-indexing (-1 denotes "no path").
+        for (int i=0; i<numNodes; i++)
         {
-            throw new InvalidDataException($"The first line of path_indexing.csv should have two integer tokens (number of scattering nodes and number of propagation paths).\nInstead, the line was:\n{lines[0]}\n\nSpecific message: {e.Message}");
-        }
-        numNodes = parsedIntLine[0];
-        numPaths = parsedIntLine[1];
-
-        if (lines.Length != (numNodes + 1))
-            throw new InvalidDataException($"Expected {numNodes+1} CSV lines, got {lines.Length}.");
-
-        // Following lines contain the indexing data.
-        pathIndexing = new int[numNodes, numNodes];
-        for (int i = 1; i < numNodes+1; i++)
-        {
-            parsedIntLine = ParseIntLine(lines[i], numNodes);
-            for (int j = 0; j < numNodes; j++)
+            for (int j=0; j<numNodes; j++)
             {
-                if ((parsedIntLine[j] < -1) || (parsedIntLine[j] >= numPaths))
-                    throw new InvalidDataException($"All path indices should be in the range [-1, numPaths={numPaths}). The value {parsedIntLine[j]} is outside of the range.");
-
-                pathIndexing[i-1, j] = parsedIntLine[j];
+                if (pathIndexing[i, j] < 0 || pathIndexing[i, j] > numPaths)
+                    throw new InvalidDataException($"Invalid path_indexing.mtx entry at ({i},{j}): {pathIndexing[i, j]}. Expected range [0, {numPaths}].");
+                pathIndexing[i, j] -= 1;
             }
         }
     }
@@ -569,63 +527,53 @@ public class RACMeshLoader : MonoBehaviour
         if (string.IsNullOrEmpty(selectedSceneFolder))
             throw new InvalidOperationException("Tried to load mode data, but the selected subfolder string is null or empty.");
         if (numPaths < 0)
-            throw new InvalidOperationException("LoadModesFromCsv() should only be called after LoadIndexingFromCsv().");
+            throw new InvalidOperationException("LoadModesFromCsv() should only be called after LoadIndexingFromMtx().");
 
         // When using Resources.Load, the path is relative to "Assets/Resources/", and no file extension is needed.
-        string assetPath = UnityPath("PythonExports", selectedSceneFolder, "modal_data");
+        string assetPath = UnityPath("PythonExports", selectedSceneFolder, "MoD-ART");
         TextAsset csvTextAsset = Resources.Load<TextAsset>(assetPath);
         if (!csvTextAsset)
             throw new FileNotFoundException($"CSV not found:\nAssets/Resources/{assetPath}.csv");
 
         // Get all lines from the TextAsset.
         string[] lines = tokenizeFile(csvTextAsset.text);
-        int[] parsedIntLine;
-        float[] parsedFloatLine;
 
-        try
-        {
-            parsedIntLine = ParseIntLine(lines[0], 2);
-        }
-        catch (Exception e)
-        {
-            throw new InvalidDataException($"The first line of modal_data.csv should have two integer tokens (number of slopes and number of frequency bands).\nInstead, the line was:\n{lines[0]}\n\nSpecific message: {e.Message}");
-        }
-        numSlopes = parsedIntLine[0];
-        if (parsedIntLine[1] != numFreqBands)
-            throw new InvalidDataException($"The number of frequency bands declared in modal_data.csv ({parsedIntLine[1]}) does not match the one declared in materials.csv ({numFreqBands}).");
-        numFDNs = numSlopes * numFreqBands;
-
-        if (lines.Length != (1 + numFDNs *3))
-            throw new InvalidDataException($"Expected {1 + numFDNs * 3} CSV lines, got {lines.Length}.");
+        // Perform sanity checks and retrieve the array sizes.
+        if (lines.Length < 3)
+            throw new InvalidDataException($"MoD-ART.csv should contain at least 3 lines, but it has {lines.Length}.");
+        if ((lines.Length % 3) != 0)
+            throw new InvalidDataException($"MoD-ART.csv should contain a number of lines divisible by 3, but it has {lines.Length}.");
+        numFDNs = lines.Length / 3;
 
         bandIdxs = new int[numFDNs];
-        decayRates = new float[numFDNs];
         T60s = new float[numFDNs];
         rightVecs = new float[numFDNs, numPaths];
         leftVecs = new float[numFDNs, numPaths];
 
-        // Following lines contain the modal data, in groups of three.
-        int lineIndex = 1;
-        float freqFromFile;
+        // Lines contain the modal data, in groups of three.
+        string[] tokens;
         for (int i = 0; i < numFDNs; i++)
         {
-            parsedFloatLine = ParseFloatLine(lines[lineIndex++], 3);
+            // Read the octave band index and T60.
+            tokens = tokenizeLine(lines[i * 3]);
+            if (tokens.Length != 2)
+                throw new InvalidDataException($"Line {(i * 3) + 1} of MoD-ART.csv should contain 2 elements, but it has {tokens.Length}.");
+            bandIdxs[i] = ParseI(tokens[0]) - 1; // N.B. Translate to 0-indexing
+            T60s[i] = ParseF(tokens[1]);
 
-            freqFromFile = parsedFloatLine[0];
-            T60s[i] = parsedFloatLine[1];
-            decayRates[i] = parsedFloatLine[2];
-
-            bandIdxs[i] = BestBandMatch(freqFromFile, frequencies);
-            if (!Mathf.Approximately(frequencies[bandIdxs[i]], freqFromFile))
-                throw new InvalidDataException($"The frequency {freqFromFile} read from modal_data.csv does not match any of the frequencies {frequencies} read from materials.csv.");
-
-            parsedFloatLine = ParseFloatLine(lines[lineIndex++], numPaths);
+            // Read the right eigenvector.
+            tokens = tokenizeLine(lines[(i * 3) + 1]);
+            if (tokens.Length != numPaths)
+                throw new InvalidDataException($"Line {(i * 3) + 2} of MoD-ART.csv should contain {numPaths} elements, but it has {tokens.Length}.");
             for (int j = 0; j < numPaths; j++)
-                rightVecs[i, j] = parsedFloatLine[j];
+                rightVecs[i, j] = ParseF(tokens[j]);
 
-            parsedFloatLine = ParseFloatLine(lines[lineIndex++], numPaths);
+            // Read the left eigenvector.
+            tokens = tokenizeLine(lines[(i * 3) + 2]);
+            if (tokens.Length != numPaths)
+                throw new InvalidDataException($"Line {(i * 3) + 3} of MoD-ART.csv should contain {numPaths} elements, but it has {tokens.Length}.");
             for (int j = 0; j < numPaths; j++)
-                leftVecs[i, j] = parsedFloatLine[j];
+                leftVecs[i, j] = ParseF(tokens[j]);
         }
     }
 
@@ -719,21 +667,28 @@ public class RACMeshLoader : MonoBehaviour
                 if (s >= mr.sharedMaterials.Length) continue; // TODO: Log debug message
                 if (!mr.sharedMaterials[s]) continue; // TODO: Log debug message
 
-                string matName = mr.sharedMaterials[s].name;
+                string patchMatString = mr.sharedMaterials[s].name;
 
-                var matMatch = System.Text.RegularExpressions.Regex.Match(matName, @"Node_(\d+)_Mat_(\d+)");
+                var matMatch = System.Text.RegularExpressions.Regex.Match(patchMatString, @"Patch_(\d+)_Mat_(.+)");
                 if (!matMatch.Success)
                 {
-                    Debug.LogError($"Failed to regex-parse material string: \"{matName}\"" +
-                                    "\nExpected sub-string format: \"Node_<integer>_Mat_<integer>\"");
+                    Debug.LogError($"Patch ignored: failed to regex-parse material string: \"{patchMatString}\"" +
+                                    "\nExpected sub-string format: \"Patch_<integer>_Mat_<string>\"");
                     continue;
                 }
 
-                int nodeIndex = int.Parse(matMatch.Groups[1].Value);
-                int matIndex = int.Parse(matMatch.Groups[2].Value);
+                int nodeIndex = int.Parse(matMatch.Groups[1].Value) - 1; // N.B. Translate to 0-indexing
+                string materialName = matMatch.Groups[2].Value;
+                int materialIndex = Array.IndexOf(materialNames, materialName);
+
+                if (materialIndex == -1)
+                {
+                    Debug.LogError($"Patch ignored: material \"{materialName}\" not found in materials.csv.");
+                    continue;
+                }
 
                 for (int j = 0; j < numFreqBands; j++)
-                    absBuffer[j] = absorptions[matIndex, j];
+                    absBuffer[j] = absorptions[materialIndex, j];
 
                 absResized = ResizeCoeffs(targetFreqs, frequencies, absBuffer);
                 RACManager.UpdateMaterial(nodeIndex, ref absResized);
