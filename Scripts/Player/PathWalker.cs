@@ -293,7 +293,17 @@ public class PathWalker : MonoBehaviour
 
     public void RebaseChildren()
     {
-        Debug.Log("TODO: iteratively set all childrens' children as children of self.");
+        if (this.transform.childCount == 1)
+        {
+            Transform child = transform.GetChild(0);
+            while (child.childCount > 0)
+            {
+                child = child.GetChild(0);
+                child.SetParent(this.transform, true); // (keep world position)
+            }
+        }
+        else
+            return;
     }
 
     public void AddChildren(int numChildren)

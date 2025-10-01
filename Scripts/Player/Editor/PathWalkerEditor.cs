@@ -29,6 +29,8 @@ public class PathWalkerEditor : Editor
             pathWalker.RemoveChildren();
         if (GUILayout.Button("Refresh children"))
             pathWalker.GatherChildren();
+        if (GUILayout.Button("Rebase children"))
+            pathWalker.RebaseChildren();
 
         EditorGUILayout.EndHorizontal();
 
