@@ -1,10 +1,11 @@
 using System;
-using UnityEngine;
-using System.Runtime.InteropServices;
+using System.Collections.Generic;
 using System.IO;
+using System.Runtime.InteropServices;
+using UnityEngine;
+using UnityEngine.LightTransport;
 using UnityEngine.Networking;
 using UnityEngine.Profiling;
-using System.Collections.Generic;
 
 [AddComponentMenu("RoomAcoustiC++/Audio Manager")]
 [RequireComponent(typeof(AudioSource))]
@@ -151,6 +152,9 @@ public class RACManager : MonoBehaviour
 
     [DllImport(DLLNAME)]
     private static extern void RACGetOutputBuffer([In] float[] buffer);
+
+    [DllImport(DLLNAME)]
+    private static extern void RACRecordImpulseResponse(float posX, float posY, float posZ, float oriW, float oriX, float oriY, float oriZ, [In] float[] buffer, int numSamples);
 
     [DllImport(DLLNAME)]
     private static extern void RACUpdateImpulseResponseMode(bool mode);
@@ -873,6 +877,13 @@ public class RACManager : MonoBehaviour
     {
         Profiler.BeginSample("Get Output");
         RACGetOutputBuffer(buffer);
+        Profiler.EndSample();
+    }
+
+    public static void RecordImpulseResponse(Vector3 position, Quaternion orientation, ref float[] buffer)
+    {
+        Profiler.BeginSample("Record IR");
+        RACRecordImpulseResponse(position.x, position.y, position.z, orientation.w, orientation.x, orientation.y, orientation.z, buffer, buffer.Length);
         Profiler.EndSample();
     }
 

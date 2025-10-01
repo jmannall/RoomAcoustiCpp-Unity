@@ -4,11 +4,13 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.LightTransport;
 using UnityEngine.SceneManagement;
+using UnityEngine.UIElements;
+using static Unity.VisualScripting.Member;
 
 public class IRController : MonoBehaviour
 {
-#if RAC_Debug
     [SerializeField]
     private float spacing = 1.0f;
 
@@ -26,12 +28,6 @@ public class IRController : MonoBehaviour
     [SerializeField, Range(0.0f, 10.0f)]
     private float impulseResponseLength = 1.0f;
 
-    private float[] inputBuffer;
-    private float[] outputBuffer;
-    private float[] outputSignal;
-    int numBuffers;
-    int numSamples;
-
     private static bool doIRs = false;
 
     [SerializeField, HideInInspector]
@@ -43,16 +39,13 @@ public class IRController : MonoBehaviour
     private string filePath;
     private string earlyConfigName = "";
     private string lateConfigName = "";
-    private string areaName = "";
     private string spatName = "";
-    private string currentSetup = "";
-
-    [SerializeField]
-    private string irFilePath;
-    private float[] impulseResponse;
+    private string srcName = "";
+    private string lstName = "";
 
     [SerializeField]
     private RACAudioSource racSource;
+    private Transform sourceTransform;
     private Transform listenerTransform;
 
     [SerializeField]
@@ -88,66 +81,6 @@ public class IRController : MonoBehaviour
     bool nextTransform = true;
 
     StreamWriter streamWriter;
-    bool expectResidues;
-
-    static bool iemStarted = false;
-    static bool iemCompleted = false;
-    static bool rtmStarted = false;
-    static bool rtmCompleted = false;
-    static void OnIEMStarted()
-    {
-        iemStarted = true;
-        // Reset `iemCompleted` in preparation for the next while loop.
-        // N.B.: DO NOT reset `iemCompleted` outside of this function, it may cause a deadlock.
-        iemCompleted = false;
-    }
-    static void OnIEMCompleted()
-    {
-        // N.B.: DO NOT reset `iemStarted` here.
-        // If RTM has not yet started, while IEM has already finished,
-        // setting `iemStarted = false` here would deadlock the while loop.
-        iemCompleted = true;
-    }
-    static void OnRTMStarted()
-    {
-        rtmStarted = true;
-        // Reset `rtmCompleted` in preparation for the next while loop.
-        // N.B.: DO NOT reset `rtmCompleted` outside of this function, it may cause a deadlock.
-        rtmCompleted = false;
-    }
-    static void OnRTMCompleted()
-    {
-        // N.B.: DO NOT reset `rtmStarted` here.
-        // If IEM has not yet started, while RTM has already finished,
-        // setting `rtmStarted = false` here would deadlock the while loop.
-        rtmCompleted = true;
-    }
-    // If isSource, sourceIndex contains the source ID, otherwise, sourceIndex contains the reverb direction index
-    static void OnResidueCallback(float residue, bool isSource, int sourceIndex, int slopeIndex)
-    {
-        // Write to file, provided expectResidues is true and streamWriter is available
-        if (irController != null && irController.streamWriter != null && irController.expectResidues)
-            irController.streamWriter.WriteLine(
-                isSource.ToString() + ", " +
-                sourceIndex.ToString() + ", " +
-                slopeIndex.ToString() + ", " +
-                residue.ToString() + ";");
-        
-        /*
-        if (isSource)
-            Debug.Log(
-                "Received source residue." +
-                " Source idx " + sourceIndex.ToString() + "," +
-                " slope idx " + slopeIndex.ToString() + ";" +
-                " Residue value: " + residue.ToString());
-        else
-            Debug.Log(
-                "Received listener residue." +
-                " Direction idx " + sourceIndex.ToString() + "," +
-                " slope idx " + slopeIndex.ToString() + ";" +
-                " Residue value: " + residue.ToString());
-        */
-    }
 
     private static IRController irController;
 
@@ -162,20 +95,6 @@ public class IRController : MonoBehaviour
     // Start is called before the first frame update
     void Awake()
     {
-        DebugCPP.RegisterIEMStartCallback(OnIEMStarted);
-        DebugCPP.RegisterIEMEndCallback(OnIEMCompleted);
-        DebugCPP.RegisterRTMStartCallback(OnRTMStarted);
-        DebugCPP.RegisterRTMEndCallback(OnRTMCompleted);
-        DebugCPP.RegisterResidueCallback(OnResidueCallback);
-
-        int numFrames = AudioSettings.GetConfiguration().dspBufferSize;
-        numSamples = Mathf.CeilToInt(impulseResponseLength * AudioSettings.outputSampleRate);
-        numBuffers = Mathf.CeilToInt(numSamples / numFrames);
-
-        inputBuffer = new float[numFrames];
-        outputBuffer = new float[2 * numFrames];
-        outputSignal = new float[numSamples];
-
         UpdateSceneName();
 
         cubeSize = Mathf.Min(spacing / 2.0f, cubeSize);
@@ -189,11 +108,6 @@ public class IRController : MonoBehaviour
         if (listenerTransform == null)
             Debug.LogError("RACAudioListener not found");
 
-        if (string.IsNullOrEmpty(irFilePath))
-            impulseResponse = new float[1] { 1.0f };
-        else
-            impulseResponse = ReadCSV(irFilePath);
-
         if (listeners.Count > 0)
             AddListenerRotations();
         else
@@ -206,6 +120,7 @@ public class IRController : MonoBehaviour
 
         if (sources.Count == 0)
             sources.Add(racSource.transform);
+        sourceTransform = sources[0].transform;
 
         transformEnumerator = ProcessTransforms();
         spatModeEnumerator = ProcessSpatModes();
@@ -213,15 +128,6 @@ public class IRController : MonoBehaviour
         lateConfigEnumerator = ProcessLateConfigs();
         sourceEnumerator = ProcessSources();
         listenerEnumerator = ProcessListeners();
-    }
-
-    void OnDisable()
-    {
-        DebugCPP.UnregisterIEMStartCallback();
-        DebugCPP.UnregisterIEMEndCallback();
-        DebugCPP.UnregisterRTMStartCallback();
-        DebugCPP.UnregisterRTMEndCallback();
-        DebugCPP.UnregisterResidueCallback();
     }
 
     void Update()
@@ -238,7 +144,6 @@ public class IRController : MonoBehaviour
             if (useTransforms && !transformEnumerator.MoveNext())
             {
                 transformEnumerator = ProcessTransforms();
-                RACManager.UpdateImpulseResponseMode(false);
                 RACManager.EnableAudioProcessing();
                 doIRs = false;
                 Debug.Log("All IR runs complete");
@@ -348,7 +253,7 @@ public class IRController : MonoBehaviour
     {
         foreach (var transform in transforms)
         {
-            areaName = transform.gameObject.name;
+            srcName = transform.gameObject.name;
             LocateListenerPositions(transform);
             yield return null; // Pause and resume in the next frame
             ClearListenerPositions(transform);
@@ -371,6 +276,8 @@ public class IRController : MonoBehaviour
             }
 
             spatName = spatMode.ToString();
+            if (spatName == "None")
+                spatName = "No";
             RACManager.UpdateSpatialisationMode(spatMode);
             yield return null; // Pause and resume in the next frame
         }
@@ -408,10 +315,9 @@ public class IRController : MonoBehaviour
         foreach (var source in sources)
         {
             activeSource++;
-            racSource.transform.position = source.position;
-            racSource.transform.rotation = source.rotation;
             if (!useTransforms)
-                areaName = source.gameObject.name;
+                srcName = source.gameObject.name;
+            sourceTransform = source.transform;
             yield return null; // Pause and resume in the next frame
         }
         activeSource = -1;
@@ -424,108 +330,22 @@ public class IRController : MonoBehaviour
         foreach (var listener in listeners)
         {
             activeListener++;
+            lstName = listener.gameObject.name;
 
-            currentSetup = "Spat_" + spatName + "_Early_" + earlyConfigName + "_Late_" + lateConfigName + "_Src_" + activeSource.ToString() + "_Lst_" + activeListener.ToString();
-
-            UpdateStreamWriter(currentSetup + "_Residues.csv");
-            irController.streamWriter.WriteLine("isSource, sourceIndex, slopeIndex, residue;");
-            expectResidues = true;
+            string currentSetup = spatName + " spatialization, Early config " + earlyConfigName + ", Late config " + lateConfigName + ", " + srcName + ", " + lstName;
 
             RACManager.UpdateListener(listener.position, listener.rotation);
             listenerTransform.position = listener.position;
             listenerTransform.rotation = listener.rotation;
             
-            racSource.RestartSource();
+            int numSamples = Mathf.CeilToInt(impulseResponseLength * AudioSettings.outputSampleRate);
+            float[] recordedIR = new float[numSamples];
 
-            int countStart = 0;
-            int countEnd = 0;
-            iemStarted = false;
-            rtmStarted = false;
-            // Wait for confirmation that both IEM and RTM have begun fresh loops.
-            while (!iemStarted || !rtmStarted)
-            {
-                countStart++;
-                if (countStart > 1000)
-                {
-                    if (!iemStarted)
-                        Debug.LogError("Failed to start a fresh loop on the IEM thread.");
-                    if (!rtmStarted)
-                        Debug.LogError("Failed to start a fresh loop on the RTM thread.");
-                    break;
-                }
-                yield return null;
-            }
-            // N.B.: `iemCompleted` and `rtmCompleted` have been reset as part of the function calls `OnIEMStarted` and `OnRTMStarted`.
-            // DO NOT manually reset `iemCompleted` nor `rtmCompleted` at this point.
-            // One thread may already have finished before the other one started.
+            RACManager.RecordImpulseResponse(sourceTransform.position, sourceTransform.rotation, ref recordedIR);
 
-            // Wait for confirmation that both IEM and RTM have finished their loops.
-            while (!iemCompleted || !rtmCompleted)
-            {
-                countEnd++;
-                if (countEnd > 1000)
-                {
-                    if (!iemCompleted)
-                        Debug.LogError("Failed to complete a fresh loop on the IEM thread.");
-                    if (!rtmCompleted)
-                        Debug.LogError("Failed to complete a fresh loop on the RTM thread.");
-                    break;
-                }
-                yield return null;
-            }
-            //Debug.Log("Time for IEM and RTM to start fresh loops: " + countStart.ToString() + " frames");
-            //Debug.Log("Time for IEM and RTM to complete fresh loops: " + countEnd.ToString() + " frames");
-            //Debug.Log("Time for IEM and RTM to run fresh loops: " + (countStart + countEnd).ToString() + " frames");
-
-            expectResidues = false;
-
-            RACManager.SubmitAudio(racSource.id, ref inputBuffer);
-            RACManager.ResetLateReverb();
-
-            //RACManager.ProcessOutput();
-            //bool success = RACManager.ProcessOutput();
-            //Debug.Log("RACManager.ProcessOutput() returned " + success.ToString());
-
-            // Wait for confirmation that the DSP thread has run a fresh loop, or else the FDNs might get reset after the start of the IR recording.
-            // TODO: Use flags and callbacks like for the other threads.
-            int countReset = 0;
-            int countFrames = 0;
-            while (countFrames < 1000)
-            {
-                if (RACManager.ProcessOutput())
-                {
-                    RACManager.GetOutputBuffer(ref outputBuffer);
-
-                    countReset += 1;
-                    if (countReset > 3)
-                        break;
-                }
-
-                countFrames++;
-                if (countFrames > 99)
-                {
-                    Debug.LogError("Failed to reset the DSP thread.");
-                    break;
-                }
-                yield return null;
-            }
-            //Debug.Log("Time to reset the DSP: " + countFrames.ToString() + " frames");
-
-            UpdateStreamWriter(currentSetup + "_IR.csv");
-
-            inputBuffer[0] = 1.0f;
-            ProcessAudioBuffer(0);
-            inputBuffer[0] = 0.0f;
-            for (int i = 1; i < numBuffers; i++)
-                ProcessAudioBuffer(i);
-            streamWriter.Write("0, 0\n");
-            streamWriter.Flush();
-
-            WavWriter.Save(filePath + "/" + currentSetup + "_IR.wav", outputSignal, AudioSettings.outputSampleRate, channels: 2, writeFloat32: true, writeMono: recordMono);
-            WavWriter.Save(filePath + "/" + currentSetup + "_echogram.wav", outputSignal, AudioSettings.outputSampleRate, channels: 2, writeFloat32: true, writeMono: recordMono, echogram: true);
+            WavWriter.Save(filePath + "/" + currentSetup + ".wav", recordedIR, AudioSettings.outputSampleRate, channels: 2, writeFloat32: true, writeMono: recordMono);
+            //WavWriter.Save(filePath + "/Echogram " + currentSetup + ".wav", recordedIR, AudioSettings.outputSampleRate, channels: 2, writeFloat32: true, writeMono: recordMono, echogram: true);
             //Debug.Log("<color=green>WAV saved to: " + wavPath + "</color>");
-
-            racSource.Stop();
 
             if (!doIRs)
                 yield break;
@@ -538,7 +358,6 @@ public class IRController : MonoBehaviour
     public void StartIRRun()
     {
         RACManager.DisableAudioProcessing();
-        RACManager.UpdateImpulseResponseMode(true);
 
         WriteRunSettings();
 
@@ -551,7 +370,6 @@ public class IRController : MonoBehaviour
     public void EndRun()
     {
         doIRs = false;
-        RACManager.UpdateImpulseResponseMode(false);
         RACManager.EnableAudioProcessing();
         Debug.Log("End IR Run Early");
     }
@@ -631,42 +449,6 @@ public class IRController : MonoBehaviour
         }
     }
 
-    void ProcessAudioBuffer(int bufferNumber)
-    {
-        int inputIdx = bufferNumber * inputBuffer.Length;
-        int outputIdx = bufferNumber * outputBuffer.Length;
-
-        for (int i = 0; i < Mathf.Min(inputBuffer.Length, impulseResponse.Length - inputIdx); i++)
-            inputBuffer[i] = impulseResponse[inputIdx + i];
-
-        RACManager.SubmitAudio(racSource.id, ref inputBuffer);
-        bool success = RACManager.ProcessOutput();
-        if (success)
-            RACManager.GetOutputBuffer(ref outputBuffer);
-
-        for (int i = 0; i < Mathf.Min(outputBuffer.Length, outputSignal.Length - outputIdx); ++i)
-            outputSignal[outputIdx + i] = outputBuffer[i];
-
-        if (recordMono)
-        {
-            for (int i = 0; i < outputBuffer.Length; i += 2)
-                WriteSample(outputBuffer[i]);
-        }
-        else
-        {
-            foreach (float sample in outputBuffer)
-                WriteSample(sample);
-        }
-
-        for (int i = 0; i < Mathf.Min(inputBuffer.Length, impulseResponse.Length - inputIdx); i++)
-            inputBuffer[i] = 0.0f;
-    }
-
-    void WriteSample(float input)
-    {
-        streamWriter.Write(input.ToString() + ", ");
-    }
-
     void WriteRunSettings()
     {
         UpdateStreamWriter("Run_settings.txt");
@@ -680,9 +462,14 @@ public class IRController : MonoBehaviour
         var fields = typeof(RACManager.EarlyConfig).GetFields();
         foreach (var config in earlyConfigs)
         {
-            streamWriter.WriteLine("\tConfig_" + idx);
-            foreach (var field in fields)
-                streamWriter.WriteLine("\t\t" + field.Name + " " + field.GetValue(config));
+            streamWriter.WriteLine("\t" + idx);
+            if (config.enabled)
+            {
+                foreach (var field in fields)
+                    streamWriter.WriteLine("\t\t" + field.Name + " " + field.GetValue(config));
+            }
+            else
+                streamWriter.WriteLine("\t\tenabled false");
             streamWriter.Flush();
             idx++;
         }
@@ -691,19 +478,26 @@ public class IRController : MonoBehaviour
         fields = typeof(RACManager.LateConfig).GetFields();
         foreach (var config in lateConfigs)
         {
-            streamWriter.WriteLine("\tConfig_" + idx);
-            foreach (var field in fields)
-                streamWriter.WriteLine("\t\t" + field.Name + " " + field.GetValue(config));
+            streamWriter.WriteLine("\t" + idx);
+            if (config.enabled)
+            {
+                foreach (var field in fields)
+                    streamWriter.WriteLine("\t\t" + field.Name + " " + field.GetValue(config));
+            }
+            else
+                streamWriter.WriteLine("\t\tenabled False");
             streamWriter.Flush();
             idx++;
         }
+
+        // TODO: Write grid parameters if using transforms
 
         // Write sources settings
         streamWriter.WriteLine("\nSource positions");
         int scrIdx = 0;
         foreach (var source in sources)
         {
-            streamWriter.WriteLine("\tSrc_" + scrIdx + ": " + source.position.x + ", " + source.position.y + ", " + source.position.z);
+            streamWriter.WriteLine("\t" + source.gameObject.name + ": " + source.position.x + ", " + source.position.y + ", " + source.position.z);
             ++scrIdx;
             // TODO: Write rotations
             streamWriter.Flush();
@@ -714,24 +508,13 @@ public class IRController : MonoBehaviour
         int lstIdx = 0;
         foreach (var listener in listeners)
         {
-            streamWriter.WriteLine("\tLst_" + lstIdx + ": " + listener.position.x + ", " + listener.position.y + ", " + listener.position.z);
+            streamWriter.WriteLine("\t" + listener.gameObject.name + ": " + listener.position.x + ", " + listener.position.y + ", " + listener.position.z);
             ++lstIdx;
             // TODO: Write rotations
             streamWriter.Flush();
         }
 
         // TODO: foreach (var transform in transforms)
-    }
-
-    float[] ReadCSV(string path)
-    {
-        // Read all lines from the CSV file
-        string[] lines = File.ReadAllLines(path);
-
-        // Split the values by commas and convert them to float
-        return lines.SelectMany(line => line.Split(','))
-                    .Select(float.Parse)
-                    .ToArray();
     }
 
     void OnDrawGizmos()
@@ -761,5 +544,4 @@ public class IRController : MonoBehaviour
         Gizmos.color = Color.white;
         Gizmos.DrawRay(listeners.ElementAt(activeListener).position, listeners.ElementAt(activeListener).forward);
     }
-#endif
 }
