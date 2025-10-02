@@ -1,7 +1,8 @@
 ﻿using TMPro;
 using UnityEngine;
 
-public class CanvasProjector : MonoBehaviour {
+public class CanvasProjector : MonoBehaviour
+{
     public Canvas targetCanvas;
     public Camera targetCamera;
     public Transform targetObject;
@@ -10,47 +11,54 @@ public class CanvasProjector : MonoBehaviour {
     public float distanceScaling;
 
     private TextMeshProUGUI textBox;
-    private Vector3 screenPos;
-    private Vector2 localPos;
-    private float distanceFromCanvas;
     private string defaultText;
     private float defaultSize;
 
+    private float distanceFromCamera;
+    private Vector3 screenSpacePos;
+    RectTransform canvasRect;
+
     void Start()
     {
-        textBox = gameObject.GetComponent<TextMeshProUGUI>();
+        textBox = GetComponent<TextMeshProUGUI>();
         defaultText = textBox.text;
         defaultSize = textBox.fontSize;
+
+        canvasRect = targetCanvas.transform as RectTransform;
+
         if (minDistance < 0)
             minDistance = 0f;
     }
 
     void Update()
     {
-        worldToUISpace();
-        if (distanceFromCanvas > minDistance
-            && screenPos.x > 0 && screenPos.x < targetCanvas.pixelRect.width
-            && screenPos.y > 0 && screenPos.y < targetCanvas.pixelRect.height)
+        screenSpacePos = targetCamera.WorldToScreenPoint(targetObject.position);
+
+        distanceFromCamera = Vector3.Dot(targetObject.position - targetCamera.transform.position, targetCamera.transform.forward);
+
+        if (distanceFromCamera < minDistance)
         {
-            textBox.text = defaultText;
-            textBox.fontSize = defaultSize / Mathf.Pow(distanceFromCanvas, distanceScaling);
-            transform.position = screenPos;
+            textBox.text = "";
+            return;
+        }
+
+
+        if (RectTransformUtility.ScreenPointToLocalPointInRectangle(
+            canvasRect, screenSpacePos, targetCanvas.worldCamera, out Vector2 localPoint))
+        {
+            // Check if within bounds of the canvas
+            if (Mathf.Abs(localPoint.x) <= canvasRect.rect.width / 2 &&
+                Mathf.Abs(localPoint.y) <= canvasRect.rect.height / 2)
+            {
+                transform.localPosition = localPoint;
+
+                textBox.text = defaultText;
+                textBox.fontSize = defaultSize / Mathf.Pow(distanceFromCamera, distanceScaling);
+            }
+            else
+                textBox.text = "";
         }
         else
             textBox.text = "";
-    }
-
-    // https://stackoverflow.com/a/45047232
-    public void worldToUISpace()
-    {
-        screenPos = targetCamera.WorldToScreenPoint(targetObject.position);
-        // If the target is on the wrong side of the canvas, return false
-        distanceFromCanvas = screenPos.z;
-
-        RectTransformUtility.ScreenPointToLocalPointInRectangle(
-            targetCanvas.transform as RectTransform,
-            screenPos, targetCanvas.worldCamera, out localPos);
-
-        screenPos = targetCanvas.transform.TransformPoint(localPos);
     }
 }
