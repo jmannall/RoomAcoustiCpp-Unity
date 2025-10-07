@@ -4,10 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using UnityEngine;
-using UnityEngine.LightTransport;
 using UnityEngine.SceneManagement;
-using UnityEngine.UIElements;
-using static Unity.VisualScripting.Member;
 
 public class IRController : MonoBehaviour
 {
@@ -217,7 +214,6 @@ public class IRController : MonoBehaviour
 
     void OnDestroy()
     {
-        // TODO: Why not unregister the callbacks here?
         listeners.Clear();
         if (streamWriter != null)
             streamWriter.Close();

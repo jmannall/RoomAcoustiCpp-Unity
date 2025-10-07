@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
 using UnityEngine;
-using UnityEngine.LightTransport;
 using UnityEngine.Networking;
 using UnityEngine.Profiling;
 
