@@ -33,6 +33,8 @@ public class IRPlotter : MonoBehaviour
 
     [SerializeField]
     private bool negativeSlopes = true;
+    [SerializeField]
+    private bool backwardsIntegration = true;
 
     public static IRPlotter irPlotter;
 
@@ -89,8 +91,13 @@ public class IRPlotter : MonoBehaviour
     void Start()
     {
         xAxis = new();
-        for (int i = 0; i <= numPlotPoints; ++i)
-            xAxis.Add((float)i / (float)numPlotPoints);
+        // These in-range values are the ones shown in the plot.
+        for (int i = 0; i < numPlotPoints; ++i)
+            xAxis.Add((float)i / (float)(numPlotPoints - 1));
+
+        // Some out-of-range values are computed for the backwards integration.
+        for (int i = numPlotPoints; i < 2 * numPlotPoints; ++i)
+            xAxis.Add((float)i / (float)(numPlotPoints - 1));
 
         myPlots = new();
     }
@@ -141,6 +148,17 @@ public class IRPlotter : MonoBehaviour
                 {
                     // Drop non-positive values
                     if (yValues[i] < 1e-15f) yValues[i] = 1e-15f;
+                }
+
+                if (backwardsIntegration)
+                {
+                    // Plot an EDC (non-normalized backwards integration) if requested
+                    for (int i = yValues.Count - 2; i >= 0; --i)
+                        yValues[i] += yValues[i+1];
+                }
+
+                for (int i = 0; i < yValues.Count; ++i)
+                {
                     // Convert to dB
                     yValues[i] = 10 * Mathf.Log10(yValues[i]);
                     // Rescale to plot range
