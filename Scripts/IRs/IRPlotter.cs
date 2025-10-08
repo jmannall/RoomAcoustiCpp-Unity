@@ -48,6 +48,7 @@ public class IRPlotter : MonoBehaviour
     private int numRegisteredSources = 0;
     private List<List<float>> sourceResidues;
     private List<List<float>> listenerResidues;
+    private int tryRecolorSources = 0;
 
     // Lock to protect residue data races
     private readonly object residueLock = new();
@@ -117,6 +118,27 @@ public class IRPlotter : MonoBehaviour
                 while (sourceId >= myPlots.Count)
                     AddNewPlot();
 
+                if (tryRecolorSources < 10)
+                {
+                    // Ensure that the source's color matches the line's color.
+                    // This is done only on the first 10 frames for efficiency.
+                    RACAudioSource[] racSources = FindObjectsByType<RACAudioSource>(FindObjectsSortMode.None);
+                    foreach (RACAudioSource thisSource in racSources)
+                    {
+                        if (thisSource.id != sourceId)
+                            continue;
+
+                        foreach (MeshRenderer meshRenderer in thisSource.GetComponentsInChildren<MeshRenderer>())
+                        {
+                            foreach (Material material in meshRenderer.materials)
+                            {
+                                material.SetColor("_BaseColor", myPlots[sourceId].color);
+                            }
+
+                        }
+                    }
+                }
+
                 yValues = new();
                 foreach (float x in xAxis)
                     yValues.Add(0f);
@@ -156,7 +178,7 @@ public class IRPlotter : MonoBehaviour
                 {
                     // Plot an EDC (non-normalized backwards integration) if requested
                     for (int i = yValues.Count - 2; i >= 0; --i)
-                        yValues[i] += yValues[i+1];
+                        yValues[i] += yValues[i + 1];
                 }
 
                 for (int i = 0; i < yValues.Count; ++i)
@@ -170,6 +192,8 @@ public class IRPlotter : MonoBehaviour
                 myPlots[sourceId].SetPlotData(xAxis, yValues);
             }
         }
+        if (tryRecolorSources < 10)
+            tryRecolorSources++;
     }
 
     public void RegisterSlopes(List<float> bandFreqs, List<int> idxs, List<float> T60s)
@@ -206,6 +230,11 @@ public class IRPlotter : MonoBehaviour
             sourceResidues.Add(new());
             listenerResidues.Add(new());
         }
+
+        tryRecolorSources = 0;
+        // TODO: Instead of waiting for residue callbacks before making plots, call
+        //      RACAudioSource[] racSources = FindObjectsByType<RACAudioSource>(FindObjectsSortMode.None);
+        // once here and use it to create the plots and recolor the sources.
     }
 
     private void AddAxisLabels()
@@ -343,7 +372,7 @@ public class IRPlotter : MonoBehaviour
     {
         GameObject child = new GameObject($"Line {myPlots.Count + 1}", typeof(RectTransform));
 
-        RectTransform tempTranform = (RectTransform)child.transform;
+        RectTransform tempTranform = child.GetComponent<RectTransform>();
         tempTranform.SetParent(this.transform, false);
         tempTranform.sizeDelta = new Vector2(1f, 1f);
 
