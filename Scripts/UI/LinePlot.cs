@@ -2,7 +2,6 @@
 // https://github.com/Radishmouse22/UILineRenderer/
 // Which is under MIT license.
 
-using NUnit.Framework;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -87,5 +86,18 @@ public class LinePlot : MaskableGraphic
     private float RotatePointTowards(Vector2 vertex, Vector2 target)
     {
         return (float)(Mathf.Atan2(target.y - vertex.y, target.x - vertex.x) * (180 / Mathf.PI));
+    }
+
+    public void SetPlotData(List<float> x, List<float> y)
+    {
+        for (int i = 0; (i < x.Count) && (i < y.Count); ++i)
+        {
+            if (i < points.Count)
+                points[i] = new Vector2(x[i], y[i]);
+            else
+                points.Add(new Vector2(x[i], y[i]));
+        }
+
+        SetVerticesDirty();
     }
 }

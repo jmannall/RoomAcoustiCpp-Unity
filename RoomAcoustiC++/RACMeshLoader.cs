@@ -242,6 +242,10 @@ public class RACMeshLoader : MonoBehaviour
             }
         }
 
+        // Send parameters to IRPlotter first; it needs to construct its lists before receiving any residue callbacks.
+        if (IRPlotter.irPlotter != null)
+            IRPlotter.irPlotter.RegisterSlopes(targetFreqs, resized_bandIdxs, resized_T60s);
+
         RACManager.InitMoDART(
           flattenedPathIndexing,
           resized_bandIdxs.ToArray(), resized_T60s.ToArray(),
