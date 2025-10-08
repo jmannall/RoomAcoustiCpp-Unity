@@ -6,6 +6,20 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
+public static class Palettes
+{
+    public static readonly List<Color> OkabeIto = new()
+    {
+        new Color(0.902f, 0.624f, 0.000f, 1f), // Light orange
+        new Color(0.337f, 0.706f, 0.914f, 1f), // Light blue
+        new Color(0.000f, 0.620f, 0.451f, 1f), // Green
+        new Color(0.941f, 0.894f, 0.259f, 1f), // Yellow
+        new Color(0.000f, 0.447f, 0.698f, 1f), // Dark blue
+        new Color(0.835f, 0.369f, 0.000f, 1f), // Dark orange
+        new Color(0.800f, 0.475f, 0.655f, 1f), // Dark pink
+    };
+}
+
 [RequireComponent(typeof(CanvasRenderer))]
 public class LinePlot : MaskableGraphic
 {

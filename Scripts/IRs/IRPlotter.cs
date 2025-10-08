@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public enum FrequencyBand
+enum FrequencyBand
 {
     [InspectorName("125Hz")] Hz125 = 0,
     [InspectorName("250Hz")] Hz250 = 1,
@@ -175,6 +175,7 @@ public class IRPlotter : MonoBehaviour
         child.transform.SetParent(this.transform, false);
 
         LinePlot lp = child.AddComponent<LinePlot>();
+        lp.color = Palettes.OkabeIto[myPlots.Count % Palettes.OkabeIto.Count];
         foreach (float x in xAxis)
             lp.points.Add(new Vector2(x, 0f));
 
