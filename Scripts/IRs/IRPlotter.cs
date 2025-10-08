@@ -1,30 +1,31 @@
 ﻿using System;
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 enum FrequencyBand
 {
-    [InspectorName("125Hz")] Hz125 = 0,
-    [InspectorName("250Hz")] Hz250 = 1,
-    [InspectorName("500Hz")] Hz500 = 2,
-    [InspectorName("1kHz")] Hz1k = 3,
-    [InspectorName("2kHz")] Hz2k = 4,
-    [InspectorName("4kHz")] Hz4k = 5,
-    [InspectorName("8kHz")] Hz8k = 6,
-    [InspectorName("16kHz")] Hz16k = 7,
+    [InspectorName("125Hz")] Hz125 = 125,
+    [InspectorName("250Hz")] Hz250 = 250,
+    [InspectorName("500Hz")] Hz500 = 500,
+    [InspectorName("1kHz")] kHz1 = 1000,
+    [InspectorName("2kHz")] kHz2 = 2000,
+    [InspectorName("4kHz")] kHz4 = 4000,
+    [InspectorName("8kHz")] kHz8 = 8000,
+    [InspectorName("16kHz")] kHz16 = 16000,
 }
 
 public class IRPlotter : MonoBehaviour
 {
 #if RAC_Debug
-    [SerializeField, Range(0.1f, 10f)]
+    [SerializeField, Range(0.1f, 5f)]
     private float durationInSeconds = 1f;
     [SerializeField, Range(10, 1000)]
     private int numPlotPoints = 100;
     [SerializeField]
-    private FrequencyBand plottedOctaveBand = FrequencyBand.Hz1k;
-    private int plottedOctaveBandIdx = (int)FrequencyBand.Hz1k;
-
+    private FrequencyBand plottedOctaveBand = FrequencyBand.kHz1;
+    private int plottedOctaveBandIdx;
 
     [SerializeField, Range(-30f, 10f)]
     private float upperLimit = -10f;
@@ -41,7 +42,6 @@ public class IRPlotter : MonoBehaviour
     private List<float> xAxis;
     private List<LinePlot> myPlots;
 
-    private List<float> bandFreqs;
     private List<int> slopeBandIdxs;
     private List<float> slopeT60s;
 
@@ -98,6 +98,8 @@ public class IRPlotter : MonoBehaviour
         // Some out-of-range values are computed for the backwards integration.
         for (int i = numPlotPoints; i < 2 * numPlotPoints; ++i)
             xAxis.Add((float)i / (float)(numPlotPoints - 1));
+
+        AddAxisLabels();
 
         myPlots = new();
     }
@@ -170,13 +172,32 @@ public class IRPlotter : MonoBehaviour
         }
     }
 
-    public void RegisterSlopes(List<float> freqs, List<int> idxs, List<float> T60s)
+    public void RegisterSlopes(List<float> bandFreqs, List<int> idxs, List<float> T60s)
     {
-        bandFreqs = freqs;
         slopeBandIdxs = idxs;
         slopeT60s = T60s;
 
-        // TODO: Set plottedOctaveBandIdx to the index of the closest match in bandFreqs
+        // Set plottedOctaveBandIdx to the index of the closest match in bandFreqs
+        if ((float)plottedOctaveBand < bandFreqs[0])
+            plottedOctaveBandIdx = 0;
+        else if ((float)plottedOctaveBand > bandFreqs[bandFreqs.Count - 1])
+            plottedOctaveBandIdx = bandFreqs.Count - 1;
+        else
+        {
+            plottedOctaveBandIdx = 0;
+            float smallestDiff = Mathf.Abs((float)plottedOctaveBand - bandFreqs[0]);
+            float diff = smallestDiff;
+
+            for (int j = 1; j < bandFreqs.Count; j++)
+            {
+                diff = Mathf.Abs((float)plottedOctaveBand - bandFreqs[j]);
+                if (diff < smallestDiff)
+                {
+                    plottedOctaveBandIdx = j;
+                    smallestDiff = diff;
+                }
+            }
+        }
 
         sourceResidues = new();
         listenerResidues = new();
@@ -187,10 +208,144 @@ public class IRPlotter : MonoBehaviour
         }
     }
 
+    private void AddAxisLabels()
+    {
+        // Add octave band label.
+        GameObject tempGameObject = new GameObject("Octave band label", typeof(RectTransform));
+
+        TextMeshProUGUI tempText = tempGameObject.AddComponent<TextMeshProUGUI>();
+        if ((int)plottedOctaveBand < 1000)
+            tempText.text = $"EDC ({(int)plottedOctaveBand}Hz octave band)";
+        else
+            tempText.text = $"EDC ({(int)plottedOctaveBand/1000}kHz octave band)";
+        tempText.alignment = TextAlignmentOptions.CaplineJustified;
+        tempText.textWrappingMode = TextWrappingModes.NoWrap;
+        tempText.fontSize = 0.05f;
+        tempText.color = new Color(0f, 0f, 0f);
+
+        ContentSizeFitter fitter = tempGameObject.AddComponent<ContentSizeFitter>();
+        fitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
+        fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+        RectTransform tempTranform = tempGameObject.GetComponent<RectTransform>();
+        tempTranform.SetParent(this.transform, false);
+        tempTranform.pivot = new Vector2(0.5f, 1f);
+        tempTranform.anchorMin = new Vector2(0.5f, 0.5f);
+        tempTranform.anchorMax = new Vector2(0.5f, 0.5f);
+        tempTranform.anchoredPosition = new Vector2(0.5f, 1f);
+
+        int numYticks = 0;
+        // Add the Y axis labels. -80f and 10f are the maximum extents of lowerLimit and upperLimit.
+        for (float yTick = -80f; yTick <= 10f; yTick += 10f)
+        {
+            float alignment = (yTick - lowerLimit) / (upperLimit - lowerLimit);
+            if ((alignment <= 0) || (alignment >= 1))
+                continue;
+
+            tempGameObject = new GameObject($"Y tick {yTick}dB", typeof(RectTransform));
+
+            tempText = tempGameObject.AddComponent<TextMeshProUGUI>();
+            tempText.text = $"{yTick}dB";
+            tempText.alignment = TextAlignmentOptions.MidlineLeft;
+            tempText.textWrappingMode = TextWrappingModes.NoWrap;
+            tempText.fontSize = 0.05f;
+            tempText.color = new Color(0f, 0f, 0f);
+
+            fitter = tempGameObject.AddComponent<ContentSizeFitter>();
+            fitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
+            fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+            tempTranform = tempGameObject.GetComponent<RectTransform>();
+            tempTranform.SetParent(this.transform, false);
+            tempTranform.pivot = new Vector2(0f, 0.5f);
+            tempTranform.anchorMin = new Vector2(0.5f, 0.5f);
+            tempTranform.anchorMax = new Vector2(0.5f, 0.5f);
+            tempTranform.anchoredPosition = new Vector2(0f, alignment);
+
+            numYticks++;
+        }
+
+        if (numYticks < 3)
+        {
+            // The labels are sparse: add more at multiples of 5.
+            for (float yTick = -75f; yTick <= 10f; yTick += 10f)
+            {
+                float alignment = (yTick - lowerLimit) / (upperLimit - lowerLimit);
+                if ((alignment <= 0) || (alignment >= 1))
+                    continue;
+
+                tempGameObject = new GameObject($"Y tick {yTick}dB", typeof(RectTransform));
+
+                tempText = tempGameObject.AddComponent<TextMeshProUGUI>();
+                tempText.text = $"{yTick}dB";
+                tempText.alignment = TextAlignmentOptions.MidlineLeft;
+                tempText.textWrappingMode = TextWrappingModes.NoWrap;
+                tempText.fontSize = 0.05f;
+                tempText.color = new Color(0f, 0f, 0f);
+
+                fitter = tempGameObject.AddComponent<ContentSizeFitter>();
+                fitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
+                fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+                tempTranform = tempGameObject.GetComponent<RectTransform>();
+                tempTranform.SetParent(this.transform, false);
+                tempTranform.pivot = new Vector2(0f, 0.5f);
+                tempTranform.anchorMin = new Vector2(0.5f, 0.5f);
+                tempTranform.anchorMax = new Vector2(0.5f, 0.5f);
+                tempTranform.anchoredPosition = new Vector2(0f, alignment);
+
+                numYticks++;
+            }
+        }
+
+        // Add the X axis labels.
+        float xTickStep;
+        if (durationInSeconds <= 0.3f)
+            xTickStep = 0.05f;
+        else if (durationInSeconds <= 0.5f)
+            xTickStep = 0.1f;
+        else if (durationInSeconds <= 1f)
+            xTickStep = 0.25f;
+        else if (durationInSeconds <= 3f)
+            xTickStep = 0.5f;
+        else
+            xTickStep = 1f;
+
+        for (float xTick = xTickStep; xTick < durationInSeconds; xTick += xTickStep)
+        {
+            float alignment = xTick / durationInSeconds;
+            if (alignment >= 1)
+                continue;
+
+            tempGameObject = new GameObject($"X tick {xTick}s", typeof(RectTransform));
+
+            tempText = tempGameObject.AddComponent<TextMeshProUGUI>();
+            tempText.text = $"{xTick}s";
+            tempText.alignment = TextAlignmentOptions.BaselineJustified;
+            tempText.textWrappingMode = TextWrappingModes.NoWrap;
+            tempText.fontSize = 0.05f;
+            tempText.color = new Color(0f, 0f, 0f);
+
+            fitter = tempGameObject.AddComponent<ContentSizeFitter>();
+            fitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
+            fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+            tempTranform = tempGameObject.GetComponent<RectTransform>();
+            tempTranform.SetParent(this.transform, false);
+            tempTranform.pivot = new Vector2(0.5f, 0f);
+            tempTranform.anchorMin = new Vector2(0.5f, 0.5f);
+            tempTranform.anchorMax = new Vector2(0.5f, 0.5f);
+            tempTranform.anchoredPosition = new Vector2(alignment, 0f);
+        }
+    }
+
     private void AddNewPlot()
     {
-        GameObject child = new GameObject("Line 1", typeof(RectTransform));
-        child.transform.SetParent(this.transform, false);
+        GameObject child = new GameObject($"Line {myPlots.Count + 1}", typeof(RectTransform));
+
+        RectTransform tempTranform = (RectTransform)child.transform;
+        tempTranform.SetParent(this.transform, false);
+        tempTranform.sizeDelta = new Vector2(1f, 1f);
 
         LinePlot lp = child.AddComponent<LinePlot>();
         lp.color = Palettes.OkabeIto[myPlots.Count % Palettes.OkabeIto.Count];
