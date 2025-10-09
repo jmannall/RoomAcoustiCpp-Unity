@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using static Unity.VisualScripting.Member;
 
 enum FrequencyBand
 {
@@ -48,7 +49,7 @@ public class IRPlotter : MonoBehaviour
     private int numRegisteredSources = 0;
     private List<List<float>> sourceResidues;
     private List<List<float>> listenerResidues;
-    private int tryRecolorSources = 0;
+    private bool allSourcesRegistered = false;
 
     // Lock to protect residue data races
     private readonly object residueLock = new();
@@ -64,9 +65,6 @@ public class IRPlotter : MonoBehaviour
                 myResidues = irPlotter.sourceResidues[slopeIndex];
             else
                 myResidues = irPlotter.listenerResidues[slopeIndex];
-
-            if (isSource && (channelIndex >= irPlotter.numRegisteredSources))
-                irPlotter.numRegisteredSources = channelIndex + 1;
 
             while (channelIndex >= myResidues.Count)
                 myResidues.Add(0f);
@@ -103,10 +101,31 @@ public class IRPlotter : MonoBehaviour
         AddAxisLabels();
 
         myPlots = new();
+
+        allSourcesRegistered = false;
     }
 
     void Update()
     {
+        if (!allSourcesRegistered)
+        {
+            RACAudioSource[] racSources = FindObjectsByType<RACAudioSource>(FindObjectsSortMode.None);
+            foreach (RACAudioSource thisSource in racSources)
+            {
+                // An ID of -1 indicates the source has not been initialized yet.
+                if (thisSource.id < 0)
+                {
+                    Debug.LogWarning("Waiting for all sources to be initialized.");
+                    return;
+                }
+            }
+            // If the loop ended, all sources have been initialized.
+            allSourcesRegistered = true;
+            numRegisteredSources = racSources.Length;
+
+            PopulatePlots(racSources);
+        }
+
         List<float> yValues;
         float combinedResidue;
         double timeInSeconds, exponentPerSecond;
@@ -115,30 +134,6 @@ public class IRPlotter : MonoBehaviour
         {
             for (int sourceId = 0; sourceId < numRegisteredSources; ++sourceId)
             {
-                while (sourceId >= myPlots.Count)
-                    AddNewPlot();
-
-                if (tryRecolorSources < 10)
-                {
-                    // Ensure that the source's color matches the line's color.
-                    // This is done only on the first 10 frames for efficiency.
-                    RACAudioSource[] racSources = FindObjectsByType<RACAudioSource>(FindObjectsSortMode.None);
-                    foreach (RACAudioSource thisSource in racSources)
-                    {
-                        if (thisSource.id != sourceId)
-                            continue;
-
-                        foreach (MeshRenderer meshRenderer in thisSource.GetComponentsInChildren<MeshRenderer>())
-                        {
-                            foreach (Material material in meshRenderer.materials)
-                            {
-                                material.SetColor("_BaseColor", myPlots[sourceId].color);
-                            }
-
-                        }
-                    }
-                }
-
                 yValues = new();
                 foreach (float x in xAxis)
                     yValues.Add(0f);
@@ -156,6 +151,10 @@ public class IRPlotter : MonoBehaviour
                     foreach (float listenerResidue in listenerResidues[slopeId])
                         combinedResidue += listenerResidue;
                     combinedResidue *= sourceResidues[slopeId][sourceId];
+
+                    // Skip this slope if the residue is zero, avoid useless computations.
+                    if (combinedResidue == 0f)
+                        continue;
 
                     if (!negativeSlopes && combinedResidue < 0f)
                         continue;
@@ -192,8 +191,6 @@ public class IRPlotter : MonoBehaviour
                 myPlots[sourceId].SetPlotData(xAxis, yValues);
             }
         }
-        if (tryRecolorSources < 10)
-            tryRecolorSources++;
     }
 
     public void RegisterSlopes(List<float> bandFreqs, List<int> idxs, List<float> T60s)
@@ -230,11 +227,6 @@ public class IRPlotter : MonoBehaviour
             sourceResidues.Add(new());
             listenerResidues.Add(new());
         }
-
-        tryRecolorSources = 0;
-        // TODO: Instead of waiting for residue callbacks before making plots, call
-        //      RACAudioSource[] racSources = FindObjectsByType<RACAudioSource>(FindObjectsSortMode.None);
-        // once here and use it to create the plots and recolor the sources.
     }
 
     private void AddAxisLabels()
@@ -277,7 +269,7 @@ public class IRPlotter : MonoBehaviour
             tempText.text = $"{yTick}dB";
             tempText.alignment = TextAlignmentOptions.MidlineLeft;
             tempText.textWrappingMode = TextWrappingModes.NoWrap;
-            tempText.fontSize = 0.05f;
+            tempText.fontSize = 0.04f;
             tempText.color = new Color(0f, 0f, 0f);
 
             fitter = tempGameObject.AddComponent<ContentSizeFitter>();
@@ -309,7 +301,7 @@ public class IRPlotter : MonoBehaviour
                 tempText.text = $"{yTick}dB";
                 tempText.alignment = TextAlignmentOptions.MidlineLeft;
                 tempText.textWrappingMode = TextWrappingModes.NoWrap;
-                tempText.fontSize = 0.05f;
+                tempText.fontSize = 0.04f;
                 tempText.color = new Color(0f, 0f, 0f);
 
                 fitter = tempGameObject.AddComponent<ContentSizeFitter>();
@@ -352,7 +344,7 @@ public class IRPlotter : MonoBehaviour
             tempText.text = $"{xTick}s";
             tempText.alignment = TextAlignmentOptions.BaselineJustified;
             tempText.textWrappingMode = TextWrappingModes.NoWrap;
-            tempText.fontSize = 0.05f;
+            tempText.fontSize = 0.04f;
             tempText.color = new Color(0f, 0f, 0f);
 
             fitter = tempGameObject.AddComponent<ContentSizeFitter>();
@@ -368,7 +360,7 @@ public class IRPlotter : MonoBehaviour
         }
     }
 
-    private void AddNewPlot()
+    private LinePlot AddNewPlot()
     {
         GameObject child = new GameObject($"Line {myPlots.Count + 1}", typeof(RectTransform));
 
@@ -377,11 +369,61 @@ public class IRPlotter : MonoBehaviour
         tempTranform.sizeDelta = new Vector2(1f, 1f);
 
         LinePlot lp = child.AddComponent<LinePlot>();
-        lp.color = Palettes.OkabeIto[myPlots.Count % Palettes.OkabeIto.Count];
         foreach (float x in xAxis)
             lp.points.Add(new Vector2(x, 0f));
 
-        myPlots.Add(lp);
+        return lp;
+    }
+
+    private void PopulatePlots(RACAudioSource[] racSources)
+    {
+        foreach (RACAudioSource thisSource in racSources)
+        {
+            Color sourceColor = Palettes.OkabeIto[thisSource.id % Palettes.OkabeIto.Count];
+            //string sourceName = thisSource.gameObject.name;
+
+            LinePlot lp = AddNewPlot();
+            lp.color = sourceColor;
+            myPlots.Add(lp);
+
+            // TODO: Add a legend label matching the source object's name and color.
+            /*
+            GameObject legend = this.transform.parent.Find("Legend").gameObject;
+            if (legend == null)
+                Debug.LogError("IRPlotter could not find a sibling named \"Legend\".");
+            else
+            {
+                GameObject tempGameObject = new GameObject(sourceName + " legend label", typeof(RectTransform));
+
+                TextMeshProUGUI tempText = tempGameObject.AddComponent<TextMeshProUGUI>();
+                tempText.text = sourceName;
+                tempText.alignment = TextAlignmentOptions.MidlineLeft;
+                //tempText.textWrappingMode = TextWrappingModes.NoWrap;
+                tempText.fontSize = 0.03f;
+                tempText.color = new Color(0f, 0f, 0f);
+
+                ContentSizeFitter fitter = tempGameObject.AddComponent<ContentSizeFitter>();
+                fitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
+                fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+                RectTransform tempTranform = tempGameObject.GetComponent<RectTransform>();
+                tempTranform.SetParent(this.transform, false);
+                tempTranform.pivot = new Vector2(0.5f, 1f);
+                tempTranform.anchorMin = new Vector2(0.5f, 0.5f);
+                tempTranform.anchorMax = new Vector2(0.5f, 0.5f);
+                tempTranform.anchoredPosition = new Vector2(0.5f, 1f);
+            }
+            */
+
+            // Ensure that the source's color matches the line's color.
+            foreach (MeshRenderer meshRenderer in thisSource.GetComponentsInChildren<MeshRenderer>())
+            {
+                foreach (Material material in meshRenderer.materials)
+                {
+                    material.SetColor("_BaseColor", sourceColor);
+                }
+            }
+        }
     }
 #endif
 }
