@@ -25,7 +25,7 @@ public class LinePlot : MaskableGraphic
 {
     public List<Vector2> points = new();
 
-    public float thickness = 0.01f;
+    public float thickness = 7f;
 
     protected override void OnPopulateMesh(VertexHelper vh)
     {

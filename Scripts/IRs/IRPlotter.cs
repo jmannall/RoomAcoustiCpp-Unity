@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using static Unity.VisualScripting.Member;
 
 enum FrequencyBand
 {
@@ -40,6 +39,7 @@ public class IRPlotter : MonoBehaviour
 
     public static IRPlotter irPlotter;
 
+    private Rect plotExtent;
     private List<float> xAxis;
     private List<LinePlot> myPlots;
 
@@ -89,14 +89,17 @@ public class IRPlotter : MonoBehaviour
 
     void Start()
     {
+        plotExtent = GetComponent<RectTransform>().rect;
+
         xAxis = new();
         // These in-range values are the ones shown in the plot.
         for (int i = 0; i < numPlotPoints; ++i)
-            xAxis.Add((float)i / (float)(numPlotPoints - 1));
+            xAxis.Add(plotExtent.width * (float)i / (float)(numPlotPoints - 1));
 
         // Some out-of-range values are computed for the backwards integration.
+        // Note that these are x > plotExtent.width, i.e., outside of the element's bounds.
         for (int i = numPlotPoints; i < 2 * numPlotPoints; ++i)
-            xAxis.Add((float)i / (float)(numPlotPoints - 1));
+            xAxis.Add(plotExtent.width * (float)i / (float)(numPlotPoints - 1));
 
         AddAxisLabels();
 
@@ -162,7 +165,7 @@ public class IRPlotter : MonoBehaviour
                     exponentPerSecond = -6.0 / (double)slopeT60s[slopeId];
                     for (int sampleId = 0; sampleId < xAxis.Count; ++sampleId)
                     {
-                        timeInSeconds = (double)xAxis[sampleId] * (double)durationInSeconds;
+                        timeInSeconds = (double)xAxis[sampleId] * (double)durationInSeconds / (double)plotExtent.width;
                         yValues[sampleId] += combinedResidue * (float)Math.Pow(10.0, exponentPerSecond * timeInSeconds);
                     }
                 }
@@ -185,7 +188,7 @@ public class IRPlotter : MonoBehaviour
                     // Convert to dB
                     yValues[i] = 10 * Mathf.Log10(yValues[i]);
                     // Rescale to plot range
-                    yValues[i] = (yValues[i] - lowerLimit) / (upperLimit - lowerLimit);
+                    yValues[i] = plotExtent.height * (yValues[i] - lowerLimit) / (upperLimit - lowerLimit);
                 }
 
                 myPlots[sourceId].SetPlotData(xAxis, yValues);
@@ -241,8 +244,9 @@ public class IRPlotter : MonoBehaviour
             tempText.text = $"EDC ({(int)plottedOctaveBand/1000}kHz octave band)";
         tempText.alignment = TextAlignmentOptions.CaplineJustified;
         tempText.textWrappingMode = TextWrappingModes.NoWrap;
-        tempText.fontSize = 0.05f;
-        tempText.color = new Color(0f, 0f, 0f);
+        //tempText.margin = new Vector4(5f, 5f, 5f, 5f);
+        tempText.fontSize = 30f;
+        tempText.color = Color.black;
 
         ContentSizeFitter fitter = tempGameObject.AddComponent<ContentSizeFitter>();
         fitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
@@ -250,10 +254,10 @@ public class IRPlotter : MonoBehaviour
 
         RectTransform tempTranform = tempGameObject.GetComponent<RectTransform>();
         tempTranform.SetParent(this.transform, false);
-        tempTranform.pivot = new Vector2(0.5f, 1f);
-        tempTranform.anchorMin = new Vector2(0.5f, 0.5f);
-        tempTranform.anchorMax = new Vector2(0.5f, 0.5f);
-        tempTranform.anchoredPosition = new Vector2(0.5f, 1f);
+        tempTranform.pivot = new Vector2(0.5f, 1.2f);
+        tempTranform.anchorMin = new Vector2(0.5f, 1f);
+        tempTranform.anchorMax = new Vector2(0.5f, 1f);
+        tempTranform.anchoredPosition = Vector2.zero;
 
         int numYticks = 0;
         // Add the Y axis labels. -80f and 10f are the maximum extents of lowerLimit and upperLimit.
@@ -269,8 +273,9 @@ public class IRPlotter : MonoBehaviour
             tempText.text = $"{yTick}dB";
             tempText.alignment = TextAlignmentOptions.MidlineLeft;
             tempText.textWrappingMode = TextWrappingModes.NoWrap;
-            tempText.fontSize = 0.04f;
-            tempText.color = new Color(0f, 0f, 0f);
+            tempText.margin = new Vector4(5f, 5f, 5f, 5f);
+            tempText.fontSize = 20f;
+            tempText.color = Color.black;
 
             fitter = tempGameObject.AddComponent<ContentSizeFitter>();
             fitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
@@ -279,9 +284,9 @@ public class IRPlotter : MonoBehaviour
             tempTranform = tempGameObject.GetComponent<RectTransform>();
             tempTranform.SetParent(this.transform, false);
             tempTranform.pivot = new Vector2(0f, 0.5f);
-            tempTranform.anchorMin = new Vector2(0.5f, 0.5f);
-            tempTranform.anchorMax = new Vector2(0.5f, 0.5f);
-            tempTranform.anchoredPosition = new Vector2(0f, alignment);
+            tempTranform.anchorMin = new Vector2(0f, alignment);
+            tempTranform.anchorMax = new Vector2(0f, alignment);
+            tempTranform.anchoredPosition = Vector2.zero;
 
             numYticks++;
         }
@@ -301,8 +306,9 @@ public class IRPlotter : MonoBehaviour
                 tempText.text = $"{yTick}dB";
                 tempText.alignment = TextAlignmentOptions.MidlineLeft;
                 tempText.textWrappingMode = TextWrappingModes.NoWrap;
-                tempText.fontSize = 0.04f;
-                tempText.color = new Color(0f, 0f, 0f);
+                tempText.margin = new Vector4(5f, 5f, 5f, 5f);
+                tempText.fontSize = 20f;
+                tempText.color = Color.black;
 
                 fitter = tempGameObject.AddComponent<ContentSizeFitter>();
                 fitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
@@ -311,9 +317,9 @@ public class IRPlotter : MonoBehaviour
                 tempTranform = tempGameObject.GetComponent<RectTransform>();
                 tempTranform.SetParent(this.transform, false);
                 tempTranform.pivot = new Vector2(0f, 0.5f);
-                tempTranform.anchorMin = new Vector2(0.5f, 0.5f);
-                tempTranform.anchorMax = new Vector2(0.5f, 0.5f);
-                tempTranform.anchoredPosition = new Vector2(0f, alignment);
+                tempTranform.anchorMin = new Vector2(0f, alignment);
+                tempTranform.anchorMax = new Vector2(0f, alignment);
+                tempTranform.anchoredPosition = Vector2.zero;
 
                 numYticks++;
             }
@@ -336,7 +342,7 @@ public class IRPlotter : MonoBehaviour
         {
             float alignment = xTick / durationInSeconds;
             if (alignment >= 1)
-                continue;
+                break;
 
             tempGameObject = new GameObject($"X tick {xTick}s", typeof(RectTransform));
 
@@ -344,8 +350,9 @@ public class IRPlotter : MonoBehaviour
             tempText.text = $"{xTick}s";
             tempText.alignment = TextAlignmentOptions.BaselineJustified;
             tempText.textWrappingMode = TextWrappingModes.NoWrap;
-            tempText.fontSize = 0.04f;
-            tempText.color = new Color(0f, 0f, 0f);
+            tempText.margin = new Vector4(5f, 5f, 5f, 5f);
+            tempText.fontSize = 20f;
+            tempText.color = Color.black;
 
             fitter = tempGameObject.AddComponent<ContentSizeFitter>();
             fitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
@@ -354,19 +361,22 @@ public class IRPlotter : MonoBehaviour
             tempTranform = tempGameObject.GetComponent<RectTransform>();
             tempTranform.SetParent(this.transform, false);
             tempTranform.pivot = new Vector2(0.5f, 0f);
-            tempTranform.anchorMin = new Vector2(0.5f, 0.5f);
-            tempTranform.anchorMax = new Vector2(0.5f, 0.5f);
-            tempTranform.anchoredPosition = new Vector2(alignment, 0f);
+            tempTranform.anchorMin = new Vector2(alignment, 0f);
+            tempTranform.anchorMax = new Vector2(alignment, 0f);
+            tempTranform.anchoredPosition = Vector2.zero;
         }
     }
 
-    private LinePlot AddNewPlot()
+    private LinePlot NewPlot()
     {
         GameObject child = new GameObject($"Line {myPlots.Count + 1}", typeof(RectTransform));
 
         RectTransform tempTranform = child.GetComponent<RectTransform>();
         tempTranform.SetParent(this.transform, false);
-        tempTranform.sizeDelta = new Vector2(1f, 1f);
+        tempTranform.pivot = Vector2.zero;
+        tempTranform.anchorMin = Vector2.zero;
+        tempTranform.anchorMax = Vector2.zero;
+        tempTranform.anchoredPosition = Vector2.zero;
 
         LinePlot lp = child.AddComponent<LinePlot>();
         foreach (float x in xAxis)
@@ -377,43 +387,62 @@ public class IRPlotter : MonoBehaviour
 
     private void PopulatePlots(RACAudioSource[] racSources)
     {
+        // This needs to be done in a separate loop from all of the following,
+        // because the order of source objects does not match their indices.
+        foreach (RACAudioSource thisSource in racSources)
+            myPlots.Add(NewPlot());
+
         foreach (RACAudioSource thisSource in racSources)
         {
+            string sourceName = thisSource.gameObject.name;
             Color sourceColor = Palettes.OkabeIto[thisSource.id % Palettes.OkabeIto.Count];
-            //string sourceName = thisSource.gameObject.name;
 
-            LinePlot lp = AddNewPlot();
-            lp.color = sourceColor;
-            myPlots.Add(lp);
+            // Set the plot line to the correct color.
+            myPlots[thisSource.id].color = sourceColor;
 
-            // TODO: Add a legend label matching the source object's name and color.
-            /*
+            // Add a legend label matching the source object's name.
             GameObject legend = this.transform.parent.Find("Legend").gameObject;
             if (legend == null)
                 Debug.LogError("IRPlotter could not find a sibling named \"Legend\".");
             else
             {
-                GameObject tempGameObject = new GameObject(sourceName + " legend label", typeof(RectTransform));
+                GameObject legendEntry = new GameObject($"{sourceName} legend entry", typeof(RectTransform));
+                legendEntry.transform.SetParent(legend.transform, false);
 
-                TextMeshProUGUI tempText = tempGameObject.AddComponent<TextMeshProUGUI>();
-                tempText.text = sourceName;
-                tempText.alignment = TextAlignmentOptions.MidlineLeft;
-                //tempText.textWrappingMode = TextWrappingModes.NoWrap;
-                tempText.fontSize = 0.03f;
-                tempText.color = new Color(0f, 0f, 0f);
+                HorizontalLayoutGroup row = legendEntry.AddComponent<HorizontalLayoutGroup>();
+                row.childAlignment = TextAnchor.MiddleLeft;
+                row.childControlWidth = true;
+                row.childControlHeight = true;
+                row.childForceExpandWidth = false;
+                row.childForceExpandHeight = false;
+                row.spacing = 6f;
+                row.padding = new RectOffset(6, 6, 6, 6);
 
-                ContentSizeFitter fitter = tempGameObject.AddComponent<ContentSizeFitter>();
-                fitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
-                fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+                GameObject entryIcon = new GameObject($"{sourceName} legend icon", typeof(RectTransform));
+                entryIcon.transform.SetParent(legendEntry.transform, false);
 
-                RectTransform tempTranform = tempGameObject.GetComponent<RectTransform>();
-                tempTranform.SetParent(this.transform, false);
-                tempTranform.pivot = new Vector2(0.5f, 1f);
-                tempTranform.anchorMin = new Vector2(0.5f, 0.5f);
-                tempTranform.anchorMax = new Vector2(0.5f, 0.5f);
-                tempTranform.anchoredPosition = new Vector2(0.5f, 1f);
+                Image iconImage = entryIcon.AddComponent<Image>();
+                iconImage.sprite = Sprite.Create(Texture2D.whiteTexture, new Rect(0f, 0f, 1f, 1f), new Vector2(0.5f, 0.5f));
+                iconImage.color = sourceColor;
+
+                // Lock the icon to a square of the desired size (otherwise its parent HorizontalLayoutGroup will stretch it)
+                LayoutElement iconLE = entryIcon.AddComponent<LayoutElement>();
+                iconLE.preferredWidth = 10f;
+                iconLE.preferredHeight = 10f;
+                iconLE.minWidth = 10f;
+                iconLE.minHeight = 10f;
+
+                GameObject entryLabel = new GameObject($"{sourceName} legend label", typeof(RectTransform));
+                entryLabel.transform.SetParent(legendEntry.transform, false);
+
+                TextMeshProUGUI labelText = entryLabel.AddComponent<TextMeshProUGUI>();
+                labelText.text = sourceName;
+                labelText.alignment = TextAlignmentOptions.MidlineLeft;
+                labelText.textWrappingMode = TextWrappingModes.NoWrap;
+                //labelText.margin = new Vector4(0.01f, 0.005f, 0.01f, 0.005f);
+                labelText.fontSize = 20f;
+                labelText.color = Color.black;
             }
-            */
 
             // Ensure that the source's color matches the line's color.
             foreach (MeshRenderer meshRenderer in thisSource.GetComponentsInChildren<MeshRenderer>())
