@@ -1,7 +1,6 @@
 ﻿using System;
 using System.IO;
 using UnityEngine;
-using static UnityEditor.Experimental.AssetDatabaseExperimental.AssetDatabaseCounters;
 
 public static class WavWriter
 {

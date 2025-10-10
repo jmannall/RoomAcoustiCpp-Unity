@@ -11,7 +11,7 @@ using UnityEngine;
 [AddComponentMenu("RoomAcoustiC++/Debug C++")]
 public class DebugCPP : MonoBehaviour
 {
-#if RAC_Debug && UNITY_EDITOR
+#if RAC_Debug
 
     // global singleton
     public static DebugCPP debug = null;
@@ -26,15 +26,26 @@ public class DebugCPP : MonoBehaviour
 
     void OnValidate()
     {
-        if (debug == null)
-            debug = this;
-        else
-            Debug.AssertFormat(debug == this, "More than one instance of the DebugCPP created! Singleton violated.");
+        //if (debug == null)
+        //    debug = this;
+        //else
+        //    Debug.AssertFormat(debug == this, "More than one instance of the DebugCPP created! Singleton violated.");
+    }
+
+    void OnDisable()
+    {
+        //UnregisterDebugCallback();
+        //UnregisterPathCallback();
     }
 
     // Use this for initialization
     void Awake()
     {
+        if (debug == null)
+            debug = this;
+        else
+            Debug.AssertFormat(debug == this, "More than one instance of the DebugCPP created! Singleton violated.");
+
         RegisterDebugCallback(OnDebugCallback);
         RegisterPathCallback(OnPathCallback);
     }
@@ -50,14 +61,10 @@ public class DebugCPP : MonoBehaviour
         style.normal.textColor = Color.white; // Text color
     }
 
-    void OnDisable()
+    void OnDestroy()
     {
         UnregisterDebugCallback();
         UnregisterPathCallback();
-    }
-
-    void OnDestroy()
-    {
         pathDictionary.Clear();
     }
 
@@ -163,6 +170,7 @@ public class DebugCPP : MonoBehaviour
         pathDictionary[keyString] = vectors;
     }
 
+#if UNITY_EDITOR
     void OnDrawGizmos()
     {
         if (source == null || listenerPosition == null)
@@ -241,5 +249,6 @@ public class DebugCPP : MonoBehaviour
             Handles.Label(path.Value[path.Value.Count - 1], path.Key.Split('s')[1], style);
         }
     }
+#endif
 #endif
 }

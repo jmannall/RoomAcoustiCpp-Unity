@@ -36,11 +36,15 @@ public class PathWalker : MonoBehaviour
 
     void OnValidate()
     {
+        //targetAgent = targetObject.GetComponent<NavMeshAgent>();
+        //GatherChildren();
+    }
+
+    void Awake()
+    {
         targetAgent = targetObject.GetComponent<NavMeshAgent>();
         GatherChildren();
     }
-
-    void Awake() { GatherChildren(); }
 
     void Start()
     {

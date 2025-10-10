@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using UnityEngine;
 using UnityEngine.Networking;
@@ -225,10 +226,20 @@ public class RACManager : MonoBehaviour
             this.maximumPathLength = maximumPathLength;
         }
 
-        public static EarlyConfig Default => new EarlyConfig(
+        public static EarlyConfig Default(int maxOrder) => new EarlyConfig(
             enabled: true,
             direct: DirectSound.Check,
-            reflOrder: 2,
+            reflOrder: maxOrder,
+            diffShadowOrder: maxOrder,
+            diffSpecularOrder: 0,
+            minimumEdgeLength: 0.0f,
+            maximumPathLength: 3f
+        );
+
+        public static EarlyConfig NoReflections => new EarlyConfig(
+            enabled: true,
+            direct: DirectSound.Check,
+            reflOrder: 0,
             diffShadowOrder: 1,
             diffSpecularOrder: 0,
             minimumEdgeLength: 0.0f,
@@ -254,9 +265,19 @@ public class RACManager : MonoBehaviour
         [Tooltip("Minimum reverberation time for each mode. A higher minimum reduces the number of slopes, and hence FDNs, used to model later reverberation.")]
         public float minT60;
 
+        public void SetNumRays(float numRays)
+        {
+            this.numRays = Mathf.Log10(numRays);
+        }
+
         public int GetNumRays()
         {
             return Mathf.RoundToInt(Mathf.Pow(10f, numRays));
+        }
+
+        public void SetMinReverbTime(float minT60)
+        {
+            this.minT60 = Mathf.Log10(minT60);
         }
 
         public float GetMinReverbTime()
@@ -317,7 +338,7 @@ public class RACManager : MonoBehaviour
 
     [Header("Acoustic Model Configuration")]
     [SerializeField]
-    private EarlyConfig earlyConfig = EarlyConfig.Default;
+    private EarlyConfig earlyConfig = EarlyConfig.Default(2);
     [SerializeField]
     private LateConfig lateConfig = LateConfig.Default;
 
@@ -365,14 +386,19 @@ public class RACManager : MonoBehaviour
 
     void OnValidate()
     {
-        if (racManager == null)
-            racManager = this;
-        else
-            Debug.AssertFormat(racManager == this, "More than one instance of the RACManager created! Singleton violated.");
+        //if (racManager == null)
+        //    racManager = this;
+        //else
+        //    Debug.AssertFormat(racManager == this, "More than one instance of the RACManager created! Singleton violated.");
     }
 
     void Awake()
     {
+        if (racManager == null)
+            racManager = this;
+        else
+            Debug.AssertFormat(racManager == this, "More than one instance of the RACManager created! Singleton violated.");
+
         AudioConfiguration config = AudioSettings.GetConfiguration();
         numFrames = config.dspBufferSize;
         sampleRate = config.sampleRate;
@@ -498,13 +524,15 @@ public class RACManager : MonoBehaviour
                         data[i * channels + 1] = outputBuffer[i * numChannels + 1]; // Right channel
                         // Fill the rest of the channels with 0
                         for (int j = numChannels; j < channels; j++)
-                                data[i * channels + j] = 0.0f;
+                            data[i * channels + j] = 0.0f;
                     }
-
                 }
             }
             else // fill output with 0
+            {
+                Debug.LogError("Failed to retrieve audio output buffer");
                 Array.Fill(data, 0.0f);
+            }
         }
     }
 
@@ -658,11 +686,23 @@ public class RACManager : MonoBehaviour
         Profiler.EndSample();
     }
 
+    public static void UpdateLateReverbNumberOfRays(float numRays)
+    {
+        racManager.lateConfig.SetNumRays(numRays);
+        UpdateLateReverbNumberOfRays();
+    }
+
     public static void UpdateMoDARTDelay()
     {
-        Profiler.BeginSample("Update number of rays");
+        Profiler.BeginSample("Update MoDART delay");
         RACUpdateMoDARTDelay(racManager.lateConfig.delay);
         Profiler.EndSample();
+    }
+
+    public static void UpdateMoDARTDelay(float delay)
+    {
+        racManager.lateConfig.delay = delay;
+        UpdateMoDARTDelay();
     }
 
     public static void UpdateMoDARTMinimumReverbTime()
@@ -670,6 +710,12 @@ public class RACManager : MonoBehaviour
         Profiler.BeginSample("Update minimum reverb time");
         RACUpdateMoDARTMinimumReverbTime(racManager.lateConfig.GetMinReverbTime());
         Profiler.EndSample();
+    }
+
+    public static void UpdateMoDARTMinimumReverbTime(float minT60)
+    {
+        racManager.lateConfig.SetMinReverbTime(minT60);
+        UpdateMoDARTMinimumReverbTime();
     }
 
     public static void UpdateSingleFDNReverbTime()

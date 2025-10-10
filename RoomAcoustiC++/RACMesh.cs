@@ -1,7 +1,6 @@
 
 using System.Collections.Generic;
 using System.IO;
-using UnityEditor.Build.Reporting;
 using UnityEngine;
 
 [AddComponentMenu("RoomAcoustiC++/Mesh")]
@@ -41,14 +40,18 @@ public class RACMesh : MonoBehaviour
 
     void OnValidate()
     {
-        if (racMesh == null)
-            racMesh = this;
-        else
-            Debug.AssertFormat(racMesh == this, "More than one instance of the RACMesh created! Singleton violated.");
+        //if (racMesh == null)
+        //    racMesh = this;
+        //else
+        //    Debug.AssertFormat(racMesh == this, "More than one instance of the RACMesh created! Singleton violated.");
     }
 
     void Awake()
     {
+        if (racMesh == null)
+            racMesh = this;
+        else
+            Debug.AssertFormat(racMesh == this, "More than one instance of the RACMesh created! Singleton violated.");
     }
 
     void Start()

@@ -109,14 +109,19 @@ public class RACMeshLoader : MonoBehaviour
 
     void OnValidate()
     {
-        if (racMeshLoader == null)
-            racMeshLoader = this;
-        else
-            Debug.AssertFormat(racMeshLoader == this, "More than one instance of the RACMeshLoader created! Singleton violated.");
+        //if (racMeshLoader == null)
+        //    racMeshLoader = this;
+        //else
+        //    Debug.AssertFormat(racMeshLoader == this, "More than one instance of the RACMeshLoader created! Singleton violated.");
     }
 
     void Awake()
     {
+        if (racMeshLoader == null)
+            racMeshLoader = this;
+        else
+            Debug.AssertFormat(racMeshLoader == this, "More than one instance of the RACMeshLoader created! Singleton violated.");
+    
         // Ensure that the mesh loader has no children, before attempting a fresh load of the mesh.
         for (int i = this.transform.childCount - 1; i >= 0; i--)
 #if UNITY_EDITOR
@@ -389,12 +394,12 @@ public class RACMeshLoader : MonoBehaviour
         PrefabUtility.SaveAsPrefabAsset(meshGameObject, prefabPath);
 #else
         // When using Resources.Load, the path is relative to "Assets/Resources/", and no file extension is needed.
-        string prefabPath = UnityPath("ProcessedPrefabs", sceneName, selectedSubfolder);
+        string prefabPath = UnityPath("ProcessedPrefabs", selectedSceneFolder);
         GameObject prefab = Resources.Load<GameObject>(prefabPath);
         if (!prefab)
             throw new FileNotFoundException($"Runtime prefab not found:\nAssets/Resources/{prefabPath}.prefab");
 
-        meshGameObject = Object.Instantiate(prefab);
+        meshGameObject = UnityEngine.Object.Instantiate(prefab);
 #endif
 
 #if UNITY_ASSERTIONS

@@ -74,6 +74,21 @@ public class IRPlotter : MonoBehaviour
 
     void OnValidate()
     {
+        //DebugCPP.RegisterResidueCallback(OnResidueCallback);
+
+        //if (irPlotter == null)
+        //    irPlotter = this;
+        //else
+        //    Debug.AssertFormat(irPlotter == this, "More than one instance of the IRPlotter created! Singleton violated.");
+    }
+
+    void OnDisable()
+    {
+        //DebugCPP.UnregisterResidueCallback();
+    }
+
+    private void Awake()
+    {
         DebugCPP.RegisterResidueCallback(OnResidueCallback);
 
         if (irPlotter == null)
@@ -82,7 +97,7 @@ public class IRPlotter : MonoBehaviour
             Debug.AssertFormat(irPlotter == this, "More than one instance of the IRPlotter created! Singleton violated.");
     }
 
-    void OnDisable()
+    private void OnDestroy()
     {
         DebugCPP.UnregisterResidueCallback();
     }

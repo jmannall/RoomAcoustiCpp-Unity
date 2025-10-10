@@ -83,15 +83,20 @@ public class IRController : MonoBehaviour
 
     void OnValidate()
     {
-        if (irController == null)
-            irController = this;
-        else
-            Debug.AssertFormat(irController == this, "More than one instance of the IRController created! Singleton violated.");
+        //if (irController == null)
+        //    irController = this;
+        //else
+        //    Debug.AssertFormat(irController == this, "More than one instance of the IRController created! Singleton violated.");
     }
 
     // Start is called before the first frame update
     void Awake()
     {
+        if (irController == null)
+            irController = this;
+        else
+            Debug.AssertFormat(irController == this, "More than one instance of the IRController created! Singleton violated.");
+
         UpdateSceneName();
 
         cubeSize = Mathf.Min(spacing / 2.0f, cubeSize);
