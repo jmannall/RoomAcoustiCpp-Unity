@@ -452,11 +452,9 @@ public class RACMaterialEntry : ScriptableObject
             freqs = RACManager.racManager.GetFrequencyBands();
         else
         {
-#if UNITY_EDITOR
-            var racManagerInstance = UnityEngine.Object.FindAnyObjectByType<RACManager>();
+            RACManager racManagerInstance = FindAnyObjectByType<RACManager>();
             if (racManagerInstance != null)
                 freqs = racManagerInstance.GetFrequencyBands();
-#endif
         }
 
         if (freqs == null)

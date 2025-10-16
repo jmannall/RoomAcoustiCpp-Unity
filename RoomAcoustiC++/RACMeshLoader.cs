@@ -142,24 +142,20 @@ public class RACMeshLoader : MonoBehaviour
             Debug.LogError("Cannot start MeshLoader: it has not been loaded.");
             return;
         }
-        if (RACManager.racManager == null)
+
+        RACManager racManagerInstance;
+        if (Application.isPlaying)
+            racManagerInstance = RACManager.racManager;
+        else
+            racManagerInstance = FindAnyObjectByType<RACManager>();
+
+        if (racManagerInstance == null)
         {
             Debug.LogError("Unable to locate RACManager instance: failed to start RACMeshLoader.");
             return;
         }
 
-        // TODO: Is this old approach still necessary? The way `RACManager.racManager` works has changed slightly.
-        //        if (Application.isPlaying && RACManager.racManager != null)
-        //            targetFreqs = RACManager.racManager.GetFrequencyBands();
-        //        else
-        //        {
-        //#if UNITY_EDITOR
-        //            RACManager racManagerInstance = UnityEngine.Object.FindAnyObjectByType<RACManager>();
-        //            if (racManagerInstance != null)
-        //                targetFreqs = racManagerInstance.GetFrequencyBands();
-        //#endif
-        //        }
-        List<float> targetFreqs = RACManager.racManager.GetFrequencyBands();
+        List<float> targetFreqs = racManagerInstance.GetFrequencyBands();
 
         SendWallsToRAC(targetFreqs);
 
@@ -294,10 +290,16 @@ public class RACMeshLoader : MonoBehaviour
         //LoadIndexingFromMtx();
         //LoadModesFromCsv();
 
-        if (RACManager.racManager == null)
+        RACManager racManagerInstance;
+        if (Application.isPlaying)
+            racManagerInstance = RACManager.racManager;
+        else
+            racManagerInstance = FindAnyObjectByType<RACManager>();
+
+        if (racManagerInstance == null)
             Debug.LogError("Unable to locate RACManager instance: failed to set frequency bands related to the loaded mesh.");
         else
-            RACManager.racManager.SetFrequencyBands(frequencies);
+            racManagerInstance.SetFrequencyBands(frequencies);
 
         return true;
     }
