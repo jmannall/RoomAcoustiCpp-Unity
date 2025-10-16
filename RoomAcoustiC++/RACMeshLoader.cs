@@ -473,22 +473,39 @@ public class RACMeshLoader : MonoBehaviour
         {
             // Read the absorption coefficients (and retrieve the material name).
             tokens = tokenizeLine(lines[(i * 2) + 1]);
-            if (tokens.Length != numFreqBands + 1)
-                throw new InvalidDataException($"Each line of materials.csv should have the same number of elements as the first ({numFreqBands + 1}), but line {(i * 2) + 2} has {tokens.Length}.");
-
-            materialNames[i] = tokens[0];
-            for (int j = 1; j < numFreqBands + 1; j++)
-                absorptions[i, j-1] = ParseF(tokens[j]);
+            if (tokens.Length == numFreqBands + 1)
+            {
+                materialNames[i] = tokens[0];
+                for (int j = 0; j < numFreqBands; j++)
+                    absorptions[i, j] = ParseF(tokens[j+1]);
+            }
+            else if (tokens.Length == 2)
+            {
+                materialNames[i] = tokens[0];
+                for (int j = 0; j < numFreqBands; j++)
+                    absorptions[i, j] = ParseF(tokens[1]);
+            }
+            else
+                throw new InvalidDataException($"Each line of materials.csv should either have two elements, or the same number of elements as the first ({numFreqBands + 1}), but line {(i * 2) + 2} has {tokens.Length}.");
 
             // Read the scattering coefficients (and cross-check the material name).
             tokens = tokenizeLine(lines[(i * 2) + 2]);
-            if (tokens.Length != numFreqBands + 1)
+            if (tokens.Length == numFreqBands + 1)
+            {
+                if (tokens[0] != materialNames[i])
+                    throw new InvalidDataException($"Each scattering coefficient line of materials.csv should have the same material name as the preceding absorption coefficient line, but line {(i * 2) + 3} does not ({tokens[0]} != {materialNames[i]}).");
+                for (int j = 0; j < numFreqBands; j++)
+                    scatterings[i, j] = ParseF(tokens[j + 1]);
+            }
+            else if (tokens.Length == 2)
+            {
+                if (tokens[0] != materialNames[i])
+                    throw new InvalidDataException($"Each scattering coefficient line of materials.csv should have the same material name as the preceding absorption coefficient line, but line {(i * 2) + 3} does not ({tokens[0]} != {materialNames[i]}).");
+                for (int j = 0; j < numFreqBands; j++)
+                    scatterings[i, j] = ParseF(tokens[1]);
+            }
+            else
                 throw new InvalidDataException($"Each line of materials.csv should have the same number of elements as the first ({numFreqBands + 1}), but line {(i * 2) + 3} has {tokens.Length}.");
-            if (tokens[0] != materialNames[i])
-                throw new InvalidDataException($"Each scattering coefficient line of materials.csv should have the same material name as the preceding absorption coefficient line, but line {(i * 2) + 3} does not ({tokens[0]} != {materialNames[i]}).");
-
-            for (int j = 1; j < numFreqBands + 1; j++)
-                scatterings[i, j-1] = ParseF(tokens[j]);
         }
     }
 
