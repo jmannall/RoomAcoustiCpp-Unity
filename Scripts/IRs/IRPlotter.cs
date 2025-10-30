@@ -27,9 +27,9 @@ public class IRPlotter : MonoBehaviour
     private FrequencyBand plottedOctaveBand = FrequencyBand.kHz1;
     private int plottedOctaveBandIdx;
 
-    [SerializeField, Range(-30f, 10f)]
+    [SerializeField, Range(-50f, 50f)]
     private float upperLimit = -10f;
-    [SerializeField, Range(-80f, -40f)]
+    [SerializeField, Range(-100f, 0f)]
     private float lowerLimit = -70f;
 
     [SerializeField]
@@ -125,6 +125,9 @@ public class IRPlotter : MonoBehaviour
 
     void Update()
     {
+        if (upperLimit <= lowerLimit)
+            upperLimit = lowerLimit + 1;
+
         if (!allSourcesRegistered)
         {
             RACAudioSource[] racSources = FindObjectsByType<RACAudioSource>(FindObjectsSortMode.None);
