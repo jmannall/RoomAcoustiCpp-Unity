@@ -413,6 +413,9 @@ public class RACMeshLoader : MonoBehaviour
 
         // Set the mesh as a child of this RACMeshLoader GameObject
         meshGameObject.transform.SetParent(this.transform);
+        // Make child inherit parent's layer (recursively)
+        foreach (Transform t in meshGameObject.GetComponentsInChildren<Transform>())
+            t.gameObject.layer = this.gameObject.layer;
 
         foreach (MeshRenderer render in meshGameObject.GetComponentsInChildren<MeshRenderer>())
             render.enabled = renderAcousticMesh;
