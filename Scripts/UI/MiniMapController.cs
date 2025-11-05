@@ -1,6 +1,6 @@
 ﻿using TMPro;
 using UnityEngine;
-using UnityEngine.EventSystems;
+using UnityEngine.AI;
 
 [RequireComponent(typeof(RectTransform))]
 public class MiniMapController : MonoBehaviour
@@ -60,9 +60,18 @@ public class MiniMapController : MonoBehaviour
                 foreach (TextMeshProUGUI l in sourceLabel)
                     l.fontStyle = FontStyles.Bold;
             }
-            // If a source was being dragged, forget about it.
-            selectedSourceIdx = -1;
-            // Stop to avoid dragging a source OOB.
+
+            // If a source was being dragged, drop it and forget about it.
+            if (selectedSourceIdx >= 0)
+            {
+                // Find the AI agent associated to the source and allow it freedom of movement.
+                StopDragging(racSources[selectedSourceIdx]);
+
+                // Forget about it.
+                selectedSourceIdx = -1;
+            }
+
+            // Do nothing else, because the cursor is OOB.
             return;
         }
 
@@ -106,22 +115,106 @@ public class MiniMapController : MonoBehaviour
                 }
             }
         }
+        else
+        {
+            if (!Input.GetMouseButton(0))
+            {
+                // At the previous frame, the mouse button WAS down, but now it's not.
+                // A source was being dragged, we need to release it.
+
+                // Find the AI agent associated to the source and allow it freedom of movement.
+                // N.B. selectedSourceIdx is known to be nonnegative at this point.
+                StopDragging(racSources[selectedSourceIdx]);
+            }
+        }
 
         if (Input.GetMouseButton(0))
         {
-            // If the mouse button IS down, update the position of the source being dragged.
+            // The source is currently being dragged. Update its position and make sure it does not move on its own.
+
+            // Update the position of the source being dragged.
             Vector3 draggedSourcePosition;
             draggedSourcePosition.x = worldCursorPos.x;
             draggedSourcePosition.z = worldCursorPos.y;
             draggedSourcePosition.y = racSources[selectedSourceIdx].transform.position.y;
-            Quaternion draggedSourceRotation = racSources[selectedSourceIdx].transform.rotation;
-            racSources[selectedSourceIdx].transform.SetPositionAndRotation(draggedSourcePosition, draggedSourceRotation);
+
+            DragSource(racSources[selectedSourceIdx], draggedSourcePosition);
         }
         else
         {
             // If the mouse button is NOT down, forget the selected source. It needs to be refreshed at the next frame.
-            selectedSourceIdx = -1;
             // By contrast, if the mouse button IS down, the selected source will be the same at the next frame.
+            selectedSourceIdx = -1;
         }
+    }
+
+    void DragSource(RACAudioSource draggedSource, Vector3 draggedPosition)
+    {
+        // Find the AI agent associated to the source being dragged, if it has one.
+        NavMeshAgent draggedSourceAgent = draggedSource.GetComponent<NavMeshAgent>();
+
+        if (draggedSourceAgent != null)
+        {
+            // If the source has a NavMeshAgent, don't move it directly, or it will get cranky.
+
+            // Prevent the source from moving while it is dragged.
+            draggedSourceAgent.isStopped = true;
+            draggedSourceAgent.updatePosition = false;
+            draggedSourceAgent.updateRotation = false;
+
+            // Look for the closest valid position (on the NavMesh) to the requested one.
+            NavMeshHit projectionOnNavMesh;
+            if (NavMesh.SamplePosition(draggedPosition,
+                out projectionOnNavMesh, 10, NavMesh.AllAreas))
+            {
+                Debug.Log($"Dragging to {draggedPosition}, projected to {projectionOnNavMesh.position}.");
+
+                // Warp the agent. It will update its internal and external position accordingly.
+                if (!draggedSourceAgent.Warp(projectionOnNavMesh.position))
+                    Debug.LogError("Failed to warp agent to new valid position.");
+            }
+            else
+                Debug.LogError("Failed to find new valid position for the agent.");
+        }
+        else
+            draggedSource.transform.SetPositionAndRotation(draggedPosition, draggedSource.transform.rotation);
+    }
+
+    void StopDragging(RACAudioSource draggedSource)
+    {
+        // Find the AI agent associated to the source being dragged, if it has one.
+        NavMeshAgent draggedSourceAgent = draggedSource.GetComponent<NavMeshAgent>();
+
+        if (draggedSourceAgent == null)
+            return;
+
+        //// The agent's transform was updated forcefully, but its internal position was not.
+        //// Look for the closest valid position (on the NavMesh) to the enforced one.
+        //NavMeshHit projectionOnNavMesh;
+        //if (NavMesh.SamplePosition(draggedSourceAgent.nextPosition,
+        //    out projectionOnNavMesh, 10, NavMesh.AllAreas))
+        //{
+        //    //// Warp the agent, ignoring any "invalid" NavMesh movement while it was dragged.
+        //    //if (draggedSourceAgent.Warp(projectionOnNavMesh.position))
+        //    //{
+        //    //    // Set the agent's destination, so it starts looking for a new one immediately.
+        //    //    draggedSourceAgent.SetDestination(projectionOnNavMesh.position);
+
+        //    //    draggedSourceAgent.isStopped = false;
+        //    //    draggedSourceAgent.updatePosition = true;
+        //    //    draggedSourceAgent.updateRotation = true;
+        //    //}
+        //    //else
+        //    //    Debug.LogError("Failed to warp agent to new valid position.");
+        //}
+        //else
+        //    Debug.LogError("Failed to find new valid position for the agent.");
+
+        draggedSourceAgent.isStopped = false;
+        draggedSourceAgent.updatePosition = true;
+        draggedSourceAgent.updateRotation = true;
+
+        // Set the agent's destination, so it starts looking for a new one immediately.
+        draggedSourceAgent.SetDestination(draggedSourceAgent.nextPosition);
     }
 }
