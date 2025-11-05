@@ -153,31 +153,11 @@ public class MiniMapController : MonoBehaviour
         // Find the AI agent associated to the source being dragged, if it has one.
         NavMeshAgent draggedSourceAgent = draggedSource.GetComponent<NavMeshAgent>();
 
+        // If the source has a NavMeshAgent, disable it during movement or it will get cranky.
         if (draggedSourceAgent != null)
-        {
-            // If the source has a NavMeshAgent, don't move it directly, or it will get cranky.
+            draggedSourceAgent.enabled = false;
 
-            // Prevent the source from moving while it is dragged.
-            draggedSourceAgent.isStopped = true;
-            draggedSourceAgent.updatePosition = false;
-            draggedSourceAgent.updateRotation = false;
-
-            // Look for the closest valid position (on the NavMesh) to the requested one.
-            NavMeshHit projectionOnNavMesh;
-            if (NavMesh.SamplePosition(draggedPosition,
-                out projectionOnNavMesh, 10, NavMesh.AllAreas))
-            {
-                Debug.Log($"Dragging to {draggedPosition}, projected to {projectionOnNavMesh.position}.");
-
-                // Warp the agent. It will update its internal and external position accordingly.
-                if (!draggedSourceAgent.Warp(projectionOnNavMesh.position))
-                    Debug.LogError("Failed to warp agent to new valid position.");
-            }
-            else
-                Debug.LogError("Failed to find new valid position for the agent.");
-        }
-        else
-            draggedSource.transform.SetPositionAndRotation(draggedPosition, draggedSource.transform.rotation);
+        draggedSource.transform.SetPositionAndRotation(draggedPosition, draggedSource.transform.rotation);
     }
 
     void StopDragging(RACAudioSource draggedSource)
@@ -188,33 +168,7 @@ public class MiniMapController : MonoBehaviour
         if (draggedSourceAgent == null)
             return;
 
-        //// The agent's transform was updated forcefully, but its internal position was not.
-        //// Look for the closest valid position (on the NavMesh) to the enforced one.
-        //NavMeshHit projectionOnNavMesh;
-        //if (NavMesh.SamplePosition(draggedSourceAgent.nextPosition,
-        //    out projectionOnNavMesh, 10, NavMesh.AllAreas))
-        //{
-        //    //// Warp the agent, ignoring any "invalid" NavMesh movement while it was dragged.
-        //    //if (draggedSourceAgent.Warp(projectionOnNavMesh.position))
-        //    //{
-        //    //    // Set the agent's destination, so it starts looking for a new one immediately.
-        //    //    draggedSourceAgent.SetDestination(projectionOnNavMesh.position);
-
-        //    //    draggedSourceAgent.isStopped = false;
-        //    //    draggedSourceAgent.updatePosition = true;
-        //    //    draggedSourceAgent.updateRotation = true;
-        //    //}
-        //    //else
-        //    //    Debug.LogError("Failed to warp agent to new valid position.");
-        //}
-        //else
-        //    Debug.LogError("Failed to find new valid position for the agent.");
-
-        draggedSourceAgent.isStopped = false;
-        draggedSourceAgent.updatePosition = true;
-        draggedSourceAgent.updateRotation = true;
-
-        // Set the agent's destination, so it starts looking for a new one immediately.
-        draggedSourceAgent.SetDestination(draggedSourceAgent.nextPosition);
+        draggedSourceAgent.nextPosition = draggedSource.transform.position;
+        draggedSourceAgent.enabled = true;
     }
 }

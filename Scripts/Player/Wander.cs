@@ -27,7 +27,7 @@ public class Wander : MonoBehaviour
     {
         agent = GetComponent<NavMeshAgent>();
 
-        Vector3 newPos = RandomNavSphere(transform.position, wanderRadius, NavMesh.AllAreas, numAttempts);
+        Vector3 newPos = RandomNavSphere(transform.position, wanderRadius, agent.areaMask, numAttempts);
         agent.SetDestination(newPos);
 
         destinationReached = false;
@@ -37,6 +37,10 @@ public class Wander : MonoBehaviour
 
     void Update()
     {
+        // Do nothing if the agent is currently disabled.
+        if (!agent.enabled || agent.isStopped)
+            return;
+
         if (destinationReached)
         {
             // The agent is at a destination.
@@ -54,7 +58,7 @@ public class Wander : MonoBehaviour
             if (timer >= loiterTimer)
             {
                 // After loitering long enough, pick a new destination.
-                Vector3 newPos = RandomNavSphere(transform.position, wanderRadius + 1, NavMesh.AllAreas, numAttempts);
+                Vector3 newPos = RandomNavSphere(transform.position, wanderRadius + 1, agent.areaMask, numAttempts);
                 agent.SetDestination(newPos);
 
                 destinationReached = false;
@@ -62,7 +66,7 @@ public class Wander : MonoBehaviour
         }
         else
         {
-            if (!agent.isStopped && agent.remainingDistance <= 0.1)
+            if (agent.remainingDistance <= 0.1)
             {
                 // If the agent is free to move and is near its destination, prepare to start loitering.
                 destinationReached = true;
