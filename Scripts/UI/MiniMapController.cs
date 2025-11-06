@@ -45,7 +45,7 @@ public class MiniMapController : MonoBehaviour
             foreach (TextMeshProUGUI label in sourceLabels)
             {
                 if (source.IsMuted())
-                    label.color = Color.gray4;
+                    label.color = Color.gray5;
                 else
                     label.color = Color.white;
             }
@@ -117,9 +117,6 @@ public class MiniMapController : MonoBehaviour
                 if (sourceDist > minSourceDist)
                     continue;
 
-                if (!allowMovingNonAgents && racSources[i].GetComponent<NavMeshAgent>() == null)
-                    continue;
-
                 minSourceDist = sourceDist;
                 selectedSourceIdx = i;
             }
@@ -180,7 +177,7 @@ public class MiniMapController : MonoBehaviour
                 foreach (TextMeshProUGUI label in sourceLabels)
                 {
                     if (racSources[selectedSourceIdx].IsMuted())
-                        label.color = Color.gray4;
+                        label.color = Color.gray5;
                     else
                         label.color = Color.white;
                 }
@@ -194,15 +191,7 @@ public class MiniMapController : MonoBehaviour
         if (Input.GetMouseButton(0))
         {
             // The source is currently being dragged. Update its position and make sure it does not move on its own.
-
-            // Update the position of the source being dragged.
-            Vector3 draggedSourcePosition;
-            draggedSourcePosition.x = worldCursorPos.x;
-            draggedSourcePosition.z = worldCursorPos.y;
-            draggedSourcePosition.y = racSources[selectedSourceIdx].transform.position.y;
-
-            DragSource(racSources[selectedSourceIdx], draggedSourcePosition);
-
+            DragSource(racSources[selectedSourceIdx]);
             previousFrameMouseLeft = true;
         }
         else
@@ -215,8 +204,18 @@ public class MiniMapController : MonoBehaviour
         }
     }
 
-    void DragSource(RACAudioSource draggedSource, Vector3 draggedPosition)
+    void DragSource(RACAudioSource draggedSource)
     {
+        // Only update the source's position if it has a NavMeshAgent and/or moving non-agents is allowed.
+        if (!allowMovingNonAgents && racSources[selectedSourceIdx].GetComponent<NavMeshAgent>() == null)
+            return;
+
+        // Update the position of the source being dragged.
+        Vector3 draggedPosition;
+        draggedPosition.x = worldCursorPos.x;
+        draggedPosition.z = worldCursorPos.y;
+        draggedPosition.y = racSources[selectedSourceIdx].transform.position.y;
+
         // Find the AI agent associated to the source being dragged, if it has one.
         NavMeshAgent draggedSourceAgent = draggedSource.GetComponent<NavMeshAgent>();
 

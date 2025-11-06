@@ -17,6 +17,8 @@ public class Wander : MonoBehaviour
 
     [SerializeField, Range(1, 100)]
     public int numAttempts = 30;
+    [SerializeField, Range(0, 2)]
+    public float minEdgeClearance = 1;
 
     private NavMeshAgent agent;
     private float timer;
@@ -27,7 +29,7 @@ public class Wander : MonoBehaviour
     {
         agent = GetComponent<NavMeshAgent>();
 
-        Vector3 newPos = RandomNavSphere(transform.position, wanderRadius, agent.areaMask, numAttempts);
+        Vector3 newPos = RandomNavSphere(transform.position, wanderRadius, agent.areaMask);
         agent.SetDestination(newPos);
 
         destinationReached = false;
@@ -40,6 +42,19 @@ public class Wander : MonoBehaviour
         // Do nothing if the agent is currently disabled.
         if (!agent.enabled || agent.isStopped)
             return;
+
+        if (!agent.isOnNavMesh)
+        {
+            // Something's broken; fix it.
+            NavMeshHit hit;
+            if (NavMesh.SamplePosition(this.transform.position, out hit, 10, agent.areaMask))
+            {
+                if (!agent.Warp(hit.position))
+                    Debug.LogError("Failed to warp agent to a valid position.");
+            }
+            else
+                Debug.LogError("Failed to find a valid position for the agent.");
+        }
 
         if (destinationReached)
         {
@@ -58,7 +73,7 @@ public class Wander : MonoBehaviour
             if (timer >= loiterTimer)
             {
                 // After loitering long enough, pick a new destination.
-                Vector3 newPos = RandomNavSphere(transform.position, wanderRadius + 1, agent.areaMask, numAttempts);
+                Vector3 newPos = RandomNavSphere(transform.position, wanderRadius + 1, agent.areaMask);
                 agent.SetDestination(newPos);
 
                 destinationReached = false;
@@ -75,16 +90,27 @@ public class Wander : MonoBehaviour
         }
     }
 
-    public static Vector3 RandomNavSphere(Vector3 origin, float dist, int layermask, int attempts)
+    public Vector3 RandomNavSphere(Vector3 origin, float dist, int areaMask)
     {
-        for (int i = 0; i < attempts; i++)
+        Vector3 returnedPosition = origin;
+        for (int i = 0; i < numAttempts; i++)
         {
             Vector3 randomPoint = origin + Random.insideUnitSphere * dist;
-            NavMeshHit hit;
-            if (NavMesh.SamplePosition(randomPoint, out hit, dist, layermask))
-                return hit.position;
+            if (NavMesh.SamplePosition(randomPoint, out NavMeshHit hit, dist, areaMask))
+            {
+                // This position is valid, so save it, but...
+                returnedPosition = hit.position;
+                // ...try to find one farther from an edge if possible.
+                if (NavMesh.FindClosestEdge(hit.position, out NavMeshHit edgeHit, areaMask))
+                {
+                    // If it's already far from any edge, stop searching.
+                    if (edgeHit.distance >= minEdgeClearance)
+                        return returnedPosition;
+                    // Otherwise, try a different point (at the next loop).
+                }
+            }
         }
         Debug.LogWarning("Failed to locate a valid destination.");
-        return origin;
+        return returnedPosition;
     }
 }
