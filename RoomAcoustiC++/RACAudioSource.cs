@@ -1,5 +1,6 @@
-using UnityEngine;
 using System;
+using UnityEngine;
+using UnityEngine.Audio;
 
 [AddComponentMenu("RoomAcoustiC++/Audio Source")]
 [RequireComponent(typeof(AudioSource))]
@@ -26,6 +27,10 @@ public class RACAudioSource : MonoBehaviour
     [SerializeField]
     [Tooltip("Play the sound when the component loads.")]
     private bool playOnAwake = false;
+
+    [SerializeField]
+    [Tooltip("Mute the sound (but advance playback) when the component loads.")]
+    private bool muteOnAwake = false;
 
     [SerializeField]
     [Tooltip("Set the source to loop. If loop points are defined in the clip, these will be respected.")]
@@ -61,6 +66,7 @@ public class RACAudioSource : MonoBehaviour
         if (clip != null)
             source.clip = clip;
         source.playOnAwake = playOnAwake;
+        source.mute = muteOnAwake;
         source.loop = loop;
         source.bypassEffects = false;
         source.bypassReverbZones = true;
@@ -180,6 +186,12 @@ public class RACAudioSource : MonoBehaviour
             source.Play();
     }
 
+    public void MuteUnmute()
+    {
+        Debug.Log("Mute Unmute");
+        source.mute = !source.mute;
+    }
+
     public void PlayPause()
     {
         Debug.Log("Play Pause");
@@ -232,6 +244,11 @@ public class RACAudioSource : MonoBehaviour
     public bool IsPlaying()
     {
         return source.isPlaying;
+    }
+
+    public bool IsMuted()
+    {
+        return source.mute;
     }
 
     public void UpdateDirectivity()

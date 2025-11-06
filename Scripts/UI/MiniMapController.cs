@@ -19,9 +19,14 @@ public class MiniMapController : MonoBehaviour
     public float pixelsPerMeter;
     [SerializeField, Range(0, 1000)]
     public int pixelMargin;
+    [SerializeField]
+    public bool allowMovingNonAgents = false;
 
     private RACAudioSource[] racSources;
     private int selectedSourceIdx = -1;
+
+    private bool previousFrameMouseLeft;
+    private bool previousFrameMouseRight;
 
     void Start()
     {
@@ -31,6 +36,23 @@ public class MiniMapController : MonoBehaviour
             mapEventCamera = GetComponentInParent<Canvas>().worldCamera;
 
         racSources = FindObjectsByType<RACAudioSource>(FindObjectsSortMode.None);
+
+        TextMeshProUGUI[] sourceLabels;
+        foreach (RACAudioSource source in racSources)
+        {
+            sourceLabels = source.GetComponentsInChildren<TextMeshProUGUI>();
+
+            foreach (TextMeshProUGUI label in sourceLabels)
+            {
+                if (source.IsMuted())
+                    label.color = Color.gray4;
+                else
+                    label.color = Color.white;
+            }
+        }
+
+        previousFrameMouseLeft = Input.GetMouseButton(0);
+        previousFrameMouseRight = Input.GetMouseButton(1);
     }
 
     void Update()
@@ -52,13 +74,13 @@ public class MiniMapController : MonoBehaviour
         if (!cursorInBounds)
         {
             // The cursor is OOB. Make sure that no source label is underlined.
-            TextMeshProUGUI[] sourceLabel;
-            for (int i = 0; i < racSources.Length; i++)
+            TextMeshProUGUI[] sourceLabels;
+            foreach (RACAudioSource source in racSources)
             {
-                sourceLabel = racSources[i].gameObject.GetComponentsInChildren<TextMeshProUGUI>();
+                sourceLabels = source.GetComponentsInChildren<TextMeshProUGUI>();
 
-                foreach (TextMeshProUGUI l in sourceLabel)
-                    l.fontStyle = FontStyles.Bold;
+                foreach (TextMeshProUGUI label in sourceLabels)
+                    label.fontStyle = FontStyles.Bold;
             }
 
             // If a source was being dragged, drop it and forget about it.
@@ -71,11 +93,15 @@ public class MiniMapController : MonoBehaviour
                 selectedSourceIdx = -1;
             }
 
+            // Treat this as a button release.
+            previousFrameMouseLeft = false;
+            previousFrameMouseRight = false;
+
             // Do nothing else, because the cursor is OOB.
             return;
         }
 
-        if (selectedSourceIdx < 0)
+        if (!previousFrameMouseLeft)
         {
             // At the previous frame, the mouse button was NOT down; we need to update the selected source.
             // Detect the closest source, and underline its label.
@@ -91,6 +117,9 @@ public class MiniMapController : MonoBehaviour
                 if (sourceDist > minSourceDist)
                     continue;
 
+                if (!allowMovingNonAgents && racSources[i].GetComponent<NavMeshAgent>() == null)
+                    continue;
+
                 minSourceDist = sourceDist;
                 selectedSourceIdx = i;
             }
@@ -98,35 +127,69 @@ public class MiniMapController : MonoBehaviour
             if (selectedSourceIdx < 0)
             {
                 Debug.LogWarning("Failed to detect closest source.");
+                previousFrameMouseLeft = false;
+                previousFrameMouseRight = false;
                 return;
             }
 
-            TextMeshProUGUI[] sourceLabel;
+            TextMeshProUGUI[] sourceLabels;
             for (int i = 0; i < racSources.Length; i++)
             {
-                sourceLabel = racSources[i].gameObject.GetComponentsInChildren<TextMeshProUGUI>();
+                sourceLabels = racSources[i].GetComponentsInChildren<TextMeshProUGUI>();
 
-                foreach (TextMeshProUGUI l in sourceLabel)
+                foreach (TextMeshProUGUI label in sourceLabels)
                 {
-                if (i == selectedSourceIdx)
-                    l.fontStyle = FontStyles.Bold | FontStyles.Underline;
-                else
-                    l.fontStyle = FontStyles.Bold;
+                    if (i == selectedSourceIdx)
+                        label.fontStyle = FontStyles.Bold | FontStyles.Underline;
+                    else
+                        label.fontStyle = FontStyles.Bold;
                 }
             }
         }
         else
         {
+            if (selectedSourceIdx < 0)
+            {
+                Debug.LogError("Left mouse remains pressed since previous frame, but no source is selected.");
+                previousFrameMouseLeft = false;
+                previousFrameMouseRight = false;
+                return;
+            }
+
             if (!Input.GetMouseButton(0))
             {
                 // At the previous frame, the mouse button WAS down, but now it's not.
                 // A source was being dragged, we need to release it.
 
                 // Find the AI agent associated to the source and allow it freedom of movement.
-                // N.B. selectedSourceIdx is known to be nonnegative at this point.
                 StopDragging(racSources[selectedSourceIdx]);
             }
+            // If the mouse button WAS down and it still is, no need to do anything here, we'll just keep dragging the selected source.
         }
+
+        if (Input.GetMouseButton(1))
+        {
+            // The right mouse button is pressed.
+            // If it wasn't pressed at the previous frame, toggle the selected source.
+            if (!previousFrameMouseRight && selectedSourceIdx >= 0)
+            {
+                racSources[selectedSourceIdx].MuteUnmute();
+
+                TextMeshProUGUI[] sourceLabels = racSources[selectedSourceIdx].GetComponentsInChildren<TextMeshProUGUI>();
+
+                foreach (TextMeshProUGUI label in sourceLabels)
+                {
+                    if (racSources[selectedSourceIdx].IsMuted())
+                        label.color = Color.gray4;
+                    else
+                        label.color = Color.white;
+                }
+            }
+
+            previousFrameMouseRight = true;
+        }
+        else
+            previousFrameMouseRight = false;
 
         if (Input.GetMouseButton(0))
         {
@@ -139,12 +202,16 @@ public class MiniMapController : MonoBehaviour
             draggedSourcePosition.y = racSources[selectedSourceIdx].transform.position.y;
 
             DragSource(racSources[selectedSourceIdx], draggedSourcePosition);
+
+            previousFrameMouseLeft = true;
         }
         else
         {
             // If the mouse button is NOT down, forget the selected source. It needs to be refreshed at the next frame.
             // By contrast, if the mouse button IS down, the selected source will be the same at the next frame.
+            // N.B.: This must be the last operation in the loop, or it will mess up logic like the right clicks.
             selectedSourceIdx = -1;
+            previousFrameMouseLeft = false;
         }
     }
 
@@ -169,6 +236,7 @@ public class MiniMapController : MonoBehaviour
             return;
 
         draggedSourceAgent.nextPosition = draggedSource.transform.position;
-        draggedSourceAgent.enabled = true;
+        if (UIManager.uiManager.IsWanderingActive())
+            draggedSourceAgent.enabled = true;
     }
 }
