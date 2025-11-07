@@ -19,6 +19,8 @@ enum FrequencyBand
 public class IRPlotter : MonoBehaviour
 {
 #if RAC_Debug
+    [SerializeField, Range(0.1f, 10f)]
+    private float lineThickness = 5f;
     [SerializeField, Range(0.1f, 5f)]
     private float durationInSeconds = 1f;
     [SerializeField, Range(10, 1000)]
@@ -50,6 +52,9 @@ public class IRPlotter : MonoBehaviour
     private List<List<float>> sourceResidues;
     private List<List<float>> listenerResidues;
     private bool allSourcesRegistered = false;
+    // The sources are sorted in alphabetical order.
+    // This translates from RACAudioSource.id to the alphabetical index.
+    private int[] sourceIdToIndex;
 
     // Lock to protect residue data races
     private readonly object residueLock = new();
@@ -209,7 +214,8 @@ public class IRPlotter : MonoBehaviour
                     yValues[i] = plotExtent.height * (yValues[i] - lowerLimit) / (upperLimit - lowerLimit);
                 }
 
-                myPlots[sourceId].SetPlotData(xAxis, yValues);
+                myPlots[sourceIdToIndex[sourceId]].SetPlotData(xAxis, yValues);
+                myPlots[sourceIdToIndex[sourceId]].thickness = lineThickness;
             }
         }
     }
@@ -405,6 +411,18 @@ public class IRPlotter : MonoBehaviour
 
     private void PopulatePlots(RACAudioSource[] racSources)
     {
+        // Sort the sources alphabetically.
+        List<RACAudioSource> sourcesList = new List<RACAudioSource>(racSources);
+        sourcesList.Sort((a, b) => string.CompareOrdinal(a.gameObject.name, b.gameObject.name));
+        racSources = sourcesList.ToArray();
+        // Build mapping from source ID to alphabetical index.
+        sourceIdToIndex = new int[numRegisteredSources];
+        for (int i = 0; i < racSources.Length; i++)
+            sourceIdToIndex[racSources[i].id] = i;
+
+        Debug.Log(racSources.ToString());
+        Debug.Log(sourceIdToIndex.ToString());
+
         // This needs to be done in a separate loop from all of the following,
         // because the order of source objects does not match their indices.
         foreach (RACAudioSource thisSource in racSources)
@@ -434,26 +452,45 @@ public class IRPlotter : MonoBehaviour
                 vlg.childForceExpandWidth = false;
                 vlg.childForceExpandHeight = false;
 
+                // Add a title to the column, specifying line style. Easier than dashed legend entry icons.
+                GameObject columnTitle = new GameObject($"Legend column {i + 1} title", typeof(RectTransform));
+                columnTitle.transform.SetParent(column.transform, false);
+
+                TextMeshProUGUI labelText = columnTitle.AddComponent<TextMeshProUGUI>();
+                labelText.alignment = TextAlignmentOptions.TopLeft;
+                labelText.textWrappingMode = TextWrappingModes.NoWrap;
+                labelText.fontSize = 20f;
+                labelText.color = Color.black;
+                if (i == 0)
+                    labelText.text = "Solid line";
+                else
+                    labelText.text = $"Dash spacing {i}";
+                // Make sure all titles have the same height.
+                LayoutElement le = columnTitle.AddComponent<LayoutElement>();
+                le.minHeight = 24f;
+
                 legendColumns[i] = column.transform;
             }
         }
 
         foreach (RACAudioSource thisSource in racSources)
         {
+            int legendIdx = sourceIdToIndex[thisSource.id];
+
             string sourceName = thisSource.gameObject.name;
-            Color sourceColor = Palettes.OkabeIto[thisSource.id % Palettes.OkabeIto.Count];
+            Color sourceColor = Palettes.OkabeIto[legendIdx % Palettes.OkabeIto.Count];
 
             // Set the plot line to the correct color.
-            myPlots[thisSource.id].color = sourceColor;
+            myPlots[legendIdx].color = sourceColor;
             // Note: this is a "floored" integer division.
-            int paletteLoop = thisSource.id / Palettes.OkabeIto.Count;
+            int paletteLoop = legendIdx / Palettes.OkabeIto.Count;
             // 1, 2, 4, ... (integer power of 2 https://stackoverflow.com/a/31176751)
-            myPlots[thisSource.id].dashStride = 1 << paletteLoop;
+            myPlots[legendIdx].dashStride = 1 << paletteLoop;
             // 1, 1, 2, 4, ...
             if (paletteLoop == 0)
-                myPlots[thisSource.id].dashLength = 1;
+                myPlots[legendIdx].dashLength = 1;
             else
-                myPlots[thisSource.id].dashLength = 1 << (paletteLoop-1);
+                myPlots[legendIdx].dashLength = 1 << (paletteLoop-1);
 
             // Add a legend label matching the source object's name.
             if (legend != null)
