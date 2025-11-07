@@ -25,6 +25,8 @@ public class LinePlot : MaskableGraphic
 {
     public List<Vector2> points = new();
 
+    public int dashStride = 1;
+    public int dashLength = 1;
     public float thickness = 7f;
 
     protected override void OnPopulateMesh(VertexHelper vh)
@@ -34,10 +36,16 @@ public class LinePlot : MaskableGraphic
         if (points.Count < 2)
             return;
 
+        Color c;
         for (int i = 0; i < points.Count - 1; i++)
         {
+            if (i % dashStride < dashLength)
+                c = this.color;
+            else
+                c = Color.clear;
+
             // Create a line segment between the next two points
-            CreateLineSegment(points[i], points[i + 1], vh);
+            CreateLineSegment(points[i], points[i + 1], vh, c);
 
             int index = i * 5;
 
@@ -62,11 +70,11 @@ public class LinePlot : MaskableGraphic
     /// <param name="point1">The starting point of the segment</param>
     /// <param name="point2">The endint point of the segment</param>
     /// <param name="vh">The vertex helper that the segment is added to</param>
-    private void CreateLineSegment(Vector3 point1, Vector3 point2, VertexHelper vh)
+    private void CreateLineSegment(Vector3 point1, Vector3 point2, VertexHelper vh, Color c)
     {
         // Create vertex template
         UIVertex vertex = UIVertex.simpleVert;
-        vertex.color = color;
+        vertex.color = c;
 
         // Create the start of the segment
         Quaternion point1Rotation = Quaternion.Euler(0, 0, RotatePointTowards(point1, point2) + 90);

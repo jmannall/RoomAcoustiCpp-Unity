@@ -410,6 +410,36 @@ public class IRPlotter : MonoBehaviour
         foreach (RACAudioSource thisSource in racSources)
             myPlots.Add(NewPlot());
 
+        GameObject legend = this.transform.parent.Find("Legend").gameObject;
+        if (legend == null)
+            Debug.LogError("IRPlotter could not find a sibling named \"Legend\".");
+
+        Transform[] legendColumns = null;
+        // Note: this is a "floored" integer division.
+        int numPaletteLoops = 1 + ((racSources.Length - 1) / Palettes.OkabeIto.Count);
+        if (legend != null)
+        {
+            // The legend needs more than one column.
+            HorizontalLayoutGroup columnsGroup = legend.AddComponent<HorizontalLayoutGroup>();
+            // Create as many columns as there are palette loops.
+            legendColumns = new Transform[numPaletteLoops];
+            for (int i = 0; i < numPaletteLoops; ++i)
+            {
+                GameObject column = new GameObject($"Legend column {i + 1}", typeof(RectTransform));
+                column.transform.SetParent(legend.transform, false);
+
+                // Stack entries in each column vertically.
+                VerticalLayoutGroup vlg = column.AddComponent<VerticalLayoutGroup>();
+                vlg.childAlignment = TextAnchor.UpperLeft;
+                vlg.childControlWidth = true;
+                vlg.childControlHeight = true;
+                vlg.childForceExpandWidth = false;
+                vlg.childForceExpandHeight = false;
+
+                legendColumns[i] = column.transform;
+            }
+        }
+
         foreach (RACAudioSource thisSource in racSources)
         {
             string sourceName = thisSource.gameObject.name;
@@ -417,15 +447,22 @@ public class IRPlotter : MonoBehaviour
 
             // Set the plot line to the correct color.
             myPlots[thisSource.id].color = sourceColor;
+            // Note: this is a "floored" integer division.
+            int paletteLoop = thisSource.id / Palettes.OkabeIto.Count;
+            // 1, 2, 4, ... (integer power of 2 https://stackoverflow.com/a/31176751)
+            myPlots[thisSource.id].dashStride = 1 << paletteLoop;
+            // 1, 1, 2, 4, ...
+            if (paletteLoop == 0)
+                myPlots[thisSource.id].dashLength = 1;
+            else
+                myPlots[thisSource.id].dashLength = 1 << (paletteLoop-1);
 
             // Add a legend label matching the source object's name.
-            GameObject legend = this.transform.parent.Find("Legend").gameObject;
-            if (legend == null)
-                Debug.LogError("IRPlotter could not find a sibling named \"Legend\".");
-            else
+            if (legend != null)
             {
                 GameObject legendEntry = new GameObject($"{sourceName} legend entry", typeof(RectTransform));
-                legendEntry.transform.SetParent(legend.transform, false);
+                // Assign to the appropriate legend column (even if there is only 1, because it holds the vertical layout group).
+                legendEntry.transform.SetParent(legendColumns[paletteLoop], false);
 
                 HorizontalLayoutGroup row = legendEntry.AddComponent<HorizontalLayoutGroup>();
                 row.childAlignment = TextAnchor.MiddleLeft;
