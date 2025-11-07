@@ -419,8 +419,6 @@ public class IRPlotter : MonoBehaviour
         int numPaletteLoops = 1 + ((racSources.Length - 1) / Palettes.OkabeIto.Count);
         if (legend != null)
         {
-            // The legend needs more than one column.
-            HorizontalLayoutGroup columnsGroup = legend.AddComponent<HorizontalLayoutGroup>();
             // Create as many columns as there are palette loops.
             legendColumns = new Transform[numPaletteLoops];
             for (int i = 0; i < numPaletteLoops; ++i)
