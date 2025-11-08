@@ -45,8 +45,8 @@ public class IRPlotter : MonoBehaviour
     private List<float> xAxis;
     private List<LinePlot> myPlots;
 
-    private List<int> slopeBandIdxs;
-    private List<float> slopeT60s;
+    private List<int> slopeBandIdxs = null;
+    private List<float> slopeT60s = null;
 
     private int numRegisteredSources = 0;
     private List<List<float>> sourceResidues;
@@ -150,6 +150,12 @@ public class IRPlotter : MonoBehaviour
             numRegisteredSources = racSources.Length;
 
             PopulatePlots(racSources);
+        }
+
+        if (slopeT60s == null)
+        {
+            Debug.LogError("Slopes have not been initialized!");
+            return;
         }
 
         List<float> yValues;
