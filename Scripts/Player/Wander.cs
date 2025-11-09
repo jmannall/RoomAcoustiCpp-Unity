@@ -56,6 +56,13 @@ public class Wander : MonoBehaviour
                 Debug.LogError("Failed to find a valid position for the agent.");
         }
 
+        // After some drag-and-drop movements, the agent may be confused.
+        if (!agent.pathPending && !agent.hasPath)
+        {
+            destinationReached = true;
+            loiterTimer = 0;
+        }
+
         if (destinationReached)
         {
             // The agent is at a destination.

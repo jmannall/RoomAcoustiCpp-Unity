@@ -426,9 +426,6 @@ public class IRPlotter : MonoBehaviour
         for (int i = 0; i < racSources.Length; i++)
             sourceIdToIndex[racSources[i].id] = i;
 
-        Debug.Log(racSources.ToString());
-        Debug.Log(sourceIdToIndex.ToString());
-
         // This needs to be done in a separate loop from all of the following,
         // because the order of source objects does not match their indices.
         foreach (RACAudioSource thisSource in racSources)
