@@ -257,7 +257,7 @@ public class RACManager : MonoBehaviour
         [Tooltip("Number of rays used for MoD-ART energy injection and detection.")]
         public float numRays;
 
-        [Range(0.0f, 0.1f)]
+        [Range(0.0f, 0.5f)]
         [Tooltip("Delay preceding the late reverberation component, in seconds.")]
         public float delay;
 

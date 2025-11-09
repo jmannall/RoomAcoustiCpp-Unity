@@ -303,7 +303,10 @@ public class IRController : MonoBehaviour
         int idx = 0;
         foreach (var config in lateConfigs)
         {
-            // RACManager.UpdateMoDARTLateConfig(config);
+            RACManager.EnableLateReverb(config.enabled);
+            RACManager.UpdateLateReverbNumberOfRays(config.numRays);
+            RACManager.UpdateMoDARTDelay(config.delay);
+            RACManager.UpdateMoDARTMinimumReverbTime(config.minT60);
             lateConfigName = idx.ToString();
             idx++;
             yield return null; // Pause and resume in the next frame
