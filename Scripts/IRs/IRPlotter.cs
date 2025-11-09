@@ -269,9 +269,9 @@ public class IRPlotter : MonoBehaviour
 
         TextMeshProUGUI tempText = tempGameObject.AddComponent<TextMeshProUGUI>();
         if ((int)plottedOctaveBand < 1000)
-            tempText.text = $"EDC ({(int)plottedOctaveBand}Hz octave band)";
+            tempText.text = $"Energy decay curves ({(int)plottedOctaveBand}Hz octave band)";
         else
-            tempText.text = $"EDC ({(int)plottedOctaveBand/1000}kHz octave band)";
+            tempText.text = $"Energy decay curves ({(int)plottedOctaveBand/1000}kHz octave band)";
         tempText.alignment = TextAlignmentOptions.CaplineJustified;
         tempText.textWrappingMode = TextWrappingModes.NoWrap;
         //tempText.margin = new Vector4(5f, 5f, 5f, 5f);
