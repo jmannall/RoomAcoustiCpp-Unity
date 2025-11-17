@@ -235,7 +235,6 @@ public class MiniMapController : MonoBehaviour
             return;
 
         draggedSourceAgent.nextPosition = draggedSource.transform.position;
-        if (UIManager.uiManager.IsWanderingActive())
-            draggedSourceAgent.enabled = true;
+        draggedSourceAgent.enabled = true;
     }
 }

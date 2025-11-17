@@ -42,7 +42,11 @@ public class Wander : MonoBehaviour
         // Do nothing if the agent is currently disabled.
         if (!agent.enabled || agent.isStopped)
             return;
+        // Do nothing if wandering is disabled altogether.
+        if (!UIManager.uiManager.IsWanderingActive())
+            return;
 
+        // Sometimes the agents get disconnected from the NavMesh...
         if (!agent.isOnNavMesh)
         {
             // Something's broken; fix it.
