@@ -93,6 +93,9 @@ public class RACAudioSource : MonoBehaviour
         if (id < 0)
             return;
 
+        if (RACManager.racManager == null)
+            return;
+
         RACManager.UpdateSource(id, transform.position, transform.rotation);
         linGain = UpdateLinearGain();
 
@@ -108,7 +111,7 @@ public class RACAudioSource : MonoBehaviour
     {
         if (RACManager.racManager == null)
             Debug.LogError("RACManager is null");
-        if (RACManager.racManager.isRunning)
+        else if (RACManager.racManager.isRunning)
         {
             if (isRunning && isPlaying)
             {

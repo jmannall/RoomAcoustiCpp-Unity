@@ -43,7 +43,7 @@ public class Wander : MonoBehaviour
         if (!agent.enabled || agent.isStopped)
             return;
         // Do nothing if wandering is disabled altogether.
-        if (!UIManager.uiManager.IsWanderingActive())
+        if (UIManager.uiManager != null && !UIManager.uiManager.IsWanderingActive())
             return;
 
         // Sometimes the agents get disconnected from the NavMesh...
