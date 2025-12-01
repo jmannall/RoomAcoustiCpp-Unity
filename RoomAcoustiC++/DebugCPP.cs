@@ -18,6 +18,7 @@ public class DebugCPP : MonoBehaviour
 
     static string debug_string = " ";
     private static Dictionary<string, List<Vector3>> pathDictionary = new Dictionary<string, List<Vector3>>();
+    private readonly object pathLock = new();
 
     public RACAudioSource source;
     private Transform listenerPosition;
@@ -153,7 +154,10 @@ public class DebugCPP : MonoBehaviour
 
         if (intersectionsSize == 0)
         {
-            pathDictionary.Remove(keyString);
+            lock (debug.pathLock)
+            {
+                pathDictionary.Remove(keyString);
+            }
             return;
         }
 
@@ -167,16 +171,25 @@ public class DebugCPP : MonoBehaviour
         for (int i = 0; i < floatArray.Length; i += 3)
             vectors.Add(new Vector3(floatArray[i], floatArray[i + 1], floatArray[i + 2]));
 
-        pathDictionary[keyString] = vectors;
+        lock (debug.pathLock)
+        {
+            pathDictionary[keyString] = vectors;
+        }
     }
 
 #if UNITY_EDITOR
     void OnDrawGizmos()
     {
-        if (source == null || listenerPosition == null)
+        if (debug == null)
+            return;
+        if (debug.source == null || listenerPosition == null)
             return;
 
-        Dictionary<string, List<Vector3>> localPathDictionary = new Dictionary<string, List<Vector3>>(pathDictionary);
+        Dictionary<string, List<Vector3>> localPathDictionary;
+        lock (debug.pathLock)
+        {
+            localPathDictionary = new Dictionary<string, List<Vector3>>(pathDictionary);
+        }
 
         foreach (var path in localPathDictionary)
         {
@@ -212,11 +225,8 @@ public class DebugCPP : MonoBehaviour
                 continue;
             }
 
-            if (!path.Key.Contains(source.id.ToString() + 's'))
-            {
-                pathDictionary.Remove(path.Key);
+            if (!path.Key.StartsWith(debug.source.id.ToString() + 's'))
                 continue;
-            }
 
             if (path.Key.Contains('r'))
             {
@@ -234,7 +244,7 @@ public class DebugCPP : MonoBehaviour
                 continue;
             }
 
-            Gizmos.DrawLine(source.transform.position, path.Value[0]);
+            Gizmos.DrawLine(debug.source.transform.position, path.Value[0]);
             Vector3[] pathWithoutLast = path.Value.ToArray();
             Array.Resize(ref pathWithoutLast, pathWithoutLast.Length - 1);
             Gizmos.DrawLineStrip(pathWithoutLast, false);
