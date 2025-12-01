@@ -1,38 +1,169 @@
+using System;
+using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
 [RequireComponent(typeof(RectTransform))]
-public class MinimapClickHandler : MonoBehaviour, IPointerClickHandler
+public class MinimapClickHandler : MonoBehaviour, IPointerClickHandler, IBeginDragHandler, IDragHandler, IEndDragHandler
 {
+    public enum MapEventType { Click, BeginDrag, Drag, EndDrag }
+
     [SerializeField]
     private XRMinimapController minimapController;
 
-    public void OnPointerClick(PointerEventData eventData)
+    [SerializeField]
+    [Tooltip("Width of the minimap (including left and right margins), in meters.")]
+    private float widthInMeters;
+    [SerializeField]
+    [Tooltip("Height of the minimap (including top and bottom margins), in meters.")]
+    private float heightInMeters;
+    [SerializeField]
+    [Tooltip("Margin below the minimap, in meters.")]
+    private float bottomMarginInMeters;
+    [SerializeField]
+    [Tooltip("Margin to the left of the minimap, in meters.")]
+    private float leftMarginInMeters;
+    [SerializeField]
+    [Tooltip("Margin above the minimap, in meters.")]
+    private float topMarginInMeters;
+    [SerializeField]
+    [Tooltip("Margin to the right of the minimap, in meters.")]
+    private float rightMarginInMeters;
+
+    [SerializeField]
+    private TextMeshProUGUI debugText;
+
+    public void OnPointerClick(PointerEventData eventData) { HandleEvent(eventData, MapEventType.Click); }
+
+    public void OnBeginDrag(PointerEventData eventData) { HandleEvent(eventData, MapEventType.BeginDrag); }
+
+    public void OnDrag(PointerEventData eventData) { HandleEvent(eventData, MapEventType.Drag); }
+
+    public void OnEndDrag(PointerEventData eventData) { HandleEvent(eventData, MapEventType.EndDrag); }
+
+    private void HandleEvent(PointerEventData eventData, MapEventType type)
+    {
+        Vector2 worldCoords = GetWorldCoordinates(eventData);
+
+        if (debugText != null)
+        {
+            string text;
+            switch (type)
+            {
+                case MapEventType.Click:
+                    text = "New OnPointerClick event.";
+                    break;
+                case MapEventType.BeginDrag:
+                    text = "New OnPointerClick event.";
+                    break;
+                case MapEventType.Drag:
+                    text = "New OnPointerClick event.";
+                    break;
+                case MapEventType.EndDrag:
+                    text = "New OnPointerClick event.";
+                    break;
+                default:
+                    text = "New event (unrecognized type).";
+                    break;
+            }
+            text += BuildDebugMessage(eventData);
+            text += "\nrectCoords " + worldCoords.ToString();
+
+            debugText.text = text;
+            //Debug.Log(text);
+        }
+
+        // If a Drag event is going out of bounds, count it as an EndDrag event instead.
+        // This will result in the source being dropped at the position of the latest valid Drag event.
+        if (type == MapEventType.Drag &&
+            (worldCoords.x < 0 || worldCoords.x > widthInMeters - (leftMarginInMeters + rightMarginInMeters) ||
+             worldCoords.y < 0 || worldCoords.y > heightInMeters - (bottomMarginInMeters + topMarginInMeters)))
+            type = MapEventType.EndDrag;
+
+        minimapController.RegisterEvent(eventData, type, worldCoords);
+    }
+
+    // Returns Vector2.positiveInfinity if the coordinates are bad for any reason.
+    private Vector2 GetWorldCoordinates(PointerEventData eventData)
     {
         RectTransform minimapRect = GetComponent<RectTransform>();
         if (minimapRect == null)
-            return;
+            return Vector2.positiveInfinity;
 
-        Camera cam;
-        if (eventData.pressEventCamera != null)
-            cam = eventData.pressEventCamera;
-        else
+        Camera cam = eventData.pressEventCamera;
+        if (cam == null)
             cam = eventData.enterEventCamera;
         if (cam == null)
-            return;
+            return Vector2.positiveInfinity;
 
-        Vector2 localCursor;
+        Vector2 rectCoords;
         if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(
-            minimapRect, eventData.position, cam, out localCursor))
-            return;
+            minimapRect, eventData.position, cam, out rectCoords))
+            return Vector2.positiveInfinity;
 
-        Vector2 pixelCoords = new Vector2(
-            localCursor.x - minimapRect.rect.xMin,
-            localCursor.y - minimapRect.rect.yMin
-        );
+        rectCoords.x -= minimapRect.rect.x;
+        rectCoords.y -= minimapRect.rect.y;
+        rectCoords.x /= minimapRect.rect.size.x;
+        rectCoords.y /= minimapRect.rect.size.y;
 
-        Debug.Log($"MinimapClickHandler detected Canvas click at {pixelCoords}.");
+        Vector2 worldCoords;
+        worldCoords.x = rectCoords.x * widthInMeters - leftMarginInMeters;
+        worldCoords.y = rectCoords.y * heightInMeters - bottomMarginInMeters;
 
-        minimapController.RegisterClick(pixelCoords);
+        return worldCoords;
+    }
+
+    private string BuildDebugMessage(PointerEventData eventData)
+    {
+        string text = "";
+        try
+        {
+            text += "\neventData.button " + eventData.button.ToString();
+        }
+        catch (Exception e)
+        {
+            text += "\neventData.button " + e.ToString();
+        }
+        try
+        {
+            text += "\neventData.dragging " + eventData.dragging.ToString();
+        }
+        catch (Exception e)
+        {
+            text += "\neventData.dragging " + e.ToString();
+        }
+        try
+        {
+            text += "\neventData.pointerDrag " + eventData.pointerDrag.ToString();
+        }
+        catch (Exception e)
+        {
+            text += "\neventData.pointerDrag " + e.ToString();
+        }
+        try
+        {
+            text += "\neventData.pointerPress " + eventData.pointerPress.ToString();
+        }
+        catch (Exception e)
+        {
+            text += "\neventData.pointerPress " + e.ToString();
+        }
+        try
+        {
+            text += "\neventData.position " + eventData.position.ToString();
+        }
+        catch (Exception e)
+        {
+            text += "\neventData.position " + e.ToString();
+        }
+        try
+        {
+            text += "\neventData.pressPosition " + eventData.pressPosition.ToString();
+        }
+        catch (Exception e)
+        {
+            text += "\neventData.pressPosition " + e.ToString();
+        }
+        return text;
     }
 }
