@@ -1,4 +1,5 @@
 using TMPro;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.AI;
 using UnityEngine.EventSystems;
@@ -10,7 +11,11 @@ public class XRMinimapController : MonoBehaviour
      * Code adapted from
      * https://blog.yarsalabs.com/real-world-position-from-a-minimap-in-unity/
      */
+    // global singleton
+    public static XRMinimapController xrMinimapController = null;
 
+    [SerializeField]
+    private GameObject plotObject;
     [SerializeField]
     private GameObject minimapObject;
 
@@ -18,16 +23,31 @@ public class XRMinimapController : MonoBehaviour
     public InputActionAsset inputActions;
     private InputActionMap uiActionMap;
 
-    [SerializeField]
-    [Tooltip("Hand in front of which the minimap gets summoned.")]
-    private Transform summoningHand;
+    [Range(1, 3)]
+    public int maxReflOrder = 3;
+    private int currentReflOrder = 2; // Note: default init value used if earlyReflectionsStartActive.
 
-    [SerializeField, Range(0.0f, 2.0f)]
-    [Tooltip("Distance between the hand and the summoned minimap.")]
-    private float summonDistance = 0.5f;
-
+    private InputAction togglePlot;
     private InputAction toggleMinimap;
+    private InputAction toggleWandering;
+    private InputAction increaseEarlyReflections;
+    private InputAction decreaseEarlyReflections;
     private InputAction muteSelectedSource;
+    private InputAction quitApplication;
+
+    [SerializeField]
+    public bool plotStartsActive = false;
+    [SerializeField]
+    public bool minimapStartsActive = true;
+    [SerializeField]
+    public bool wanderingStartsActive = true;
+    [SerializeField]
+    public bool earlyReflectionsStartActive = true;
+
+    [SerializeField]
+    private TextMeshProUGUI earlyReflectionsText;
+
+    private bool wanderingIsActive = true;
 
     private RACAudioSource[] racSources;
     private int selectedSourceIdx = -1;
@@ -38,38 +58,158 @@ public class XRMinimapController : MonoBehaviour
 
     private void Awake()
     {
+        if (xrMinimapController == null)
+            xrMinimapController = this;
+        else
+            Debug.AssertFormat(xrMinimapController == this, "More than one instance of the XRMinimapController created! Singleton violated.");
+
         uiActionMap = inputActions.FindActionMap("UI");
         uiActionMap.Enable();
-
-        if (summoningHand == null)
-            Debug.LogError("Summoning hand transform not provided.");
-        if (minimapObject == null)
-            Debug.LogError("Minimap object not provided.");
     }
 
     private void Start()
     {
+        togglePlot = uiActionMap["TogglePlot"];
+        togglePlot.performed += context => TogglePlot();
+
         toggleMinimap = uiActionMap["ToggleMinimap"];
         toggleMinimap.performed += context => ToggleMinimap();
 
+        toggleWandering = uiActionMap["ToggleWandering"];
+        toggleWandering.performed += context => ToggleWandering();
+
+        increaseEarlyReflections = uiActionMap["IncreaseEarlyReflections"];
+        increaseEarlyReflections.performed += context => IncreaseEarlyReflections();
+
+        decreaseEarlyReflections = uiActionMap["DecreaseEarlyReflections"];
+        decreaseEarlyReflections.performed += context => DecreaseEarlyReflections();
+
         muteSelectedSource = uiActionMap["MuteSelectedSource"];
         muteSelectedSource.performed += context => MuteSelectedSource();
+
+        quitApplication = uiActionMap["QuitApplication"];
+        quitApplication.performed += context => QuitApplication();
 
         racSources = FindObjectsByType<RACAudioSource>(FindObjectsSortMode.None);
 
         if (racSources.Length > 0)
             selectedSourceIdx = 0;
 
+        if (plotObject == null)
+            Debug.LogWarning("Plot object not provided.");
+        else
+        {
+            if (plotStartsActive != plotObject.activeSelf)
+                TogglePlot();
+        }
+
+        if (minimapObject == null)
+            Debug.LogWarning("Minimap object not provided.");
+        else
+        {
+            if (minimapStartsActive != minimapObject.activeSelf)
+                ToggleMinimap();
+        }
+
+        if (wanderingStartsActive)
+        {
+            wanderingIsActive = true;
+            EnableWandering();
+        }
+        else
+        {
+            wanderingIsActive = false;
+            DisableWandering();
+        }
+
+        if (earlyReflectionsStartActive)
+            SetEarlyReflections(currentReflOrder); // Note: this uses the default init value defined above.
+        else
+            SetEarlyReflections(0);
+
         RefreshLabelStyles();
     }
 
-    public void MoveMinimap() {
-        minimapObject.transform.position = summoningHand.position + summonDistance * summoningHand.forward;
+    public void TogglePlot()
+    {
+        if (plotObject != null)
+            plotObject.SetActive(!plotObject.activeSelf);
     }
 
     public void ToggleMinimap() {
         // TODO: If far from user and/or out of sight, move in front of user before reactivating?
-        minimapObject.SetActive(!minimapObject.activeSelf);
+        if (minimapObject != null)
+            minimapObject.SetActive(!minimapObject.activeSelf);
+    }
+
+    void ToggleWandering()
+    {
+        if (wanderingIsActive)
+            DisableWandering();
+        else
+            EnableWandering();
+    }
+
+    void DisableWandering()
+    {
+        foreach (RACAudioSource source in racSources)
+        {
+            NavMeshAgent sourceAgent = source.GetComponent<NavMeshAgent>();
+            if (sourceAgent != null)
+                sourceAgent.isStopped = true;
+        }
+
+        wanderingIsActive = false;
+    }
+
+    void EnableWandering()
+    {
+        foreach (RACAudioSource source in racSources)
+        {
+            NavMeshAgent sourceAgent = source.GetComponent<NavMeshAgent>();
+            if (sourceAgent != null)
+                sourceAgent.isStopped = false;
+        }
+
+        wanderingIsActive = true;
+    }
+
+    public bool IsWanderingActive() { return wanderingIsActive; }
+
+    void IncreaseEarlyReflections() { SetEarlyReflections(currentReflOrder + 1); }
+    void DecreaseEarlyReflections() { SetEarlyReflections(currentReflOrder - 1); }
+
+    void SetEarlyReflections(int order)
+    {
+        if (order < 0 || order > maxReflOrder)
+            return;
+
+        if (order == 0)
+            RACManager.UpdateEarlyConfig(RACManager.EarlyConfig.NoReflections);
+        else
+            RACManager.UpdateEarlyConfig(RACManager.EarlyConfig.Default(order));
+
+        switch (order)
+        {
+            // These are calibrated for the museum scene (approx.)
+            default:
+            case 0:
+                RACManager.UpdateMoDARTDelay(0.0f);
+                break;
+            case 1:
+                RACManager.UpdateMoDARTDelay(0.025f);
+                break;
+            case 2:
+                RACManager.UpdateMoDARTDelay(0.05f);
+                break;
+            case 3:
+                RACManager.UpdateMoDARTDelay(0.075f);
+                break;
+        }
+        if (earlyReflectionsText != null)
+            earlyReflectionsText.text = "Early reflection order: " + order.ToString();
+
+        currentReflOrder = order;
     }
 
     public void MuteSelectedSource()
@@ -78,6 +218,15 @@ public class XRMinimapController : MonoBehaviour
             return;
         racSources[selectedSourceIdx].MuteUnmute();
         RefreshLabelStyles();
+    }
+
+    void QuitApplication()
+    {
+#if UNITY_EDITOR
+        EditorApplication.ExitPlaymode();
+#else
+        Application.Quit();
+#endif
     }
 
     public void RefreshLabelStyles()
