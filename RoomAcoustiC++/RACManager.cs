@@ -156,9 +156,6 @@ public class RACManager : MonoBehaviour
     [DllImport(DLLNAME)]
     private static extern void RACRecordImpulseResponse(float posX, float posY, float posZ, float oriW, float oriX, float oriY, float oriZ, [In] float[] buffer, int numSamples);
 
-    [DllImport(DLLNAME)]
-    private static extern void RACUpdateImpulseResponseMode(bool mode);
-
     #endregion
 
     public event Action enableAudioProcessing;
@@ -930,11 +927,6 @@ public class RACManager : MonoBehaviour
         Profiler.BeginSample("Record IR");
         RACRecordImpulseResponse(position.x, position.y, position.z, orientation.w, orientation.x, orientation.y, orientation.z, buffer, buffer.Length);
         Profiler.EndSample();
-    }
-
-    public static void UpdateImpulseResponseMode(bool mode)
-    {
-        RACUpdateImpulseResponseMode(mode);
     }
     #endregion
 

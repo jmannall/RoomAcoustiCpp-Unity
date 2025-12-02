@@ -82,18 +82,6 @@ public class DebugCPP : MonoBehaviour
     public static extern void RegisterResidueCallback(residueCallback cb);
 
     [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void RegisterIEMStartCallback(iemStartCallback cb);
-
-    [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void RegisterIEMEndCallback(iemEndCallback cb);
-
-    [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void RegisterRTMStartCallback(rtmStartCallback cb);
-
-    [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void RegisterRTMEndCallback(rtmEndCallback cb);
-
-    [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
     static extern void UnregisterDebugCallback();
 
     [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
@@ -101,18 +89,6 @@ public class DebugCPP : MonoBehaviour
 
     [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
     public static extern void UnregisterResidueCallback();
-
-    [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void UnregisterIEMStartCallback();
-
-    [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void UnregisterIEMEndCallback();
-
-    [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void UnregisterRTMStartCallback();
-
-    [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void UnregisterRTMEndCallback();
 
     //Create string param callback delegate
     delegate void debugCallback(IntPtr request, int colour, int size);
@@ -122,12 +98,8 @@ public class DebugCPP : MonoBehaviour
     // If isSource, channelIndex contains the source ID, otherwise, channelIndex contains the reverb direction index
     public delegate void residueCallback(float residue, bool isSource, int channelIndex, int slopeIndex);
 
-    public delegate void iemStartCallback();
-    public delegate void iemEndCallback();
-    public delegate void rtmStartCallback();
-    public delegate void rtmEndCallback();
-
-    enum Colour { red, green, blue, black, white, yellow, orange };
+    // Error, Init, Update, Remove, Parameter, Warning, Assert, External
+    enum Colour { orange, green, blue, magenta, white, yellow, red, cyan };
     [MonoPInvokeCallback(typeof(debugCallback))]
     static void OnDebugCallback(IntPtr request, int colour, int size)
     {

@@ -110,7 +110,7 @@ public class RACAudioSource : MonoBehaviour
     void OnAudioFilterRead(float[] data, int channels)
     {
         if (RACManager.racManager == null)
-            Debug.LogError("RACManager is null");
+            Debug.Log("Skip processing of source. RACManager is null");
         else if (RACManager.racManager.isRunning)
         {
             if (isRunning && isPlaying)
