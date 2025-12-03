@@ -11,8 +11,6 @@ using UnityEngine;
 [AddComponentMenu("RoomAcoustiC++/Debug C++")]
 public class DebugCPP : MonoBehaviour
 {
-#if RAC_Debug
-
     // global singleton
     public static DebugCPP debug = null;
 
@@ -24,20 +22,6 @@ public class DebugCPP : MonoBehaviour
     private Transform listenerPosition;
 
     private GUIStyle style = new GUIStyle();
-
-    void OnValidate()
-    {
-        //if (debug == null)
-        //    debug = this;
-        //else
-        //    Debug.AssertFormat(debug == this, "More than one instance of the DebugCPP created! Singleton violated.");
-    }
-
-    void OnDisable()
-    {
-        //UnregisterDebugCallback();
-        //UnregisterPathCallback();
-    }
 
     // Use this for initialization
     void Awake()
@@ -53,6 +37,9 @@ public class DebugCPP : MonoBehaviour
 
     void Start()
     {
+        if (IRPlotter.irPlotter != null)
+            RegisterResidueCallback(IRPlotter.OnResidueCallback);
+
         listenerPosition = FindAnyObjectByType<RACAudioListener>().transform;
         if (listenerPosition == null)
             Debug.LogError("RACAudioListener not found");
@@ -66,6 +53,7 @@ public class DebugCPP : MonoBehaviour
     {
         UnregisterDebugCallback();
         UnregisterPathCallback();
+        UnregisterResidueCallback();
         pathDictionary.Clear();
     }
 
@@ -149,7 +137,7 @@ public class DebugCPP : MonoBehaviour
         }
     }
 
-#if UNITY_EDITOR
+#if UNITY_EDITOR && RAC_DEBUG
     void OnDrawGizmos()
     {
         if (debug == null)
@@ -231,6 +219,5 @@ public class DebugCPP : MonoBehaviour
             Handles.Label(path.Value[path.Value.Count - 1], path.Key.Split('s')[1], style);
         }
     }
-#endif
 #endif
 }

@@ -18,7 +18,6 @@ enum FrequencyBand
 
 public class IRPlotter : MonoBehaviour
 {
-#if RAC_Debug
     [SerializeField, Range(0.1f, 10f)]
     private float lineThickness = 5f;
     [SerializeField, Range(0.1f, 5f)]
@@ -60,7 +59,7 @@ public class IRPlotter : MonoBehaviour
     private readonly object residueLock = new();
 
     // If isSource, channelIndex contains the source ID, otherwise, channelIndex contains the reverb direction index
-    static void OnResidueCallback(float residue, bool isSource, int channelIndex, int slopeIndex)
+    public static void OnResidueCallback(float residue, bool isSource, int channelIndex, int slopeIndex)
     {
         List<float> myResidues;
 
@@ -77,34 +76,19 @@ public class IRPlotter : MonoBehaviour
         }
     }
 
-    void OnValidate()
-    {
-        //DebugCPP.RegisterResidueCallback(OnResidueCallback);
-
-        //if (irPlotter == null)
-        //    irPlotter = this;
-        //else
-        //    Debug.AssertFormat(irPlotter == this, "More than one instance of the IRPlotter created! Singleton violated.");
-    }
-
-    void OnDisable()
-    {
-        //DebugCPP.UnregisterResidueCallback();
-    }
-
     private void Awake()
     {
-        DebugCPP.RegisterResidueCallback(OnResidueCallback);
-
         if (irPlotter == null)
             irPlotter = this;
         else
             Debug.AssertFormat(irPlotter == this, "More than one instance of the IRPlotter created! Singleton violated.");
+
+        // DebugCPP.RegisterResidueCallback(OnResidueCallback);
     }
 
     private void OnDestroy()
     {
-        DebugCPP.UnregisterResidueCallback();
+        // DebugCPP.UnregisterResidueCallback();
     }
 
     void Start()
@@ -547,5 +531,4 @@ public class IRPlotter : MonoBehaviour
             }
         }
     }
-#endif
 }

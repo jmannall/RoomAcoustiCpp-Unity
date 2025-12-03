@@ -20,7 +20,7 @@ public class DebugCPPEditor : Editor
         VisualElement myInspector = new VisualElement();
         InspectorElement.FillDefaultInspector(myInspector, serializedObject, this);
 
-        myInspector.Add(new Label("Enable RAC_Debug on the RACManager script."));
+        myInspector.Add(new Label("Enable RAC_Debug on the RACManager script to enable gizmo debugging."));
 
         return myInspector;
     }
