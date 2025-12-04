@@ -81,14 +81,6 @@ public class IRController : MonoBehaviour
 
     private static IRController irController;
 
-    void OnValidate()
-    {
-        //if (irController == null)
-        //    irController = this;
-        //else
-        //    Debug.AssertFormat(irController == this, "More than one instance of the IRController created! Singleton violated.");
-    }
-
     // Start is called before the first frame update
     void Awake()
     {

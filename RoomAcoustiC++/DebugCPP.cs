@@ -37,9 +37,6 @@ public class DebugCPP : MonoBehaviour
 
     void Start()
     {
-        if (IRPlotter.irPlotter != null)
-            RegisterResidueCallback(IRPlotter.OnResidueCallback);
-
         listenerPosition = FindAnyObjectByType<RACAudioListener>().transform;
         if (listenerPosition == null)
             Debug.LogError("RACAudioListener not found");
@@ -53,7 +50,6 @@ public class DebugCPP : MonoBehaviour
     {
         UnregisterDebugCallback();
         UnregisterPathCallback();
-        UnregisterResidueCallback();
         pathDictionary.Clear();
     }
 
@@ -88,6 +84,7 @@ public class DebugCPP : MonoBehaviour
 
     // Error, Init, Update, Remove, Parameter, Warning, Assert, External
     enum Colour { orange, green, blue, magenta, white, yellow, red, cyan };
+
     [MonoPInvokeCallback(typeof(debugCallback))]
     static void OnDebugCallback(IntPtr request, int colour, int size)
     {
@@ -107,6 +104,7 @@ public class DebugCPP : MonoBehaviour
         Debug.Log(debug_string);
     }
 
+    [MonoPInvokeCallback(typeof(pathCallback))]
     static void OnPathCallback(IntPtr key, IntPtr intersections, int keySize, int intersectionsSize)
     {
         // Convert the IntPtr key to a string
@@ -137,7 +135,7 @@ public class DebugCPP : MonoBehaviour
         }
     }
 
-#if UNITY_EDITOR && RAC_DEBUG
+#if UNITY_EDITOR && RAC_Debug
     void OnDrawGizmos()
     {
         if (debug == null)

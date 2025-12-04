@@ -1,4 +1,5 @@
-﻿using System;
+﻿using AOT;
+using System;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
@@ -59,7 +60,8 @@ public class IRPlotter : MonoBehaviour
     private readonly object residueLock = new();
 
     // If isSource, channelIndex contains the source ID, otherwise, channelIndex contains the reverb direction index
-    public static void OnResidueCallback(float residue, bool isSource, int channelIndex, int slopeIndex)
+    [MonoPInvokeCallback(typeof(DebugCPP.residueCallback))]
+    static void OnResidueCallback(float residue, bool isSource, int channelIndex, int slopeIndex)
     {
         List<float> myResidues;
 
@@ -83,12 +85,12 @@ public class IRPlotter : MonoBehaviour
         else
             Debug.AssertFormat(irPlotter == this, "More than one instance of the IRPlotter created! Singleton violated.");
 
-        // DebugCPP.RegisterResidueCallback(OnResidueCallback);
+        DebugCPP.RegisterResidueCallback(OnResidueCallback);
     }
 
     private void OnDestroy()
     {
-        // DebugCPP.UnregisterResidueCallback();
+        DebugCPP.UnregisterResidueCallback();
     }
 
     void Start()
