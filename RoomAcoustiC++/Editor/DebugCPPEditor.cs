@@ -20,7 +20,8 @@ public class DebugCPPEditor : Editor
         VisualElement myInspector = new VisualElement();
         InspectorElement.FillDefaultInspector(myInspector, serializedObject, this);
 
-        myInspector.Add(new Label("Enable RAC_Debug on the RACManager script to enable gizmo debugging."));
+        // https://discussions.unity.com/t/what-happened-to-wordwrap/814214/5
+        myInspector.Add(new Label("Enable RAC_Debug on the RACManager script to enable gizmo debugging.") { style = { whiteSpace = WhiteSpace.Normal } });
 
         return myInspector;
     }

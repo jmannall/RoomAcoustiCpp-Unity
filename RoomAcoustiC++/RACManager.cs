@@ -34,9 +34,9 @@ public class RACManager : MonoBehaviour
 #endif
 
 #if UNITY_IOS
-    private const string DLLNAME = "__Internal";
+    public const string DLLNAME = "__Internal";
 #else
-    private const string DLLNAME = PluginName + PluginType + "_x64";
+    public const string DLLNAME = PluginName + PluginType + "_x64";
 #endif
 
     // Load and Destroy
@@ -83,6 +83,12 @@ public class RACManager : MonoBehaviour
 
     [DllImport(DLLNAME)]
     private static extern void RACUpdateLateReverbNumberOfRays(int numRays);
+
+    [DllImport(DLLNAME)]
+    private static extern void RACUpdateLateReverbDistanceThresholds(float sourceThresh, float listenerThresh);
+
+    [DllImport(DLLNAME)]
+    private static extern void RACUpdateSelfShadowingRadius(float radius);
 
     [DllImport(DLLNAME)]
     private static extern void RACUpdateMoDARTDelay(float delay);
@@ -254,6 +260,17 @@ public class RACManager : MonoBehaviour
         [Tooltip("Number of rays used for MoD-ART energy injection and detection.")]
         public float numRays;
 
+        [Range(0.0f, 2.5f)]
+        [Tooltip("Minimum distance that a sound source needs to move before triggering an update of late reverberation parameters, in meters.")]
+        public float sourceThresh;
+        [Range(0.0f, 2.5f)]
+        [Tooltip("Minimum distance that the listener needs to move before triggering an update of late reverberation parameters, in meters.")]
+        public float listenerThresh;
+
+        [Range(0.0f, 1.0f)]
+        [Tooltip("Radius of the sphere used to consider self-shadowing of the listener's head for late reverberation parameters, in meters.")]
+        public float selfShadowRadius;
+
         [Range(0.0f, 0.5f)]
         [Tooltip("Delay preceding the late reverberation component, in seconds.")]
         public float delay;
@@ -282,10 +299,13 @@ public class RACManager : MonoBehaviour
             return Mathf.Pow(10f, minT60);
         }
 
-        public LateConfig(bool enabled, float numRays, float delay, float minT60)
+        public LateConfig(bool enabled, float numRays, float sourceThresh, float listenerThresh, float selfShadowRadius, float delay, float minT60)
         {
             this.enabled = enabled;
             this.numRays = numRays;
+            this.sourceThresh = sourceThresh;
+            this.listenerThresh = listenerThresh;
+            this.selfShadowRadius = selfShadowRadius;
             this.delay = delay;
             this.minT60 = minT60;
         }
@@ -293,6 +313,9 @@ public class RACManager : MonoBehaviour
         public static LateConfig Default => new LateConfig(
             enabled: true,
             numRays: 3f,
+            sourceThresh: 0.25f,
+            listenerThresh: 0.05f,
+            selfShadowRadius: 0.0f,
             delay: 0f,
             minT60: 0.01f
         );
@@ -454,6 +477,10 @@ public class RACManager : MonoBehaviour
         if (!success)
             Debug.LogError("Failed to initialize Early Reflections");
         UpdateSpatialisationMode();
+
+        // These are not passed with the initialization call, so they should be set separately.
+        UpdateLateReverbDistanceThresholds();
+        UpdateSelfShadowingRadius();
     }
 
     void Start()
@@ -687,6 +714,33 @@ public class RACManager : MonoBehaviour
     {
         racManager.lateConfig.SetNumRays(numRays);
         UpdateLateReverbNumberOfRays();
+    }
+
+    public static void UpdateLateReverbDistanceThresholds()
+    {
+        Profiler.BeginSample("Update distance thresholds for late reverb updates");
+        RACUpdateLateReverbDistanceThresholds(racManager.lateConfig.sourceThresh, racManager.lateConfig.listenerThresh);
+        Profiler.EndSample();
+    }
+
+    public static void UpdateLateReverbDistanceThresholds(float sourceThresh, float listenerThresh)
+    {
+        racManager.lateConfig.sourceThresh = sourceThresh;
+        racManager.lateConfig.listenerThresh = listenerThresh;
+        UpdateLateReverbDistanceThresholds();
+    }
+
+    public static void UpdateSelfShadowingRadius()
+    {
+        Profiler.BeginSample("Update self-shadowing radius");
+        RACUpdateSelfShadowingRadius(racManager.lateConfig.selfShadowRadius);
+        Profiler.EndSample();
+    }
+
+    public static void UpdateSelfShadowingRadius(float radius)
+    {
+        racManager.lateConfig.selfShadowRadius = radius;
+        UpdateSelfShadowingRadius();
     }
 
     public static void UpdateMoDARTDelay()

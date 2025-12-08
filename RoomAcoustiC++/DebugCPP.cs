@@ -53,25 +53,23 @@ public class DebugCPP : MonoBehaviour
         pathDictionary.Clear();
     }
 
-    private const string DLLNAME = "RoomAcoustiCpp_Debug_x64";
-
     //------------------------------------------------------------------------------------------------
-    [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+    [DllImport(RACManager.DLLNAME, CallingConvention = CallingConvention.Cdecl)]
     static extern void RegisterDebugCallback(debugCallback cb);
 
-    [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+    [DllImport(RACManager.DLLNAME, CallingConvention = CallingConvention.Cdecl)]
     static extern void RegisterPathCallback(pathCallback cb);
 
-    [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+    [DllImport(RACManager.DLLNAME, CallingConvention = CallingConvention.Cdecl)]
     public static extern void RegisterResidueCallback(residueCallback cb);
 
-    [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+    [DllImport(RACManager.DLLNAME, CallingConvention = CallingConvention.Cdecl)]
     static extern void UnregisterDebugCallback();
 
-    [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+    [DllImport(RACManager.DLLNAME, CallingConvention = CallingConvention.Cdecl)]
     static extern void UnregisterPathCallback();
 
-    [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+    [DllImport(RACManager.DLLNAME, CallingConvention = CallingConvention.Cdecl)]
     public static extern void UnregisterResidueCallback();
 
     //Create string param callback delegate

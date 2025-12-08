@@ -173,10 +173,16 @@ public class RACManagerEditor : Editor
         }
         SerializedProperty enableLate = lateConfig.FindPropertyRelative("enabled");
         SerializedProperty numRays = lateConfig.FindPropertyRelative("numRays");
+        SerializedProperty sourceThresh = lateConfig.FindPropertyRelative("sourceThresh");
+        SerializedProperty listenerThresh = lateConfig.FindPropertyRelative("listenerThresh");
+        SerializedProperty selfShadowRadius = lateConfig.FindPropertyRelative("selfShadowRadius");
         SerializedProperty delay = lateConfig.FindPropertyRelative("delay");
         SerializedProperty minT60 = lateConfig.FindPropertyRelative("minT60");
         bool oldEnableLate = enableLate.boolValue;
         float oldNumRays = numRays.floatValue;
+        float oldSourceThresh = sourceThresh.floatValue;
+        float oldListenerThresh = listenerThresh.floatValue;
+        float oldSelfShadowRadius = selfShadowRadius.floatValue;
         float oldDelay = delay.floatValue;
         float oldMinT60 = minT60.floatValue;
 
@@ -189,6 +195,10 @@ public class RACManagerEditor : Editor
                 RACManager.EnableLateReverb();
             if (numRays.floatValue != oldNumRays)
                 RACManager.UpdateLateReverbNumberOfRays();
+            if (sourceThresh.floatValue != oldSourceThresh || listenerThresh.floatValue != oldListenerThresh)
+                RACManager.UpdateLateReverbDistanceThresholds();
+            if (selfShadowRadius.floatValue != oldSelfShadowRadius)
+                RACManager.UpdateSelfShadowingRadius();
             if (delay.floatValue != oldDelay)
                 RACManager.UpdateMoDARTDelay();
             if (minT60.floatValue != oldMinT60)
