@@ -181,6 +181,9 @@ public class RACMeshLoader : MonoBehaviour
         // rightVecs = float[numFDNs, numPaths];
         // leftVecs = float[numFDNs, numPaths];
 
+        // Keep track of the top T60 of each band. It will be used if SingleFDN reverb is selected.
+        float[] topT60 = new float[targetFreqs.Count];
+
         // Fill out all resized variables.
         int oldBandIdx, newBandIdx;
         for (int localIdx = 0; localIdx < numFDNs; ++localIdx)
@@ -201,6 +204,9 @@ public class RACMeshLoader : MonoBehaviour
                     resized_leftVecs.Add(leftVecs[localIdx, i]);
                     resized_rightVecs.Add(rightVecs[localIdx, i]);
                 }
+
+                if (topT60[newBandIdx] < T60s[localIdx])
+                    topT60[newBandIdx] = T60s[localIdx];
             }
         }
 
@@ -221,6 +227,9 @@ public class RACMeshLoader : MonoBehaviour
                             resized_leftVecs.Add(leftVecs[localIdx, i]);
                             resized_rightVecs.Add(rightVecs[localIdx, i]);
                         }
+
+                        if (topT60[targetFreqIdx] < T60s[localIdx])
+                            topT60[targetFreqIdx] = T60s[localIdx];
                     }
                 }
             }
@@ -238,6 +247,9 @@ public class RACMeshLoader : MonoBehaviour
                             resized_leftVecs.Add(leftVecs[localIdx, i]);
                             resized_rightVecs.Add(rightVecs[localIdx, i]);
                         }
+
+                        if (topT60[targetFreqIdx] < T60s[localIdx])
+                            topT60[targetFreqIdx] = T60s[localIdx];
                     }
                 }
             }
@@ -247,12 +259,37 @@ public class RACMeshLoader : MonoBehaviour
         if (IRPlotter.irPlotter != null)
             IRPlotter.irPlotter.RegisterSlopes(targetFreqs, resized_bandIdxs, resized_T60s);
 
-        RACManager.InitMoDART(
-          flattenedPathIndexing,
-          resized_bandIdxs.ToArray(), resized_T60s.ToArray(),
-          resized_leftVecs.ToArray(), resized_rightVecs.ToArray(),
-          resized_numFDNs, numNodes, numPaths
-          );
+        if (racManagerInstance.GetLateReverbModel() == RACManager.LateReverbModel.SingleFDN)
+        {
+            Debug.LogWarning("RAC mesh loader is initializing late reverb with a single FDN.");
+
+            // Force-set reverbTimeModel to "Custom" and pass the top T60 of each band.
+            RACManager.UpdateSingleFDNReverbTimeModel(RACManager.ReverbTime.Custom);
+            RACManager.UpdateSingleFDNReverbTime(new List<float>(topT60));
+
+            // TODO: Base dimensions from loaded mesh, somehow.
+            List<float> roomDimensions = new List<float> { 2.0f, 3.0f, 5.0f };
+            // Volume is unused, because we force ReverbTime.Custom, but best not to pass 0 anyway.
+            float volume = roomDimensions[0] * roomDimensions[1] * roomDimensions[2];
+
+            bool success = RACManager.InitSingleFDN(volume, roomDimensions.ToArray());
+
+            if (!success)
+                Debug.LogError("Failed to initialize late reverb.");
+        }
+        else
+        {
+            Debug.Log("RAC mesh loader is initializing late reverb with MoD-ART.");
+
+            bool success = RACManager.InitMoDART(flattenedPathIndexing,
+                resized_bandIdxs.ToArray(), resized_T60s.ToArray(),
+                resized_leftVecs.ToArray(), resized_rightVecs.ToArray(),
+                resized_numFDNs, numNodes, numPaths
+                );
+
+            if (!success)
+                Debug.LogError("Failed to initialize late reverb.");
+        }
 
         RACManager.UpdatePlanesAndEdges();
     }

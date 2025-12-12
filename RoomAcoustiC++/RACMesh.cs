@@ -38,14 +38,6 @@ public class RACMesh : MonoBehaviour
 
     //////////////////// Unity Functions ////////////////////
 
-    void OnValidate()
-    {
-        //if (racMesh == null)
-        //    racMesh = this;
-        //else
-        //    Debug.AssertFormat(racMesh == this, "More than one instance of the RACMesh created! Singleton violated.");
-    }
-
     void Awake()
     {
         if (racMesh == null)
@@ -67,9 +59,32 @@ public class RACMesh : MonoBehaviour
         Debug.Log("Number of meshes: " + meshes.Length);
         Debug.Log("Number of objects: " + objects.Length);
 
-        bool success = RACManager.InitSingleFDN(volume, roomDimensions.ToArray());
-        if (!success)
-            Debug.LogError("Failed to initialize SingleFDN");
+        RACManager racManagerInstance;
+        if (Application.isPlaying)
+            racManagerInstance = RACManager.racManager;
+        else
+            racManagerInstance = FindAnyObjectByType<RACManager>();
+
+        if (racManagerInstance == null)
+        {
+            Debug.LogError("Unable to locate RACManager instance: failed to start RACMesh.");
+            return;
+        }
+
+        if (racManagerInstance.GetLateReverbModel() == RACManager.LateReverbModel.SingleFDN)
+        {
+            Debug.Log("RAC mesh is initializing late reverb with a single FDN.");
+
+            bool success = RACManager.InitSingleFDN(volume, roomDimensions.ToArray());
+
+            if (!success)
+                Debug.LogError("Failed to initialize late reverb.");
+        }
+        else
+        {
+            Debug.LogError("RAC mesh cannot initialize MoD-ART. Use RacMesh if you want basic late reverb.");
+            return;
+        }
 
         initialised = true;
         if (absorptionSkew != 0.0f)

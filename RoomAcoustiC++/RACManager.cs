@@ -181,7 +181,10 @@ public class RACManager : MonoBehaviour
     public enum SpatMode { None, Performance, Quality }
     public enum ReverbTime { Sabine, Eyring, Custom }
     public enum FDNMatrix { Householder, RandomOrthogonal }
-    public enum LateReverbModel { SingleFDN, MoDART }
+    public enum LateReverbModel {
+        [InspectorName("Single FDN")] SingleFDN,
+        [InspectorName("MoD-ART")] MoDART
+    }
     public enum DiffractionModel { Attenuate, LowPass, UDFA, UDFAI, NNBest, NNSmall, UTD, BTM }
     public enum SourceDirectivity { Omni, Subcardioid, Cardioid, Supercardioid, Hypercardioid, Bidirectional, Genelec8020c, Genelec8020cDTF, QSC_K8 }
     public enum DirectSound { None, Check, AlwaysOn }
@@ -370,7 +373,7 @@ public class RACManager : MonoBehaviour
     private DiffractionModel diffractionModel = DiffractionModel.BTM;
 
     [SerializeField, HideInInspector]
-    private LateReverbModel lateReverbModel = LateReverbModel.SingleFDN;
+    private LateReverbModel lateReverbModel = LateReverbModel.MoDART;
 
     [SerializeField, HideInInspector]
     private List<float> T60;
@@ -403,14 +406,6 @@ public class RACManager : MonoBehaviour
     #region Unity Functions
 
     //////////////////// Unity Functions ////////////////////
-
-    void OnValidate()
-    {
-        //if (racManager == null)
-        //    racManager = this;
-        //else
-        //    Debug.AssertFormat(racManager == this, "More than one instance of the RACManager created! Singleton violated.");
-    }
 
     void Awake()
     {
@@ -582,8 +577,7 @@ public class RACManager : MonoBehaviour
 
     public static bool InitMoDART(int[] indexing, int[] frequencyIndexing, float[] t60s, float[] leftEigenvectors, float[] rightEigenvectors, int numFDNs, int numNodes, int numPaths)
     {
-        return RACInitMoDART(
-            racManager.lateConfig.enabled, racManager.lateConfig.GetNumRays(), (int)racManager.fdnMatrix,
+        return RACInitMoDART(racManager.lateConfig.enabled, racManager.lateConfig.GetNumRays(), (int)racManager.fdnMatrix,
             racManager.lateConfig.delay, racManager.lateConfig.GetMinReverbTime(), indexing, frequencyIndexing, t60s,
             leftEigenvectors, rightEigenvectors, numFDNs, numNodes, numPaths);
     }
@@ -781,6 +775,12 @@ public class RACManager : MonoBehaviour
             racManager.T60.RemoveRange(racManager.frequencyBands.Count, racManager.T60.Count - racManager.frequencyBands.Count);
 
         RACUpdateSingleFDNReverbTime(racManager.T60.ToArray());
+    }
+
+    public static void UpdateSingleFDNReverbTime(List<float> newT60)
+    {
+        racManager.T60 = newT60;
+        UpdateSingleFDNReverbTime();
     }
 
     public static void UpdateSingleFDNReverbTimeModel()
@@ -1056,6 +1056,8 @@ public class RACManager : MonoBehaviour
         else
             Debug.LogError("Headphone EQ file not found");
     }
+
+    public LateReverbModel GetLateReverbModel() { return lateReverbModel; }
 
     public List<float> GetFrequencyBands() { return frequencyBands; }
 

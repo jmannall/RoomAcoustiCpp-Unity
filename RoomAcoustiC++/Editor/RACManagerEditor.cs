@@ -146,6 +146,8 @@ public class RACManagerEditor : Editor
 
         EditorGUILayout.PropertyField(selectedHeadphoneEQ, new GUIContent("Headphone EQ File", "Select Headphone EQ File."));
 
+        EditorGUILayout.PropertyField(lateReverbModel, new GUIContent("Late Reverb Model", "Select the late reverberation model."));
+
         GUI.enabled = true;
         if (selectedHeadphoneEQ.enumValueIndex == (int)RACManager.HeadphoneEQFiles.Custom)
         {
@@ -224,18 +226,19 @@ public class RACManagerEditor : Editor
             GUI.changed = false;
         }
 
-        EditorGUILayout.PropertyField(lateReverbModel, new GUIContent("Late Reverb Model", "Select the late reverberation model."));
-        serializedObject.ApplyModifiedProperties();
+        // TODO: Allow changing late reverb model at runtime
+        // EditorGUILayout.PropertyField(lateReverbModel, new GUIContent("Late Reverb Model", "Select the late reverberation model."));
+        // serializedObject.ApplyModifiedProperties();
 
-        if (isPlaying && GUI.changed)
-        {
-            // TODO: update late reverb model
-            GUI.changed = false;
-        }
+        // if (isPlaying && GUI.changed)
+        // {
+        //      TODO: update late reverb model
+        //      GUI.changed = false;
+        // }
 
         bool isSingleFDN = lateReverbModel.enumValueIndex == (int)RACManager.LateReverbModel.SingleFDN;
         if (isSingleFDN)
-            EditorGUILayout.PropertyField(reverbTimeModel, new GUIContent("Reverberation Time", "Select the formula used to calculate the reverberation time"));
+            EditorGUILayout.PropertyField(reverbTimeModel, new GUIContent("Reverberation Time", "Select the formula used to calculate the reverberation time (IGNORED if a RAC mesh loader is present)."));
 
         bool isCustom = reverbTimeModel.enumValueIndex == (int)RACManager.ReverbTime.Custom;
         if (isSingleFDN && isCustom)
@@ -250,7 +253,7 @@ public class RACManagerEditor : Editor
             else if (T60.arraySize > frequencyBands.arraySize)
                 T60.arraySize = frequencyBands.arraySize; // Resize to match frequency bands
 
-            EditorGUILayout.PropertyField(T60, new GUIContent("T60", "Enter custom T60"));
+            EditorGUILayout.PropertyField(T60, new GUIContent("T60", "Enter custom T60 (IGNORED if a RAC mesh loader is present)."));
         }
         serializedObject.ApplyModifiedProperties();
         if (isPlaying && GUI.changed)

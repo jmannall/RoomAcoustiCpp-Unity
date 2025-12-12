@@ -149,6 +149,8 @@ public class UIManager : MonoBehaviour
             if (sourceAgent != null)
                 sourceAgent.isStopped = true;
         }
+        if (wanderingText != null)
+            wanderingText.text = "Let sources wander around (Escape)";
 
         wanderingIsActive = false;
     }
@@ -161,6 +163,8 @@ public class UIManager : MonoBehaviour
             if (sourceAgent != null)
                 sourceAgent.isStopped = false;
         }
+        if (wanderingText != null)
+            wanderingText.text = "Stop sources from wandering (Escape)";
 
         wanderingIsActive = true;
     }
