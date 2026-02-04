@@ -45,6 +45,8 @@ public class Wander : MonoBehaviour
         // Do nothing if wandering is disabled altogether.
         if (UIManager.uiManager != null && !UIManager.uiManager.IsWanderingActive())
             return;
+        if (XRMinimapController.xrMinimapController != null && !XRMinimapController.xrMinimapController.IsWanderingActive())
+            return;
 
         // Sometimes the agents get disconnected from the NavMesh...
         if (!agent.isOnNavMesh)

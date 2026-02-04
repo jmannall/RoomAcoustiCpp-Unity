@@ -276,8 +276,8 @@ public class IRPlotter : MonoBehaviour
         tempTranform.anchoredPosition = Vector2.zero;
 
         int numYticks = 0;
-        // Add the Y axis labels. -80f and 10f are the maximum extents of lowerLimit and upperLimit.
-        for (float yTick = -80f; yTick <= 10f; yTick += 10f)
+        // Add the Y axis labels. -100f and 50f are the maximum extents of lowerLimit and upperLimit.
+        for (float yTick = -100f; yTick <= 50f; yTick += 10f)
         {
             float alignment = (yTick - lowerLimit) / (upperLimit - lowerLimit);
             if ((alignment <= 0) || (alignment >= 1))
@@ -441,22 +441,25 @@ public class IRPlotter : MonoBehaviour
                 vlg.childForceExpandWidth = false;
                 vlg.childForceExpandHeight = false;
 
-                // Add a title to the column, specifying line style. Easier than dashed legend entry icons.
-                GameObject columnTitle = new GameObject($"Legend column {i + 1} title", typeof(RectTransform));
-                columnTitle.transform.SetParent(column.transform, false);
+                if (numPaletteLoops > 1)
+                {
+                    // Add a title to the column, specifying line style. Easier to do than dashed legend entry icons.
+                    GameObject columnTitle = new GameObject($"Legend column {i + 1} title", typeof(RectTransform));
+                    columnTitle.transform.SetParent(column.transform, false);
 
-                TextMeshProUGUI labelText = columnTitle.AddComponent<TextMeshProUGUI>();
-                labelText.alignment = TextAlignmentOptions.TopLeft;
-                labelText.textWrappingMode = TextWrappingModes.NoWrap;
-                labelText.fontSize = 20f;
-                labelText.color = Color.black;
-                if (i == 0)
-                    labelText.text = "Solid line";
-                else
-                    labelText.text = $"Dash spacing {i}";
-                // Make sure all titles have the same height.
-                LayoutElement le = columnTitle.AddComponent<LayoutElement>();
-                le.minHeight = 24f;
+                    TextMeshProUGUI labelText = columnTitle.AddComponent<TextMeshProUGUI>();
+                    labelText.alignment = TextAlignmentOptions.TopLeft;
+                    labelText.textWrappingMode = TextWrappingModes.NoWrap;
+                    labelText.fontSize = 20f;
+                    labelText.color = Color.black;
+                    if (i == 0)
+                        labelText.text = "Solid line";
+                    else
+                        labelText.text = $"Dash spacing {i}";
+                    // Make sure all titles have the same height.
+                    LayoutElement le = columnTitle.AddComponent<LayoutElement>();
+                    le.minHeight = 24f;
+                }
 
                 legendColumns[i] = column.transform;
             }

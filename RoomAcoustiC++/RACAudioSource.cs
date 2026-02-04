@@ -27,6 +27,8 @@ public class RACAudioSource : MonoBehaviour
     [SerializeField]
     [Tooltip("Play the sound when the component loads.")]
     private bool playOnAwake = false;
+    // This is called by RACManager to synchronize sources.
+    public bool WantsToPlayOnAwake => playOnAwake;
 
     [SerializeField]
     [Tooltip("Mute the sound (but advance playback) when the component loads.")]
@@ -65,13 +67,20 @@ public class RACAudioSource : MonoBehaviour
         source = GetComponent<AudioSource>();
         if (clip != null)
             source.clip = clip;
-        source.playOnAwake = playOnAwake;
         source.mute = muteOnAwake;
         source.loop = loop;
         source.bypassEffects = false;
         source.bypassReverbZones = true;
         source.spatialBlend = 0.0f;
         source.panStereo = 0.0f;
+
+        // Don't use the actual "playOnAwake" of the underlying Unity source,
+        //  in order to avoid de-synchronization issues (see comments in "Start()").
+        source.playOnAwake = false;
+        // If the underlying Unity source awoke first, it may have started playing;
+        //  stop it (and reset its progress).
+        if (source.isPlaying)
+            source.Stop();
     }
 
     void Start()
@@ -82,8 +91,14 @@ public class RACAudioSource : MonoBehaviour
         RACManager.racManager.enableAudioProcessing += InitSource;
         RACManager.racManager.disableAudioProcessing += RemoveSource;
 
-        if (playOnAwake)
-            Play();
+        // If the scene is loaded on a slow PC, this "Start()" method might be called
+        //  at noticeably different times for different RACAudioSource instances.
+        // In that event, calling "Play()" here would make the sources de-synchronized.
+        // We mitigate the issue by starting playback in a loop, in RACManager.
+        /*
+          * if (playOnAwake)
+          *    Play();
+          */
 
         input = new float[numFrames];
     }

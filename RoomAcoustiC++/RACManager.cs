@@ -500,6 +500,9 @@ public class RACManager : MonoBehaviour
         Debug.Log("Stand Alone Windows");
 #endif
         interleavedData = new float[numReverbSources * numFrames];
+
+        // This is used to synchronize sources which are set to "playOnAwake".
+        StartCoroutine(SyncStartAllSources());
     }
 
     void OnDestroy()
@@ -1063,4 +1066,21 @@ public class RACManager : MonoBehaviour
 
     public void SetFrequencyBands(List<float> newFrequencyBands) { frequencyBands = newFrequencyBands; }
     public void SetFrequencyBands(float[] newFrequencyBands) { frequencyBands = new List<float>(newFrequencyBands); }
+
+    // https://docs.unity3d.com/6000.3/Documentation/Manual/Coroutines.html
+    private System.Collections.IEnumerator SyncStartAllSources()
+    {
+        // This "yield" skips a frame, ensuring that "Start()" has been called
+        //  on all loaded objects in the scene.
+        yield return null;
+
+        RACAudioSource[] sources = FindObjectsByType<RACAudioSource>(FindObjectsSortMode.None);
+
+        // Add a 2.5 second safeguard. Gives all RACSources time to initialize before playing.
+        double t = AudioSettings.dspTime + 2.5;
+
+        foreach (RACAudioSource s in sources)
+            if (s.WantsToPlayOnAwake)
+                s.PlayScheduled(t);
+    }
 }

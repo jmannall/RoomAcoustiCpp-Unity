@@ -1,3 +1,5 @@
+using Oculus.Interaction.Body.Input;
+using System.ComponentModel;
 using TMPro;
 using UnityEditor;
 using UnityEngine;
@@ -45,7 +47,14 @@ public class XRMinimapController : MonoBehaviour
     public bool earlyReflectionsStartActive = true;
 
     [SerializeField]
+    private TextMeshProUGUI wanderingText;
+    [SerializeField]
     private TextMeshProUGUI earlyReflectionsText;
+
+    [SerializeField]
+    private TextMeshProUGUI forbiddenDragText;
+    private Animator forbiddenDragAnimator;
+    private void Emphasize() => forbiddenDragAnimator.SetTrigger("Emphasize");
 
     private bool wanderingIsActive = true;
 
@@ -65,6 +74,11 @@ public class XRMinimapController : MonoBehaviour
 
         uiActionMap = inputActions.FindActionMap("UI");
         uiActionMap.Enable();
+
+        if (forbiddenDragText != null)
+            forbiddenDragAnimator = forbiddenDragText.GetComponent<Animator>();
+        else
+            forbiddenDragAnimator = null;
     }
 
     private void Start()
@@ -158,6 +172,8 @@ public class XRMinimapController : MonoBehaviour
             if (sourceAgent != null)
                 sourceAgent.isStopped = true;
         }
+        if (wanderingText != null)
+            wanderingText.text = "Let sources\nwander around";
 
         wanderingIsActive = false;
     }
@@ -170,6 +186,8 @@ public class XRMinimapController : MonoBehaviour
             if (sourceAgent != null)
                 sourceAgent.isStopped = false;
         }
+        if (wanderingText != null)
+            wanderingText.text = "Stop sources\nfrom wandering";
 
         wanderingIsActive = true;
     }
@@ -207,7 +225,11 @@ public class XRMinimapController : MonoBehaviour
                 break;
         }
         if (earlyReflectionsText != null)
-            earlyReflectionsText.text = "Early reflection order: " + order.ToString();
+        {
+            earlyReflectionsText.text = "Early reflections:\norder " + order.ToString();
+            if (order == maxReflOrder)
+                earlyReflectionsText.text += " (max)";
+        }
 
         currentReflOrder = order;
     }
@@ -287,6 +309,9 @@ public class XRMinimapController : MonoBehaviour
                 // If the source has a NavMeshAgent, disable it during movement or it will get cranky.
                 if (draggedSourceAgent != null)
                     draggedSourceAgent.enabled = false;
+                // If the source DOESN'T have a NavMeshAgent, and its movement is forbidden, emphasize the warning text.
+                else if (!allowMovingNonAgents && forbiddenDragAnimator != null)
+                    Emphasize();
                 break;
 
             case MinimapClickHandler.MapEventType.Drag:
