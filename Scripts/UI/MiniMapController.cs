@@ -22,11 +22,24 @@ public class MiniMapController : MonoBehaviour
     [SerializeField]
     public bool allowMovingNonAgents = false;
 
+    [SerializeField]
+    private TextMeshProUGUI forbiddenDragText;
+    private Animator forbiddenDragAnimator;
+    private void Emphasize() => forbiddenDragAnimator.SetTrigger("Emphasize");
+
     private RACAudioSource[] racSources;
     private int selectedSourceIdx = -1;
 
     private bool previousFrameMouseLeft;
     private bool previousFrameMouseRight;
+
+    private void Awake()
+    {
+        if (forbiddenDragText != null)
+            forbiddenDragAnimator = forbiddenDragText.GetComponent<Animator>();
+        else
+            forbiddenDragAnimator = null;
+    }
 
     void Start()
     {
@@ -73,16 +86,6 @@ public class MiniMapController : MonoBehaviour
 
         if (!cursorInBounds)
         {
-            // The cursor is OOB. Make sure that no source label is underlined.
-            TextMeshProUGUI[] sourceLabels;
-            foreach (RACAudioSource source in racSources)
-            {
-                sourceLabels = source.GetComponentsInChildren<TextMeshProUGUI>();
-
-                foreach (TextMeshProUGUI label in sourceLabels)
-                    label.fontStyle = FontStyles.Bold;
-            }
-
             // If a source was being dragged, drop it and forget about it.
             if (selectedSourceIdx >= 0)
             {
@@ -96,6 +99,9 @@ public class MiniMapController : MonoBehaviour
             // Treat this as a button release.
             previousFrameMouseLeft = false;
             previousFrameMouseRight = false;
+
+            // Update the labels, a source might have been de-selected.
+            RefreshLabelStyles();
 
             // Do nothing else, because the cursor is OOB.
             return;
@@ -127,20 +133,6 @@ public class MiniMapController : MonoBehaviour
                 previousFrameMouseLeft = false;
                 previousFrameMouseRight = false;
                 return;
-            }
-
-            TextMeshProUGUI[] sourceLabels;
-            for (int i = 0; i < racSources.Length; i++)
-            {
-                sourceLabels = racSources[i].GetComponentsInChildren<TextMeshProUGUI>();
-
-                foreach (TextMeshProUGUI label in sourceLabels)
-                {
-                    if (i == selectedSourceIdx)
-                        label.fontStyle = FontStyles.Bold | FontStyles.Underline;
-                    else
-                        label.fontStyle = FontStyles.Bold;
-                }
             }
         }
         else
@@ -202,14 +194,12 @@ public class MiniMapController : MonoBehaviour
             selectedSourceIdx = -1;
             previousFrameMouseLeft = false;
         }
+
+        RefreshLabelStyles();
     }
 
     void DragSource(RACAudioSource draggedSource)
     {
-        // Only update the source's position if it has a NavMeshAgent and/or moving non-agents is allowed.
-        if (!allowMovingNonAgents && racSources[selectedSourceIdx].GetComponent<NavMeshAgent>() == null)
-            return;
-
         // Update the position of the source being dragged.
         Vector3 draggedPosition;
         draggedPosition.x = worldCursorPos.x;
@@ -222,6 +212,12 @@ public class MiniMapController : MonoBehaviour
         // If the source has a NavMeshAgent, disable it during movement or it will get cranky.
         if (draggedSourceAgent != null)
             draggedSourceAgent.enabled = false;
+        // If the source DOESN'T have a NavMeshAgent, and its movement is forbidden, emphasize the warning text.
+        else if (!allowMovingNonAgents && forbiddenDragAnimator != null)
+        {
+            Emphasize();
+            return;
+        }
 
         draggedSource.transform.SetPositionAndRotation(draggedPosition, draggedSource.transform.rotation);
     }
@@ -236,5 +232,37 @@ public class MiniMapController : MonoBehaviour
 
         draggedSourceAgent.nextPosition = draggedSource.transform.position;
         draggedSourceAgent.enabled = true;
+    }
+
+    public void RefreshLabelStyles()
+    {
+        if (racSources.Length <= 0)
+            return;
+
+        TextMeshProUGUI[] sourceLabels;
+        for (int i = 0; i < racSources.Length; i++)
+        {
+            sourceLabels = racSources[i].GetComponentsInChildren<TextMeshProUGUI>();
+
+            foreach (TextMeshProUGUI label in sourceLabels)
+            {
+                // Muted source labels are colored in gray.
+                if (racSources[i].IsMuted())
+                    label.color = Color.gray5;
+                else
+                    label.color = Color.white;
+
+                // All source labels are bold. Optional styles are added with a bitwise OR (it's a bit mask).
+                FontStyles sourceStyle = FontStyles.Bold;
+                // Immovable source labels are in italics.
+                if (!allowMovingNonAgents && racSources[i].GetComponent<NavMeshAgent>() == null)
+                    sourceStyle |= FontStyles.Italic;
+                // The selected source is underlined.
+                if (i == selectedSourceIdx)
+                    sourceStyle |= FontStyles.Underline;
+                // Set the style mask.
+                label.fontStyle = sourceStyle;
+            }
+        }
     }
 }

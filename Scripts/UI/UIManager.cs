@@ -202,7 +202,11 @@ public class UIManager : MonoBehaviour
                 break;
         }
         if (earlyReflectionsText != null)
+        {
             earlyReflectionsText.text = "Current early reflection order: " + order.ToString();
+            if (order == maxReflOrder)
+                earlyReflectionsText.text += " (max)";
+        }
 
         currentReflOrder = order;
     }
