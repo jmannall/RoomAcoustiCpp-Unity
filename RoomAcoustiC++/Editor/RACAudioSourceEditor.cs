@@ -1,7 +1,7 @@
 using UnityEditor;
 using UnityEngine;
 
-[AddComponentMenu("RoomAcoustiC++/Editor/AudioSource")]
+[AddComponentMenu("RoomAcoustiC++/Editor/RAC AudioSource")]
 [CustomEditor(typeof(RACAudioSource))]
 
 public class RACAudioSourceEditor : Editor

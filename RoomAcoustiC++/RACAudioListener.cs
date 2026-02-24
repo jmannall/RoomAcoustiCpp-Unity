@@ -1,7 +1,7 @@
 
 using UnityEngine;
 
-[AddComponentMenu("RoomAcoustiC++/Audio Listener")]
+[AddComponentMenu("RoomAcoustiC++/RAC Audio Listener")]
 [RequireComponent(typeof(AudioListener))]
 
 public class RACAudioListener : MonoBehaviour

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
 
-[AddComponentMenu("RoomAcoustiC++/Mesh")]
+[AddComponentMenu("RoomAcoustiC++/RAC Mesh")]
 
 public class RACMesh : MonoBehaviour
 {

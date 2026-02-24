@@ -2,7 +2,7 @@ using System;
 using UnityEngine;
 using UnityEngine.Audio;
 
-[AddComponentMenu("RoomAcoustiC++/Audio Source")]
+[AddComponentMenu("RoomAcoustiC++/RAC Audio Source")]
 [RequireComponent(typeof(AudioSource))]
 
 public class RACAudioSource : MonoBehaviour

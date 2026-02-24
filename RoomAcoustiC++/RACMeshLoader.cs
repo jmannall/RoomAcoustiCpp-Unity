@@ -8,6 +8,8 @@ using System.Collections.Generic;
 using UnityEditor;
 #endif
 
+[AddComponentMenu("RoomAcoustiC++/RAC Audio Mesh")]
+
 public class RACMeshLoader : MonoBehaviour
 {
     // global singleton
@@ -404,7 +406,7 @@ public class RACMeshLoader : MonoBehaviour
             imp.materialImportMode = ModelImporterMaterialImportMode.ImportStandard;    // for OBJ/MTL
             imp.materialLocation = ModelImporterMaterialLocation.InPrefab;              // avoid scattering .mat files
             imp.materialName = ModelImporterMaterialName.BasedOnMaterialName;           // keep material names exactly
-            imp.materialSearch = ModelImporterMaterialSearch.Local;                     // don’t “find” random matches elsewhere
+            imp.materialSearch = ModelImporterMaterialSearch.Local;                     // don't find random matches elsewhere
 
             imp.SaveAndReimport();
         }

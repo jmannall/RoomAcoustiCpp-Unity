@@ -3,7 +3,7 @@ using UnityEditor;
 using UnityEngine;
 using System.Collections.Generic;
 
-[AddComponentMenu("RoomAcoustiC++/Editor/MaterialEntry")]
+[AddComponentMenu("RoomAcoustiC++/Editor/RAC MaterialEntry")]
 [CustomEditor(typeof(RACMaterialEntry)), CanEditMultipleObjects]
 
 public class RACMaterialEntryEditor : Editor

@@ -7,7 +7,7 @@ using UnityEngine;
 using UnityEngine.Networking;
 using UnityEngine.Profiling;
 
-[AddComponentMenu("RoomAcoustiC++/Audio Manager")]
+[AddComponentMenu("RoomAcoustiC++/RAC Audio Manager")]
 [RequireComponent(typeof(AudioSource))]
 
 public class RACManager : MonoBehaviour

@@ -3,7 +3,7 @@ using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
 
-[AddComponentMenu("RoomAcoustiC++/Material")]
+[AddComponentMenu("RoomAcoustiC++/RAC Material")]
 
 public class RACMaterial : MonoBehaviour
 {

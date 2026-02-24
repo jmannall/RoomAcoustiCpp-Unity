@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 using UnityEditor;
 using UnityEngine;
 
-[AddComponentMenu("RoomAcoustiC++/Debug C++")]
+[AddComponentMenu("RoomAcoustiC++/RAC Debug C++")]
 public class DebugCPP : MonoBehaviour
 {
     // global singleton
