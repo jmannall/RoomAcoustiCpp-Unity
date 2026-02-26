@@ -1,5 +1,3 @@
-using Oculus.Interaction.Body.Input;
-using System.ComponentModel;
 using TMPro;
 using UnityEditor;
 using UnityEngine;
