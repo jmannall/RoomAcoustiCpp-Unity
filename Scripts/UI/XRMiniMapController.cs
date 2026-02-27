@@ -294,7 +294,8 @@ public class XRMinimapController : MonoBehaviour
         {
             default:
             case MinimapClickHandler.MapEventType.Click:
-                // If the event is just a click, select the closest source and do nothing else.
+            case MinimapClickHandler.MapEventType.RightClick:
+                // If the event is just a click (either left or right), select the closest source and do nothing else.
                 SelectClostestSource(eventCoords);
                 break;
 

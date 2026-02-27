@@ -6,10 +6,7 @@ using UnityEngine.EventSystems;
 [RequireComponent(typeof(RectTransform))]
 public class MinimapClickHandler : MonoBehaviour, IPointerClickHandler, IBeginDragHandler, IDragHandler, IEndDragHandler
 {
-    public enum MapEventType { Click, BeginDrag, Drag, EndDrag }
-
-    [SerializeField]
-    private XRMinimapController minimapController;
+    public enum MapEventType { Click, RightClick, BeginDrag, Drag, EndDrag }
 
     [SerializeField]
     [Tooltip("Width of the minimap (including left and right margins), in meters.")]
@@ -33,7 +30,12 @@ public class MinimapClickHandler : MonoBehaviour, IPointerClickHandler, IBeginDr
     [SerializeField]
     private TextMeshProUGUI debugText;
 
-    public void OnPointerClick(PointerEventData eventData) { HandleEvent(eventData, MapEventType.Click); }
+    public void OnPointerClick(PointerEventData eventData) {
+        if (eventData.button == PointerEventData.InputButton.Right)
+            HandleEvent(eventData, MapEventType.RightClick);
+        else
+            HandleEvent(eventData, MapEventType.Click);
+    }
 
     public void OnBeginDrag(PointerEventData eventData) { HandleEvent(eventData, MapEventType.BeginDrag); }
 
@@ -51,7 +53,10 @@ public class MinimapClickHandler : MonoBehaviour, IPointerClickHandler, IBeginDr
             switch (type)
             {
                 case MapEventType.Click:
-                    text = "New OnPointerClick event.";
+                    text = "New OnPointerClick event (left).";
+                    break;
+                case MapEventType.RightClick:
+                    text = "New OnPointerClick event (right).";
                     break;
                 case MapEventType.BeginDrag:
                     text = "New OnPointerClick event.";
@@ -80,7 +85,10 @@ public class MinimapClickHandler : MonoBehaviour, IPointerClickHandler, IBeginDr
              worldCoords.y < 0 || worldCoords.y > heightInMeters - (bottomMarginInMeters + topMarginInMeters)))
             type = MapEventType.EndDrag;
 
-        minimapController.RegisterEvent(eventData, type, worldCoords);
+        if (MinimapController.minimapController != null)
+            MinimapController.minimapController.RegisterEvent(eventData, type, worldCoords);
+        else if (XRMinimapController.xrMinimapController != null)
+            XRMinimapController.xrMinimapController.RegisterEvent(eventData, type, worldCoords);
     }
 
     // Returns Vector2.positiveInfinity if the coordinates are bad for any reason.
@@ -90,15 +98,9 @@ public class MinimapClickHandler : MonoBehaviour, IPointerClickHandler, IBeginDr
         if (minimapRect == null)
             return Vector2.positiveInfinity;
 
-        Camera cam = eventData.pressEventCamera;
-        if (cam == null)
-            cam = eventData.enterEventCamera;
-        if (cam == null)
-            return Vector2.positiveInfinity;
-
         Vector2 rectCoords;
         if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(
-            minimapRect, eventData.position, cam, out rectCoords))
+            minimapRect, eventData.position, null, out rectCoords))
             return Vector2.positiveInfinity;
 
         rectCoords.x -= minimapRect.rect.x;

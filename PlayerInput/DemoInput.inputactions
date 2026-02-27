@@ -1,14 +1,229 @@
 {
+    "version": 1,
     "name": "DemoInput",
     "maps": [
         {
-            "name": "Player",
+            "name": "UI",
             "id": "c6061a88-6915-48f7-9a1c-46480c4c176a",
+            "actions": [
+                {
+                    "name": "TogglePlot",
+                    "type": "Button",
+                    "id": "b0cc4c5d-e927-4ad7-b16b-c26ae7dc3414",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "ToggleMinimap",
+                    "type": "Button",
+                    "id": "62976986-9fef-40e4-8a39-e14bcd8506a7",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "IncreaseEarlyReflections",
+                    "type": "Button",
+                    "id": "c2fe9145-4fd1-4c51-bb6a-afbbfadcf0cb",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "DecreaseEarlyReflections",
+                    "type": "Button",
+                    "id": "6549aea2-a512-4fd5-97cd-2e88731b711b",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "ToggleWandering",
+                    "type": "Button",
+                    "id": "664d72f4-e8ed-480f-a4c5-a34968dbc1da",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "QuitApplication",
+                    "type": "Button",
+                    "id": "db0c3c0e-e03f-4c2b-a6d6-fe24fd7c6185",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "MuteSelectedSource",
+                    "type": "Button",
+                    "id": "02a086c6-5351-4369-9deb-f80c6f411c10",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                }
+            ],
+            "bindings": [
+                {
+                    "name": "",
+                    "id": "ba6342c2-7e5e-447a-8408-cf9218cbe03a",
+                    "path": "<Keyboard>/shift",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "TogglePlot",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "de4b5258-3990-4d98-a9a5-fdbbdd3cf1bd",
+                    "path": "<XRController>{RightHand}/{GripButton}",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "MuteSelectedSource",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "d5b4fe94-b507-4668-8bab-15d668ff7979",
+                    "path": "<Keyboard>/delete",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "QuitApplication",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "4ec4a03f-72f4-4c5f-b021-35351a61c399",
+                    "path": "<XRController>{RightHand}/{SecondaryButton}",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "QuitApplication",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "893fe87a-6d09-44c2-b694-c4dc36c7eeb7",
+                    "path": "<Keyboard>/escape",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "ToggleWandering",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "b00d78f6-22cb-4e2b-a042-4b7cf2eb9532",
+                    "path": "<XRController>{RightHand}/{PrimaryButton}",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "ToggleWandering",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "6d35c8ae-a671-4b3f-b975-64b3f63283f1",
+                    "path": "<Keyboard>/q",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "DecreaseEarlyReflections",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "7e9a1792-0844-4a28-b412-9bb0adea11d7",
+                    "path": "<XRController>{LeftHand}/{PrimaryButton}",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "DecreaseEarlyReflections",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "ee19d191-2e32-4268-ae12-85d965fb17db",
+                    "path": "<XRController>{LeftHand}/{GripButton}",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "TogglePlot",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "ed06995f-c7fd-40fc-8989-a197f28ce11d",
+                    "path": "<Keyboard>/space",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "ToggleMinimap",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "7f1333ef-887e-4650-9d3a-c0869cef958c",
+                    "path": "<XRController>{LeftHand}/{GripButton}",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "ToggleMinimap",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "ff8924fd-ed31-45b5-a258-59af71ac0d62",
+                    "path": "<Keyboard>/e",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "IncreaseEarlyReflections",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "f2ec7167-9a19-4592-8f3e-41525f7b8ccb",
+                    "path": "<XRController>{LeftHand}/{SecondaryButton}",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "IncreaseEarlyReflections",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                }
+            ]
+        },
+        {
+            "name": "Player",
+            "id": "b6d2b10f-a5ea-4ca3-9e18-8f593b70e43d",
             "actions": [
                 {
                     "name": "PlayerMove",
                     "type": "Value",
-                    "id": "b637f140-330d-4504-bfca-4176d15b8dc3",
+                    "id": "d18bc26c-6933-462b-b82c-7f637d64854c",
                     "expectedControlType": "Vector2",
                     "processors": "",
                     "interactions": "",
@@ -17,7 +232,7 @@
                 {
                     "name": "PlayerLook",
                     "type": "PassThrough",
-                    "id": "84c80b58-998f-41d0-aefe-7a47f72e2214",
+                    "id": "98629e61-0a3c-4b88-9729-f957fb7c54d7",
                     "expectedControlType": "Vector2",
                     "processors": "",
                     "interactions": "",
@@ -27,7 +242,7 @@
             "bindings": [
                 {
                     "name": "2D Vector",
-                    "id": "66015d2b-f424-470f-8bc0-fecddf482477",
+                    "id": "d1a2237e-29c7-4175-9ea7-838e5d041bea",
                     "path": "2DVector",
                     "interactions": "",
                     "processors": "",
@@ -38,29 +253,29 @@
                 },
                 {
                     "name": "Up",
-                    "id": "93e3f00e-0476-4479-abb3-d9be89ec25ba",
+                    "id": "98bdd3ee-2b98-46df-ad5e-458574b19a65",
                     "path": "<Keyboard>/w",
                     "interactions": "",
                     "processors": "",
-                    "groups": "Keyboard and Mouse",
+                    "groups": ";Keyboard and Mouse",
                     "action": "PlayerMove",
                     "isComposite": false,
                     "isPartOfComposite": true
                 },
                 {
                     "name": "Down",
-                    "id": "d70dc057-1fad-4af6-860c-5499b4c93dac",
+                    "id": "52099de1-b40b-4183-9de6-7fb6ab63f5eb",
                     "path": "<Keyboard>/s",
                     "interactions": "",
                     "processors": "",
-                    "groups": "Keyboard and Mouse",
+                    "groups": ";Keyboard and Mouse",
                     "action": "PlayerMove",
                     "isComposite": false,
                     "isPartOfComposite": true
                 },
                 {
                     "name": "Left",
-                    "id": "4663a3de-11d3-4c7c-83a2-c81e7d7be3df",
+                    "id": "ada13a0c-9195-4742-ac6d-6b8962f7f11b",
                     "path": "<Keyboard>/a",
                     "interactions": "",
                     "processors": "",
@@ -71,7 +286,7 @@
                 },
                 {
                     "name": "Right",
-                    "id": "342553a1-50ef-4a04-a46e-db1faccf9cdb",
+                    "id": "4a20abca-d795-4988-9322-893b012a2cd3",
                     "path": "<Keyboard>/d",
                     "interactions": "",
                     "processors": "",
@@ -82,7 +297,7 @@
                 },
                 {
                     "name": "2D Vector",
-                    "id": "a65c0f5e-bb49-4be1-b558-c0520be12034",
+                    "id": "09acbd79-4bc3-42f8-af64-76a3f2ec9b5a",
                     "path": "2DVector(mode=2)",
                     "interactions": "",
                     "processors": "",
@@ -93,7 +308,7 @@
                 },
                 {
                     "name": "Up",
-                    "id": "fa77daaa-de97-4a0a-a93e-5e0cb496701d",
+                    "id": "1e1a6300-7254-46c3-a021-19d90857f7fe",
                     "path": "<Mouse>/delta/up",
                     "interactions": "",
                     "processors": "",
@@ -104,7 +319,7 @@
                 },
                 {
                     "name": "Down",
-                    "id": "e03c63dc-2f40-4f6a-96e2-4f604eaf90b5",
+                    "id": "952ef75b-c694-42a2-a5a0-77f1445a6f33",
                     "path": "<Mouse>/delta/down",
                     "interactions": "",
                     "processors": "",
@@ -115,7 +330,7 @@
                 },
                 {
                     "name": "Left",
-                    "id": "64701e58-8fcd-4da7-a6d5-e3569d68cc9f",
+                    "id": "e2356d3b-6b8c-4d6e-a98a-16c19a2cafca",
                     "path": "<Mouse>/delta/left",
                     "interactions": "",
                     "processors": "",
@@ -126,7 +341,7 @@
                 },
                 {
                     "name": "Right",
-                    "id": "a5388713-a326-49bf-87e1-afc2d4d7c97f",
+                    "id": "dca6ddf3-32a5-488b-9821-e02d0b2b0904",
                     "path": "<Mouse>/delta/right",
                     "interactions": "",
                     "processors": "",
@@ -134,34 +349,6 @@
                     "action": "PlayerLook",
                     "isComposite": false,
                     "isPartOfComposite": true
-                }
-            ]
-        },
-        {
-            "name": "Audio",
-            "id": "e2f50698-ad17-4f53-90ee-1498143f7681",
-            "actions": [
-                {
-                    "name": "PlayPause",
-                    "type": "Button",
-                    "id": "fadf1ce6-7d63-4510-a0b0-d04128f6c225",
-                    "expectedControlType": "Button",
-                    "processors": "",
-                    "interactions": "",
-                    "initialStateCheck": false
-                }
-            ],
-            "bindings": [
-                {
-                    "name": "",
-                    "id": "f62f03f7-8533-4174-9ada-02cd1daa5563",
-                    "path": "<Keyboard>/space",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "Keyboard and Mouse",
-                    "action": "PlayPause",
-                    "isComposite": false,
-                    "isPartOfComposite": false
                 }
             ]
         }

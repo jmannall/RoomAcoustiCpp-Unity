@@ -150,7 +150,7 @@ public class UIManager : MonoBehaviour
                 sourceAgent.isStopped = true;
         }
         if (wanderingText != null)
-            wanderingText.text = "Let sources wander around (Escape)";
+            wanderingText.text = "<b>Escape</b>: let sources wander around";
 
         wanderingIsActive = false;
     }
@@ -164,7 +164,7 @@ public class UIManager : MonoBehaviour
                 sourceAgent.isStopped = false;
         }
         if (wanderingText != null)
-            wanderingText.text = "Stop sources from wandering (Escape)";
+            wanderingText.text = "<b>Escape</b>: stop sources from wandering";
 
         wanderingIsActive = true;
     }
