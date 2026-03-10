@@ -331,6 +331,9 @@ public class RACManager : MonoBehaviour
 
     [Header("Initial properties")]
     [SerializeField, Range(0.0f, 10.0f)]
+    private float sourceStartDelay = 0.5f;
+
+    [SerializeField, Range(0.0f, 10.0f)]
     private float lerpFactor = 2.0f;
 
     [SerializeField]
@@ -1076,8 +1079,8 @@ public class RACManager : MonoBehaviour
 
         RACAudioSource[] sources = FindObjectsByType<RACAudioSource>(FindObjectsSortMode.None);
 
-        // Add a 2.5 second safeguard. Gives all RACSources time to initialize before playing.
-        double t = AudioSettings.dspTime + 2.5;
+        // Add a safeguard. Gives all RACSources time to initialize before playing.
+        double t = AudioSettings.dspTime + sourceStartDelay;
 
         foreach (RACAudioSource s in sources)
             if (s.WantsToPlayOnAwake)

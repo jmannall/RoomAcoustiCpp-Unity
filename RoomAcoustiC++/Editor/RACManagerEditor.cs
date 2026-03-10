@@ -12,13 +12,14 @@ public class RACManagerEditor : Editor
     private string[] pluginOptions = new string[] { "RAC_Default", "RAC_Debug", "RAC_Profile", "RAC_ProfileDetailed" };
     private int selectedIndex = 0;
 
-    private SerializedProperty lerpFactor, frequencyBands, hrtfResamplingStep, numReverbSources, fdnSize,
+    private SerializedProperty sourceStartDelay, lerpFactor, frequencyBands, hrtfResamplingStep, numReverbSources, fdnSize,
         fdnMatrix, selectedHRTF, customHRTFFile, selectedHeadphoneEQ, customHeadphoneEQFile, earlyConfig,
         lateConfig, spatialisationMode, diffractionModel, lateReverbModel, reverbTimeModel, T60;
 
     void OnEnable()
     {
         // Link the SerializedProperty to the serialized field in the target class
+        sourceStartDelay = serializedObject.FindProperty("sourceStartDelay");
         lerpFactor = serializedObject.FindProperty("lerpFactor");
         frequencyBands = serializedObject.FindProperty("frequencyBands");
         hrtfResamplingStep = serializedObject.FindProperty("hrtfResamplingStep");
@@ -71,6 +72,8 @@ public class RACManagerEditor : Editor
             // Apply new define symbols
             PlayerSettings.SetScriptingDefineSymbols(buildTarget, newDefines);
         }
+
+        EditorGUILayout.PropertyField(sourceStartDelay, new GUIContent("Auto-playback delay", "Delay (in seconds) after which sound sources start playback, if set to \"play on awake.\" Increase this on slow machines to fix de-sync issues."));
 
         EditorGUILayout.PropertyField(lerpFactor, new GUIContent("Lerp Factor", "Control the speed at which DSP parameters are interpolated."));
 

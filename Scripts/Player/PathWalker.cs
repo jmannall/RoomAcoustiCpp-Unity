@@ -9,9 +9,7 @@ using UnityEngine.Rendering;
 
 public class PathWalker : MonoBehaviour
 {
-    public GameObject targetObject;
-    [SerializeField, HideInInspector]
-    private NavMeshAgent targetAgent;
+    public NavMeshAgent targetAgent;
 
     public bool switchDirection = false;
     public bool closedLoop = false;
@@ -34,15 +32,8 @@ public class PathWalker : MonoBehaviour
     float targetYaw = 0f;
     private float currentRotationVelocity = 0f;
 
-    void OnValidate()
-    {
-        //targetAgent = targetObject.GetComponent<NavMeshAgent>();
-        //GatherChildren();
-    }
-
     void Awake()
     {
-        targetAgent = targetObject.GetComponent<NavMeshAgent>();
         GatherChildren();
     }
 
@@ -54,6 +45,9 @@ public class PathWalker : MonoBehaviour
 
     void Update()
     {
+        if (targetAgent == null)
+            return;
+
         if (waypoints.Count != 0 && !targetAgent.isStopped && targetAgent.remainingDistance <= distanceThreshold)
         {
             if (!startedWait)
@@ -73,11 +67,11 @@ public class PathWalker : MonoBehaviour
 
     void FaceTarget()
     {
-        if (targetObject.transform.eulerAngles.y == targetYaw)
+        if (targetAgent.transform.eulerAngles.y == targetYaw)
             return;
 
-        float yaw = Mathf.SmoothDamp(targetObject.transform.eulerAngles.y, targetYaw, ref currentRotationVelocity, rotationSmoothTime);
-        targetObject.transform.eulerAngles = new Vector3(0f, yaw, 0f);
+        float yaw = Mathf.SmoothDamp(targetAgent.transform.eulerAngles.y, targetYaw, ref currentRotationVelocity, rotationSmoothTime);
+        targetAgent.transform.eulerAngles = new Vector3(0f, yaw, 0f);
         if (targetYaw < 0f && yaw > targetYaw + 360f)
             targetYaw += 360f;
         if (targetYaw > 360f && yaw < targetYaw - 360f)
@@ -176,7 +170,7 @@ public class PathWalker : MonoBehaviour
         currentRotationVelocity = 0f;
         Vector3 direction = waypoints[idx].forward;
         targetYaw = Mathf.Rad2Deg * Mathf.Atan2(direction.x, direction.z);
-        float currentYaw = targetObject.transform.eulerAngles.y;
+        float currentYaw = targetAgent.transform.eulerAngles.y;
         if (targetYaw < 0f)
             targetYaw += 360f;
 
