@@ -35,6 +35,8 @@ public class RACManager : MonoBehaviour
 
 #if UNITY_IOS
     public const string DLLNAME = "__Internal";
+#elif UNITY_ANDROID
+    public const string DLLNAME = PluginName + PluginType;
 #else
     public const string DLLNAME = PluginName + PluginType + "_x64";
 #endif
