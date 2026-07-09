@@ -1,8 +1,9 @@
 
 using System.Collections.Generic;
+using System.IO;
 using UnityEngine;
 
-[AddComponentMenu("RoomAcoustiC++/Mesh")]
+[AddComponentMenu("RoomAcoustiC++/RAC Mesh")]
 
 public class RACMesh : MonoBehaviour
 {
@@ -39,8 +40,10 @@ public class RACMesh : MonoBehaviour
 
     void Awake()
     {
-        Debug.AssertFormat(racMesh == null, "More than one instance of the RACMesh created! Singleton violated.");
-        racMesh = this;
+        if (racMesh == null)
+            racMesh = this;
+        else
+            Debug.AssertFormat(racMesh == this, "More than one instance of the RACMesh created! Singleton violated.");
     }
 
     void Start()
@@ -53,9 +56,35 @@ public class RACMesh : MonoBehaviour
         if (disableMeshRenderers)
             DisableMeshRenderers();
 
-        Debug.Log("Number of objects: " + meshes.Length);
+        Debug.Log("Number of meshes: " + meshes.Length);
+        Debug.Log("Number of objects: " + objects.Length);
 
-        RACManager.InitLateReverb(volume, roomDimensions.ToArray());
+        RACManager racManagerInstance;
+        if (Application.isPlaying)
+            racManagerInstance = RACManager.racManager;
+        else
+            racManagerInstance = FindAnyObjectByType<RACManager>();
+
+        if (racManagerInstance == null)
+        {
+            Debug.LogError("Unable to locate RACManager instance: failed to start RACMesh.");
+            return;
+        }
+
+        if (racManagerInstance.GetLateReverbModel() == RACManager.LateReverbModel.SingleFDN)
+        {
+            Debug.Log("RAC mesh is initializing late reverb with a single FDN.");
+
+            bool success = RACManager.InitSingleFDN(volume, roomDimensions.ToArray());
+
+            if (!success)
+                Debug.LogError("Failed to initialize late reverb.");
+        }
+        else
+        {
+            Debug.LogError("RAC mesh cannot initialize MoD-ART. Use RacMesh if you want basic late reverb.");
+            return;
+        }
 
         initialised = true;
         if (absorptionSkew != 0.0f)
@@ -63,7 +92,7 @@ public class RACMesh : MonoBehaviour
         RACManager.UpdatePlanesAndEdges();
     }
 
-    private void LateUpdate()
+    void LateUpdate()
     {
         meshes = GetComponentsInChildren<MeshFilter>();
         objects = GetComponentsInChildren<RACObject>();

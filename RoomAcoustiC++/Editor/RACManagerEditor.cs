@@ -4,7 +4,7 @@ using UnityEditor;
 using UnityEditor.Build;
 using UnityEngine;
 
-[AddComponentMenu("RoomAcoustiC++/Editor/AudioManager")]
+[AddComponentMenu("RoomAcoustiC++/Editor/RAC AudioManager")]
 [CustomEditor(typeof(RACManager))]
 
 public class RACManagerEditor : Editor
@@ -12,23 +12,29 @@ public class RACManagerEditor : Editor
     private string[] pluginOptions = new string[] { "RAC_Default", "RAC_Debug", "RAC_Profile", "RAC_ProfileDetailed" };
     private int selectedIndex = 0;
 
-    private SerializedProperty lerpFactor, frequencyBands, hrtfResamplingStep, numReverbSources, fdnMatrix, selectedHRTF, customHRTFFile, selectedHeadphoneEQ, customHeadphoneEQFile, iemConfig, spatialisationMode, diffractionModel, reverbTimeModel, T60;
+    private SerializedProperty sourceStartDelay, lerpFactor, frequencyBands, hrtfResamplingStep, numReverbSources, fdnSize,
+        fdnMatrix, selectedHRTF, customHRTFFile, selectedHeadphoneEQ, customHeadphoneEQFile, earlyConfig,
+        lateConfig, spatialisationMode, diffractionModel, lateReverbModel, reverbTimeModel, T60;
 
-    private void OnEnable()
+    void OnEnable()
     {
         // Link the SerializedProperty to the serialized field in the target class
+        sourceStartDelay = serializedObject.FindProperty("sourceStartDelay");
         lerpFactor = serializedObject.FindProperty("lerpFactor");
         frequencyBands = serializedObject.FindProperty("frequencyBands");
         hrtfResamplingStep = serializedObject.FindProperty("hrtfResamplingStep");
         numReverbSources = serializedObject.FindProperty("numReverbSources");
+        fdnSize = serializedObject.FindProperty("fdnSize");
         fdnMatrix = serializedObject.FindProperty("fdnMatrix");
         selectedHRTF = serializedObject.FindProperty("selectedHRTF");
         customHRTFFile = serializedObject.FindProperty("customHRTFFile");
         selectedHeadphoneEQ = serializedObject.FindProperty("selectedHeadphoneEQ");
         customHeadphoneEQFile = serializedObject.FindProperty("customHeadphoneEQFile");
-        iemConfig = serializedObject.FindProperty("iemConfig");
+        earlyConfig = serializedObject.FindProperty("earlyConfig");
+        lateConfig = serializedObject.FindProperty("lateConfig");
         spatialisationMode = serializedObject.FindProperty("spatialisationMode");
         diffractionModel = serializedObject.FindProperty("diffractionModel");
+        lateReverbModel = serializedObject.FindProperty("lateReverbModel");
         reverbTimeModel = serializedObject.FindProperty("reverbTimeModel");
         T60 = serializedObject.FindProperty("T60");
     }
@@ -66,6 +72,8 @@ public class RACManagerEditor : Editor
             // Apply new define symbols
             PlayerSettings.SetScriptingDefineSymbols(buildTarget, newDefines);
         }
+
+        EditorGUILayout.PropertyField(sourceStartDelay, new GUIContent("Auto-playback delay", "Delay (in seconds) after which sound sources start playback, if set to \"play on awake.\" Increase this on slow machines to fix de-sync issues."));
 
         EditorGUILayout.PropertyField(lerpFactor, new GUIContent("Lerp Factor", "Control the speed at which DSP parameters are interpolated."));
 
@@ -126,12 +134,11 @@ public class RACManagerEditor : Editor
 
         EditorGUILayout.EndHorizontal();
 
-        
-
         EditorGUILayout.Separator();
 
         EditorGUILayout.PropertyField(hrtfResamplingStep, new GUIContent("HRTF Resampling Step", "Control the HRTF angular resolution."));
         EditorGUILayout.PropertyField(numReverbSources, new GUIContent("Reverb Sources", "Control the number of reverb sources used for late reverberation spatialisation."));
+        EditorGUILayout.PropertyField(fdnSize, new GUIContent("FDN Size", "Control the number of delay lines in each feedback delay matrix."));
         EditorGUILayout.PropertyField(fdnMatrix, new GUIContent("FDN Matrix", "Select the design of the FDN feedback matrix."));
 
         EditorGUILayout.PropertyField(selectedHRTF, new GUIContent("HRTF File", "Select HRTF File."));
@@ -142,6 +149,8 @@ public class RACManagerEditor : Editor
 
         EditorGUILayout.PropertyField(selectedHeadphoneEQ, new GUIContent("Headphone EQ File", "Select Headphone EQ File."));
 
+        EditorGUILayout.PropertyField(lateReverbModel, new GUIContent("Late Reverb Model", "Select the late reverberation model."));
+
         GUI.enabled = true;
         if (selectedHeadphoneEQ.enumValueIndex == (int)RACManager.HeadphoneEQFiles.Custom)
         {
@@ -151,15 +160,54 @@ public class RACManagerEditor : Editor
                 RACManager.LoadHeadphoneEQ();
         }
         serializedObject.ApplyModifiedProperties();
-        //GUI.enabled = true;
         GUI.changed = false;
 
-        EditorGUILayout.PropertyField(iemConfig, new GUIContent("Image Edge Model", "Control the acoustic components modelled by the image edge model."), true);
+        SerializedProperty enableEarly = earlyConfig.FindPropertyRelative("enabled");
+        bool oldEnableEarly = enableEarly.boolValue;
+
+        EditorGUILayout.PropertyField(earlyConfig, new GUIContent("Early sound", "Control the settings of the image edge model."), true);
         serializedObject.ApplyModifiedProperties();
 
         if (isPlaying && GUI.changed)
         {
-            RACManager.UpdateIEMConfig();
+            if (enableEarly.boolValue != oldEnableEarly)
+                RACManager.EnableEarlyReverb();
+            else
+                RACManager.UpdateEarlyConfig();
+            GUI.changed = false;
+        }
+        SerializedProperty enableLate = lateConfig.FindPropertyRelative("enabled");
+        SerializedProperty numRays = lateConfig.FindPropertyRelative("numRays");
+        SerializedProperty sourceThresh = lateConfig.FindPropertyRelative("sourceThresh");
+        SerializedProperty listenerThresh = lateConfig.FindPropertyRelative("listenerThresh");
+        SerializedProperty selfShadowRadius = lateConfig.FindPropertyRelative("selfShadowRadius");
+        SerializedProperty delay = lateConfig.FindPropertyRelative("delay");
+        SerializedProperty minT60 = lateConfig.FindPropertyRelative("minT60");
+        bool oldEnableLate = enableLate.boolValue;
+        float oldNumRays = numRays.floatValue;
+        float oldSourceThresh = sourceThresh.floatValue;
+        float oldListenerThresh = listenerThresh.floatValue;
+        float oldSelfShadowRadius = selfShadowRadius.floatValue;
+        float oldDelay = delay.floatValue;
+        float oldMinT60 = minT60.floatValue;
+
+        EditorGUILayout.PropertyField(lateConfig, new GUIContent("Late reverberation", "Control the settings of the MoD-ART model."), true);
+        serializedObject.ApplyModifiedProperties();
+
+        if (isPlaying && GUI.changed)
+        {
+            if (enableLate.boolValue != oldEnableLate)
+                RACManager.EnableLateReverb();
+            if (numRays.floatValue != oldNumRays)
+                RACManager.UpdateLateReverbNumberOfRays();
+            if (sourceThresh.floatValue != oldSourceThresh || listenerThresh.floatValue != oldListenerThresh)
+                RACManager.UpdateLateReverbDistanceThresholds();
+            if (selfShadowRadius.floatValue != oldSelfShadowRadius)
+                RACManager.UpdateSelfShadowingRadius();
+            if (delay.floatValue != oldDelay)
+                RACManager.UpdateMoDARTDelay();
+            if (minT60.floatValue != oldMinT60)
+                RACManager.UpdateMoDARTMinimumReverbTime();
             GUI.changed = false;
         }
 
@@ -181,10 +229,22 @@ public class RACManagerEditor : Editor
             GUI.changed = false;
         }
 
-        EditorGUILayout.PropertyField(reverbTimeModel, new GUIContent("Reverberation Time", "Select the formula used to calculate the reverberation time"));
+        // TODO: Allow changing late reverb model at runtime
+        // EditorGUILayout.PropertyField(lateReverbModel, new GUIContent("Late Reverb Model", "Select the late reverberation model."));
+        // serializedObject.ApplyModifiedProperties();
+
+        // if (isPlaying && GUI.changed)
+        // {
+        //      TODO: update late reverb model
+        //      GUI.changed = false;
+        // }
+
+        bool isSingleFDN = lateReverbModel.enumValueIndex == (int)RACManager.LateReverbModel.SingleFDN;
+        if (isSingleFDN)
+            EditorGUILayout.PropertyField(reverbTimeModel, new GUIContent("Reverberation Time", "Select the formula used to calculate the reverberation time (IGNORED if a RAC mesh loader is present)."));
 
         bool isCustom = reverbTimeModel.enumValueIndex == (int)RACManager.ReverbTime.Custom;
-        if (isCustom)
+        if (isSingleFDN && isCustom)
         {
             if (T60.arraySize < frequencyBands.arraySize)
             {
@@ -196,17 +256,17 @@ public class RACManagerEditor : Editor
             else if (T60.arraySize > frequencyBands.arraySize)
                 T60.arraySize = frequencyBands.arraySize; // Resize to match frequency bands
 
-            EditorGUILayout.PropertyField(T60, new GUIContent("T60", "Enter custom T60"));
+            EditorGUILayout.PropertyField(T60, new GUIContent("T60", "Enter custom T60 (IGNORED if a RAC mesh loader is present)."));
         }
         serializedObject.ApplyModifiedProperties();
         if (isPlaying && GUI.changed)
         {
             if (isCustom)
-                RACManager.UpdateReverbTime();
+                RACManager.UpdateSingleFDNReverbTime();
             else
-                RACManager.UpdateReverbTimeModel();
+                RACManager.UpdateSingleFDNReverbTimeModel();
             GUI.changed = false;
-        }        
+        }
     }
 
     private float SnapToOctave(float value, float reference)

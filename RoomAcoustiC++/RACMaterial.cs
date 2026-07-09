@@ -3,14 +3,14 @@ using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
 
-[AddComponentMenu("RoomAcoustiC++/Material")]
+[AddComponentMenu("RoomAcoustiC++/RAC Material")]
 
 public class RACMaterial : MonoBehaviour
 {
     [Tooltip("List of materials to be used by the acoustic model.")]
     public List<RACMaterialEntry> materials;
 
-    public void Awake()
+    void Awake()
     {
         if (materials == null)
             materials = new List<RACMaterialEntry>();

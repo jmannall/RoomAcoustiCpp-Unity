@@ -201,7 +201,7 @@ public class RACMaterialEntry : ScriptableObject
 
     //////////////////// Unity Functions ////////////////////
 
-    private void Awake()
+    void Awake()
     {
         SetAbsorption();
     }
@@ -449,14 +449,12 @@ public class RACMaterialEntry : ScriptableObject
     {
         List<float> freqs = null;
         if (Application.isPlaying && RACManager.racManager != null)
-            freqs = RACManager.racManager.frequencyBands;
+            freqs = RACManager.racManager.GetFrequencyBands();
         else
         {
-#if UNITY_EDITOR
-            var racManagerInstance = UnityEngine.Object.FindAnyObjectByType<RACManager>();
+            RACManager racManagerInstance = FindAnyObjectByType<RACManager>();
             if (racManagerInstance != null)
-                freqs = racManagerInstance.frequencyBands;
-#endif
+                freqs = racManagerInstance.GetFrequencyBands();
         }
 
         if (freqs == null)

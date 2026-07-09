@@ -1274,6 +1274,7 @@ MonoBehaviour:
     specularDiffractionOrder: 0
     lateReverb: 1
     minimumEdgeLength: 0
+    maximumPathLength: 1000
   spatialisationMode: 1
   diffractionModel: 4
   T60:

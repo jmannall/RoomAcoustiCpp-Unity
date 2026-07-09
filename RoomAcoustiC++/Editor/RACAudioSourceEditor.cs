@@ -1,14 +1,14 @@
 using UnityEditor;
 using UnityEngine;
 
-[AddComponentMenu("RoomAcoustiC++/Editor/AudioSource")]
+[AddComponentMenu("RoomAcoustiC++/Editor/RAC AudioSource")]
 [CustomEditor(typeof(RACAudioSource))]
 
 public class RACAudioSourceEditor : Editor
 {
     private SerializedProperty directivity;
 
-    private void OnEnable()
+    void OnEnable()
     {
         directivity = serializedObject.FindProperty("directivity");
     }

@@ -1,23 +1,24 @@
 
 using UnityEngine;
 
-[AddComponentMenu("RoomAcoustiC++/Audio Listener")]
+[AddComponentMenu("RoomAcoustiC++/RAC Audio Listener")]
 [RequireComponent(typeof(AudioListener))]
 
 public class RACAudioListener : MonoBehaviour
 {
     // singleton
-    private static RACAudioListener racAudioListener = null;
+    public static RACAudioListener racAudioListener = null;
 
     #region Unity Functions
 
     //////////////////// Unity Functions ////////////////////
-    
-    private void Awake()
+
+    void Awake()
     {
-        Debug.AssertFormat(racAudioListener == null, "More than one instance of the RACAudioListener created! Singleton violated.");
-        racAudioListener = this;
-        // UpdateListener();
+        if (racAudioListener == null)
+            racAudioListener = this;
+        else
+            Debug.AssertFormat(racAudioListener == this, "More than one instance of the RACAudioListener created! Singleton violated.");
     }
 
     void Update()

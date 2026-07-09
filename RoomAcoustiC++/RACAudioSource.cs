@@ -1,8 +1,8 @@
-
-using UnityEngine;
 using System;
+using UnityEngine;
+using UnityEngine.Audio;
 
-[AddComponentMenu("RoomAcoustiC++/Audio Source")]
+[AddComponentMenu("RoomAcoustiC++/RAC Audio Source")]
 [RequireComponent(typeof(AudioSource))]
 
 public class RACAudioSource : MonoBehaviour
@@ -27,6 +27,12 @@ public class RACAudioSource : MonoBehaviour
     [SerializeField]
     [Tooltip("Play the sound when the component loads.")]
     private bool playOnAwake = false;
+    // This is called by RACManager to synchronize sources.
+    public bool WantsToPlayOnAwake => playOnAwake;
+
+    [SerializeField]
+    [Tooltip("Mute the sound (but advance playback) when the component loads.")]
+    private bool muteOnAwake = false;
 
     [SerializeField]
     [Tooltip("Set the source to loop. If loop points are defined in the clip, these will be respected.")]
@@ -56,17 +62,25 @@ public class RACAudioSource : MonoBehaviour
 
     //////////////////// Unity Functions ////////////////////
 
-    private void Awake()
+    void Awake()
     {
         source = GetComponent<AudioSource>();
         if (clip != null)
             source.clip = clip;
-        source.playOnAwake = playOnAwake;
+        source.mute = muteOnAwake;
         source.loop = loop;
         source.bypassEffects = false;
         source.bypassReverbZones = true;
         source.spatialBlend = 0.0f;
         source.panStereo = 0.0f;
+
+        // Don't use the actual "playOnAwake" of the underlying Unity source,
+        //  in order to avoid de-synchronization issues (see comments in "Start()").
+        source.playOnAwake = false;
+        // If the underlying Unity source awoke first, it may have started playing;
+        //  stop it (and reset its progress).
+        if (source.isPlaying)
+            source.Stop();
     }
 
     void Start()
@@ -77,8 +91,14 @@ public class RACAudioSource : MonoBehaviour
         RACManager.racManager.enableAudioProcessing += InitSource;
         RACManager.racManager.disableAudioProcessing += RemoveSource;
 
-        if (playOnAwake)
-            Play();
+        // If the scene is loaded on a slow PC, this "Start()" method might be called
+        //  at noticeably different times for different RACAudioSource instances.
+        // In that event, calling "Play()" here would make the sources de-synchronized.
+        // We mitigate the issue by starting playback in a loop, in RACManager.
+        /*
+          * if (playOnAwake)
+          *    Play();
+          */
 
         input = new float[numFrames];
     }
@@ -88,20 +108,25 @@ public class RACAudioSource : MonoBehaviour
         if (id < 0)
             return;
 
+        if (RACManager.racManager == null)
+            return;
+
         RACManager.UpdateSource(id, transform.position, transform.rotation);
         linGain = UpdateLinearGain();
 
         isPlaying = source.isPlaying;
     }
 
-    private void OnDestroy()
+    void OnDestroy()
     {
         RemoveSource();
     }
 
-    private void OnAudioFilterRead(float[] data, int channels)
+    void OnAudioFilterRead(float[] data, int channels)
     {
-        if (RACManager.racManager.isRunning)
+        if (RACManager.racManager == null)
+            Debug.Log("Skip processing of source. RACManager is null");
+        else if (RACManager.racManager.isRunning)
         {
             if (isRunning && isPlaying)
             {
@@ -179,6 +204,12 @@ public class RACAudioSource : MonoBehaviour
             source.Play();
     }
 
+    public void MuteUnmute()
+    {
+        Debug.Log("Mute Unmute");
+        source.mute = !source.mute;
+    }
+
     public void PlayPause()
     {
         Debug.Log("Play Pause");
@@ -231,6 +262,11 @@ public class RACAudioSource : MonoBehaviour
     public bool IsPlaying()
     {
         return source.isPlaying;
+    }
+
+    public bool IsMuted()
+    {
+        return source.mute;
     }
 
     public void UpdateDirectivity()

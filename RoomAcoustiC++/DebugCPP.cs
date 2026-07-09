@@ -8,16 +8,15 @@ using System.Runtime.InteropServices;
 using UnityEditor;
 using UnityEngine;
 
-[AddComponentMenu("RoomAcoustiC++/Debug C++")]
+[AddComponentMenu("RoomAcoustiC++/RAC Debug C++")]
 public class DebugCPP : MonoBehaviour
 {
-#if RAC_Debug && UNITY_EDITOR
-
     // global singleton
     public static DebugCPP debug = null;
 
     static string debug_string = " ";
     private static Dictionary<string, List<Vector3>> pathDictionary = new Dictionary<string, List<Vector3>>();
+    private readonly object pathLock = new();
 
     public RACAudioSource source;
     private Transform listenerPosition;
@@ -27,14 +26,16 @@ public class DebugCPP : MonoBehaviour
     // Use this for initialization
     void Awake()
     {
-        Debug.AssertFormat(debug == null, "More than one instance of the DebugCPP created! Singleton violated.");
-        debug = this;
+        if (debug == null)
+            debug = this;
+        else
+            Debug.AssertFormat(debug == this, "More than one instance of the DebugCPP created! Singleton violated.");
 
         RegisterDebugCallback(OnDebugCallback);
         RegisterPathCallback(OnPathCallback);
     }
 
-    private void Start()
+    void Start()
     {
         listenerPosition = FindAnyObjectByType<RACAudioListener>().transform;
         if (listenerPosition == null)
@@ -45,46 +46,43 @@ public class DebugCPP : MonoBehaviour
         style.normal.textColor = Color.white; // Text color
     }
 
-    private void OnDisable()
+    void OnDestroy()
     {
         UnregisterDebugCallback();
         UnregisterPathCallback();
-    }
-
-    private void OnDestroy()
-    {
         pathDictionary.Clear();
     }
 
-    private const string DLLNAME = "RoomAcoustiCpp_Debug";
-
     //------------------------------------------------------------------------------------------------
-    [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+    [DllImport(RACManager.DLLNAME, CallingConvention = CallingConvention.Cdecl)]
     static extern void RegisterDebugCallback(debugCallback cb);
 
-    [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+    [DllImport(RACManager.DLLNAME, CallingConvention = CallingConvention.Cdecl)]
     static extern void RegisterPathCallback(pathCallback cb);
 
-    [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void RegisterIEMCallback(iemCallback cb);
+    [DllImport(RACManager.DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+    public static extern void RegisterResidueCallback(residueCallback cb);
 
-    [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+    [DllImport(RACManager.DLLNAME, CallingConvention = CallingConvention.Cdecl)]
     static extern void UnregisterDebugCallback();
 
-    [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+    [DllImport(RACManager.DLLNAME, CallingConvention = CallingConvention.Cdecl)]
     static extern void UnregisterPathCallback();
 
-    [DllImport(DLLNAME, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void UnregisterIEMCallback();
+    [DllImport(RACManager.DLLNAME, CallingConvention = CallingConvention.Cdecl)]
+    public static extern void UnregisterResidueCallback();
 
     //Create string param callback delegate
     delegate void debugCallback(IntPtr request, int colour, int size);
 
     delegate void pathCallback(IntPtr key, IntPtr intersections, int keySize, int intersectionsSize);
 
-    public delegate void iemCallback(int id);
+    // If isSource, channelIndex contains the source ID, otherwise, channelIndex contains the reverb direction index
+    public delegate void residueCallback(float residue, bool isSource, int channelIndex, int slopeIndex);
 
-    enum Colour { red, green, blue, black, white, yellow, orange };
+    // Error, Init, Update, Remove, Parameter, Warning, Assert, External
+    enum Colour { orange, green, blue, magenta, white, yellow, red, cyan };
+
     [MonoPInvokeCallback(typeof(debugCallback))]
     static void OnDebugCallback(IntPtr request, int colour, int size)
     {
@@ -104,6 +102,7 @@ public class DebugCPP : MonoBehaviour
         Debug.Log(debug_string);
     }
 
+    [MonoPInvokeCallback(typeof(pathCallback))]
     static void OnPathCallback(IntPtr key, IntPtr intersections, int keySize, int intersectionsSize)
     {
         // Convert the IntPtr key to a string
@@ -111,7 +110,10 @@ public class DebugCPP : MonoBehaviour
 
         if (intersectionsSize == 0)
         {
-            pathDictionary.Remove(keyString);
+            lock (debug.pathLock)
+            {
+                pathDictionary.Remove(keyString);
+            }
             return;
         }
 
@@ -125,15 +127,25 @@ public class DebugCPP : MonoBehaviour
         for (int i = 0; i < floatArray.Length; i += 3)
             vectors.Add(new Vector3(floatArray[i], floatArray[i + 1], floatArray[i + 2]));
 
-        pathDictionary[keyString] = vectors;
+        lock (debug.pathLock)
+        {
+            pathDictionary[keyString] = vectors;
+        }
     }
 
-    private void OnDrawGizmos()
+#if UNITY_EDITOR && RAC_Debug
+    void OnDrawGizmos()
     {
-        if (source == null || listenerPosition == null)
+        if (debug == null)
+            return;
+        if (debug.source == null || listenerPosition == null)
             return;
 
-        Dictionary<string, List<Vector3>> localPathDictionary = new Dictionary<string, List<Vector3>>(pathDictionary);
+        Dictionary<string, List<Vector3>> localPathDictionary;
+        lock (debug.pathLock)
+        {
+            localPathDictionary = new Dictionary<string, List<Vector3>>(pathDictionary);
+        }
 
         foreach (var path in localPathDictionary)
         {
@@ -169,11 +181,8 @@ public class DebugCPP : MonoBehaviour
                 continue;
             }
 
-            if (!path.Key.Contains(source.id.ToString() + 's'))
-            {
-                pathDictionary.Remove(path.Key);
+            if (!path.Key.StartsWith(debug.source.id.ToString() + 's'))
                 continue;
-            }
 
             if (path.Key.Contains('r'))
             {
@@ -191,7 +200,7 @@ public class DebugCPP : MonoBehaviour
                 continue;
             }
 
-            Gizmos.DrawLine(source.transform.position, path.Value[0]);
+            Gizmos.DrawLine(debug.source.transform.position, path.Value[0]);
             Vector3[] pathWithoutLast = path.Value.ToArray();
             Array.Resize(ref pathWithoutLast, pathWithoutLast.Length - 1);
             Gizmos.DrawLineStrip(pathWithoutLast, false);

@@ -6,22 +6,30 @@ public class PlayerCamera : MonoBehaviour
     [SerializeField]
     private bool lockCursor;
 
+    [SerializeField]
+    private bool lockPitch;
+    [SerializeField]
+    private bool lockYaw;
+
     [SerializeField, Range(0, 1)]
-    private float mouseSensitivity = 1;
+    private float mouseSensitivity = 1f;
 
     [SerializeField]
-    private Vector2 pitchMinMax = new Vector2(-40, 85);
+    private Vector2 pitchMinMax = new Vector2(-60, 85);
 
     [SerializeField]
     private float rotationSmoothTime = 0.12f;
 
-    Vector3 rotationSmoothVelocity;
-    Vector3 currentRotation;
-
-    float yaw;
-    float pitch;
+    private Vector3 currentRotation;
+    private Vector3 currentRotationVelocity;
+    
+    private float yaw = 0f;
+    private float pitch = 0f;
 
     private InputAction look;
+
+    private PlayerController playerController;
+    private Transform firstPersonCamera;
 
     void Start()
     {
@@ -31,29 +39,58 @@ public class PlayerCamera : MonoBehaviour
             Cursor.visible = false;
         }
 
-        InputActionMap inputActionMap = GetComponentInParent<PlayerController>().playerActionMap;
+        playerController = GetComponentInParent<PlayerController>();
+        InputActionMap inputActionMap = playerController.playerActionMap;
         if (inputActionMap.enabled)
             look = inputActionMap["PlayerLook"];
+
+        firstPersonCamera = playerController.firstPersonCamera;
+
+        // If no camera was assigned, all movement is with respect to self.
+        if (firstPersonCamera == null)
+            firstPersonCamera = this.transform;
+
+        // Set the rotation "reference frame" to match the initial state of the object.
+        pitch = firstPersonCamera.eulerAngles.x;
+        yaw = firstPersonCamera.eulerAngles.y;
+        pitch = Mathf.Clamp(pitch, pitchMinMax.x, pitchMinMax.y);
+
+        currentRotation = new Vector3(pitch, yaw, 0f);
+        currentRotationVelocity = Vector3.zero;
     }
 
     void Update()
     {
         if (look == null)
             return;
-        UpdateYawPitch();
-        UpdateCurrentRotation();
-        transform.eulerAngles = currentRotation;
+
+        if (!lockYaw)
+            yaw += look.ReadValue<Vector2>().x * mouseSensitivity;
+        if (!lockPitch)
+        {
+            pitch -= look.ReadValue<Vector2>().y * mouseSensitivity;
+            pitch = Mathf.Clamp(pitch, pitchMinMax.x, pitchMinMax.y);
+        }
+
+        currentRotation = Vector3.SmoothDamp(currentRotation, new Vector3(pitch, yaw), ref currentRotationVelocity, rotationSmoothTime);
+        firstPersonCamera.eulerAngles = currentRotation;
     }
 
-    void UpdateYawPitch()
+    public void SetControl(bool relinquishControl)
     {
-        yaw += look.ReadValue<Vector2>().x * mouseSensitivity;
-        pitch -= look.ReadValue<Vector2>().y * mouseSensitivity;
-        pitch = Mathf.Clamp(pitch, pitchMinMax.x, pitchMinMax.y);
-    }
-
-    void UpdateCurrentRotation()
-    {
-        currentRotation = Vector3.SmoothDamp(currentRotation, new Vector3(pitch, yaw), ref rotationSmoothVelocity, rotationSmoothTime);
+        if (relinquishControl)
+        {
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+            lockPitch = true;
+            lockYaw = true;
+        }
+        else
+        {
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+            lockPitch = false;
+            lockYaw = false;
+        }
     }
 }
