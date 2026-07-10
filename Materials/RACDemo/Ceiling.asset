@@ -10,29 +10,29 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0f585c1f54c389545866b621f51c0d92, type: 3}
-  m_Name: Floor
+  m_Name: Ceiling
   m_EditorClassIdentifier: 
-  material: {fileID: 2100000, guid: f1e08a35734730d408c1444cb05c18a6, type: 2}
+  material: {fileID: 2100000, guid: c724b6dd3bc210148b31f47706237ef6, type: 2}
   mAbsorptionMap:
   - frequency: 250
-    absorption: 0.11
+    absorption: 0.35
   - frequency: 500
-    absorption: 0.1
+    absorption: 0.64
   - frequency: 1000
-    absorption: 0.07
+    absorption: 0.73
   - frequency: 2000
-    absorption: 0.06
+    absorption: 0.73
   - frequency: 4000
-    absorption: 0.07
+    absorption: 0.77
   customAbsorptions:
   - 0.5
-  - 0.11
-  - 0.11
-  - 0.11
-  - 0.1
-  - 0.07
-  - 0.06
-  - 0.07
-  - 0.07
-  - 0
-  absorption: 24
+  - 0.5
+  - 0.5
+  - 0.35
+  - 0.64
+  - 0.73
+  - 0.73
+  - 0.77
+  - 0.5
+  - 0.5
+  absorption: 2

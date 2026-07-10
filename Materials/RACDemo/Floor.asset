@@ -10,29 +10,29 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0f585c1f54c389545866b621f51c0d92, type: 3}
-  m_Name: Obstacle
+  m_Name: Floor
   m_EditorClassIdentifier: 
-  material: {fileID: 2100000, guid: ed97bd6844ecbca4b985856fa50139bd, type: 2}
+  material: {fileID: 2100000, guid: 638115a4a785d4545a4721a4b4afb2b7, type: 2}
   mAbsorptionMap:
   - frequency: 250
-    absorption: 0.1
+    absorption: 0.11
   - frequency: 500
-    absorption: 0.05
+    absorption: 0.1
   - frequency: 1000
-    absorption: 0.04
-  - frequency: 2000
     absorption: 0.07
+  - frequency: 2000
+    absorption: 0.06
   - frequency: 4000
-    absorption: 0.09
+    absorption: 0.07
   customAbsorptions:
   - 0.5
+  - 0.11
+  - 0.11
+  - 0.11
   - 0.1
-  - 0.1
-  - 0.1
-  - 0.05
-  - 0.04
   - 0.07
-  - 0.09
-  - 0.09
-  - 0.09
-  absorption: 21
+  - 0.06
+  - 0.07
+  - 0.07
+  - 0
+  absorption: 24
