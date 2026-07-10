@@ -55,7 +55,8 @@ public class RACManagerEditor : Editor
             string selectedDefine = pluginOptions[selectedIndex];
 
             // Use NamedBuildTarget for modern Unity
-            var buildTarget = NamedBuildTarget.FromBuildTargetGroup(EditorUserBuildSettings.selectedBuildTargetGroup);
+            var group = BuildPipeline.GetBuildTargetGroup(EditorUserBuildSettings.activeBuildTarget);
+            var buildTarget = NamedBuildTarget.FromBuildTargetGroup(group);
 
             // Get current defines
             string defines = PlayerSettings.GetScriptingDefineSymbols(buildTarget);
