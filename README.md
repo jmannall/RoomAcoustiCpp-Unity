@@ -1,7 +1,8 @@
 # RoomAcoustiC++: Real-time Acoustics Library - Unity Engine Interface
 
-RoomAcoustiC++ (RAC) is a C++ library for real-time room acoustic modelling designed for psychoacoustic research and immersive audio applications.
-RAC was developed as part of a PhD at the University of Surrey and is distributed open-source with the aim of encouraging and increasing accessibility to real-time acoustics across technical and non-technical research fields.
+## Description
+RoomAcoustiC++ (RAC) is a C++ library for real-time room acoustic modelling.
+At a high level it consists of a combined image edge ([IE](https://doi.org/10.1051/aacus/2021010)) and feedback delay network (FDN) models that can be applied to an arbitrary triangulated mesh.
 This repository provides modular C# scripts and resources for integrating RAC with the Unity projects.
 
 The official documentation of RoomAcoustiC++, including the API used by Unity, is available at [https://roomacousticpp.readthedocs.io/en/latest/](https://roomacousticpp.readthedocs.io/en/latest/).
@@ -89,6 +90,7 @@ To access RAC's debugging features, you must add a "RAC Debug C++" component to 
 This component is defined by the `DebugCPP` class.
 You will also need to select the "RAC_Debug" version of the plugin, using the drop-down selection at the top of the "RAC Audio Manager" inspector.
 After applying the plugin selection, Unity will load the "RAC_Debug" DLL which includes debugging features.
+Assigning a RACAudioSource to this script will draw early reverberation paths for that source in the Unity scene view.
 
 #### Recording data
 
