@@ -351,6 +351,34 @@
                     "isPartOfComposite": true
                 }
             ]
+        },
+        {
+            "name": "Audio",
+            "id": "b5a8a147-8465-496e-88ee-5a178619df27",
+            "actions": [
+                {
+                    "name": "PlayPause",
+                    "type": "Button",
+                    "id": "d0266f27-9b3f-46bc-88da-3f3b9940a3a2",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                }
+            ],
+            "bindings": [
+                {
+                    "name": "",
+                    "id": "2f5acc83-3a0d-452c-9743-c69a3c3a5076",
+                    "path": "<Keyboard>/space",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": ";Keyboard and Mouse",
+                    "action": "PlayPause",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                }
+            ]
         }
     ],
     "controlSchemes": [

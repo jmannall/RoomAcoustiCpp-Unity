@@ -25,7 +25,7 @@ public class RACMeshEditor : Editor
         DrawDefaultInspector();
         GUI.changed = false;
 
-        EditorGUILayout.Slider(absorptionSkew, -1.0f, 1.0f, new GUIContent("Absorption Skew", "Scale the material absorption."));
+        EditorGUILayout.Slider(absorptionSkew, -0.98f, 0.98f, new GUIContent("Absorption Skew", "Scale the material absorption."));
 
         serializedObject.ApplyModifiedProperties();
 

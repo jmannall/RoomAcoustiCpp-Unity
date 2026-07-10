@@ -16,7 +16,7 @@ public class RACMesh : MonoBehaviour
     [Min(0.0f)]
     private List<float> roomDimensions = new List<float> { 2.0f, 3.0f, 5.0f };
 
-[SerializeField, HideInInspector]
+    [SerializeField, HideInInspector]
     private float absorptionSkew = 0.0f;
    
     [SerializeField]

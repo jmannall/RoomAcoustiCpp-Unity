@@ -524,9 +524,7 @@ public class RACManager : MonoBehaviour
 
             Profiler.BeginSample("Process Audio Output");
             bool success = RACProcessOutput();
-            //for (int i = 1, j = 0; i < numFDNChannels * numFrames; i += numFDNChannels, j += 2)
-            //    interleavedData[i] = data[j];
-            //bool success = RACProcessOutput_MOD_ART(interleavedData);
+
             Profiler.EndSample();
 
             if (success)

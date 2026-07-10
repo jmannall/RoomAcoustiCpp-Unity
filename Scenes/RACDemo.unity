@@ -1307,7 +1307,7 @@ MonoBehaviour:
   hrtfResamplingStep: 5
   numReverbSources: 12
   fdnSize: 12
-  fdnMatrix: 1
+  fdnMatrix: 0
   earlyConfig:
     enabled: 1
     direct: 1
@@ -1318,15 +1318,15 @@ MonoBehaviour:
     maximumPathLength: 3
   lateConfig:
     enabled: 1
-    numRays: 3
-    sourceThresh: 0.25
+    numRays: 2
+    sourceThresh: 0.1
     listenerThresh: 0.05
-    selfShadowRadius: 0
+    selfShadowRadius: 0.1
     delay: 0
-    minT60: 0.01
-  spatialisationMode: 1
-  diffractionModel: 4
-  lateReverbModel: 1
+    minT60: 0
+  spatialisationMode: 2
+  diffractionModel: 5
+  lateReverbModel: 0
   T60:
   - 1
   - 1
@@ -1334,7 +1334,7 @@ MonoBehaviour:
   - 1
   - 1
   reverbTimeModel: 1
-  selectedHRTF: 0
+  selectedHRTF: 1
   customHRTFFile: 
   selectedHeadphoneEQ: 0
   customHeadphoneEQFile: 
@@ -1622,6 +1622,10 @@ PrefabInstance:
     - target: {fileID: 1096285736628334722, guid: 5e07509371f3ba741a8def441336069e, type: 3}
       propertyPath: m_Enabled
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1943093024270902643, guid: 5e07509371f3ba741a8def441336069e, type: 3}
+      propertyPath: speed
+      value: 1.5
       objectReference: {fileID: 0}
     - target: {fileID: 1943093024270902643, guid: 5e07509371f3ba741a8def441336069e, type: 3}
       propertyPath: playerInput
