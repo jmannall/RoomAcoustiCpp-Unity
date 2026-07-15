@@ -1,0 +1,32 @@
+All rights reserved.
+
+Current Licensing
+=================
+This copy of RoomAcoustiC++ is free software; you can redistribute 
+it and/or modify it under the terms of the GNU Lesser General Public License
+version 3 as published by the Free Software Foundation.
+
+RoomAcoustiC++ is distributed in the hope that it will be useful, but 
+WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY 
+or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public
+License version 3 for more details.
+
+You should have received a copy of the GNU Lesser General Public License
+version 3 along with this program; if not, see https://www.gnu.org/licenses/.
+
+The full text of the LGPLv3 license is provided in the LGPL_LICENSE file
+located in the Plugin directory of this repository.
+
+Previous Licensing
+==================
+Versions of RoomAcoustiC++ distributed prior to 4/7/2026 were licensed 
+under the terms of the GNU General Public License version 3 (GPLv3).
+
+All rights granted under GPLv3 for those versions remain valid and are
+not affected by the licensing change.
+
+No Additional Rights
+====================
+No additional rights or permissions
+are granted beyond those provided under the LGPLv3 license contained
+in the LICENSE file.
