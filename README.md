@@ -25,11 +25,18 @@ You will notice that some settings become "locked" during runtime, while others 
 
 #### The environment mesh
 
-Create another empty game object anywhere, and assign a "RAC Audio Mesh" component to it.
-This component is defined by the `RACMeshLoader` class.
-It loads and handles the 3D mesh which describes the acoustic environment &mdash; you may or may not render it visually as well.
+Create another empty game object anywhere, and assign a "RAC Mesh" or "RAC Mesh Loader" component to it.
+These components are defined by the `RACMesh` and `RACMeshLoader` classes.
+They handle the 3D mesh which describes the acoustic environment &mdash; you may or may not render it visually as well.
 
-This component assumes that you have pre-processed your environment using [the Python package for MoD-ART analysis](https://github.com/IoSR-Surrey/MoD-ART).
+`RACMesh` creates the acoustic environment from the meshes attached to this object or any child objects.
+This also allows it update dynamically at runtime but only supports to SingleFDN late reverbation model.
+For the more advanced MoD-ART late reverberation model you must use `RACMeshLoader`.
+This game object should also be assigned a "RAC Material" defined in the `RACMaterial` class.
+This provides a customisable list of material entries, defined in the `RACMaterialEntry` class, that link acoustic properties to Unity materials.
+Any mesh with an assigned Unity material will then automatically link to the correct acoustic properties.
+
+`RACMeshLoader` assumes that you have pre-processed your environment using [the Python package for MoD-ART analysis](https://github.com/IoSR-Surrey/MoD-ART).
 The pre-processed mesh files must be placed in `PythonExports/YourEnvironmentName/` as shown in the following example.
 Also, make sure the `RAVES-Unity` GitHub repository is cloned in the `Assets` folder as shown.
 The first time your environment is loaded in the Unity editor, a file named `YourEnvironmentName.prefab` will be automatically generated in `ProcessedPrefabs`.
