@@ -4,7 +4,6 @@ using UnityEditor;
 using UnityEditor.Build;
 using UnityEngine;
 
-[AddComponentMenu("RoomAcoustiC++/Editor/RAC AudioManager")]
 [CustomEditor(typeof(RACManager))]
 
 public class RACManagerEditor : Editor

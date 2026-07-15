@@ -8,7 +8,7 @@ using System.Collections.Generic;
 using UnityEditor;
 #endif
 
-[AddComponentMenu("RoomAcoustiC++/RAC Audio Mesh")]
+[AddComponentMenu("RoomAcoustiC++/RAC Mesh Loader")]
 
 public class RACMeshLoader : MonoBehaviour
 {

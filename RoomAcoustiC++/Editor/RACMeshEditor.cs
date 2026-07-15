@@ -1,7 +1,6 @@
 using UnityEditor;
 using UnityEngine;
 
-[AddComponentMenu("RoomAcoustiC++/Editor/RAC Mesh")]
 [CustomEditor(typeof(RACMesh))]
 
 public class RACMeshEditor : Editor
